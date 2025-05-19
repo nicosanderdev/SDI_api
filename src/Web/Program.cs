@@ -1,4 +1,4 @@
-using SDI_Api.Infrastructure.Data;
+using SDI_Api.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,34 +10,30 @@ builder.AddWebServices();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    await app.InitialiseDatabaseAsync();
+    // await app.InitialiseDatabaseAsync();
+    
+    app.UseSwagger();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
+    });
+    app.MapSwagger();
 }
 else
 {
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
+    app.UseExceptionHandler("/Error", createScopeForErrors: true);
 }
 
 app.UseHealthChecks("/health");
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
-app.UseSwaggerUi(settings =>
-{
-    settings.Path = "/api";
-    settings.DocumentPath = "/api/specification.json";
-});
-
-app.MapRazorPages();
-
 app.MapFallbackToFile("index.html");
 
 app.UseExceptionHandler(options => { });
-
-
 app.MapEndpoints();
 
 app.Run();

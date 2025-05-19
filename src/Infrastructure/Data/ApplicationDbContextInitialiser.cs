@@ -11,15 +11,17 @@ namespace SDI_Api.Infrastructure.Data;
 
 public static class InitialiserExtensions
 {
-    public static async Task InitialiseDatabaseAsync(this WebApplication app)
+    public static Task InitialiseDatabaseAsync(this WebApplication app)
     {
         using var scope = app.Services.CreateScope();
 
         var initialiser = scope.ServiceProvider.GetRequiredService<ApplicationDbContextInitialiser>();
 
-        await initialiser.InitialiseAsync();
+        // await initialiser.InitialiseAsync();
 
-        await initialiser.SeedAsync();
+        // await initialiser.SeedAsync();
+        
+        return Task.CompletedTask;
     }
 }
 
@@ -38,7 +40,7 @@ public class ApplicationDbContextInitialiser
         _roleManager = roleManager;
     }
 
-    public async Task InitialiseAsync()
+    /* public Task InitialiseAsync()
     {
         try
         {
@@ -104,5 +106,5 @@ public class ApplicationDbContextInitialiser
 
             await _context.SaveChangesAsync();
         }
-    }
+    } */
 }

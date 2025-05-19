@@ -1,0 +1,21 @@
+# This is a generated file. Not intended for manual editing.
+services:
+  webapp:
+    build:
+      context: "C:\\repos\\SDI_api\\src"
+      dockerfile: "Web/Dockerfile"
+      target: "base"
+    command: []
+    entrypoint:
+    - "dotnet"
+    - "/app/bin/Debug/net9.0/SDI_Api.Web.dll"
+    environment:
+      ASPNETCORE_STATICWEBASSETS: "/app/bin/Debug/net9.0/SDI_Api.Web.staticwebassets.runtime.CT.json"
+      DOTNET_USE_POLLING_FILE_WATCHER: "true"
+    image: "web:dev"
+    ports: []
+    volumes:
+    - "C:\\repos\\SDI_api\\src\\Web:/app:rw"
+    - "C:\\repos\\SDI_api:/src:rw"
+    - "C:\\Users\\nicol\\.nuget\\packages:/home/app/.nuget/packages"
+    working_dir: "/app"
