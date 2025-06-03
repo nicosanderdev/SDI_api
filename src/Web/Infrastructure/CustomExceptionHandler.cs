@@ -1,6 +1,7 @@
 ﻿using SDI_Api.Application.Common.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using NotFoundException = SDI_Api.Application.Common.Exceptions.NotFoundException;
 
 namespace SDI_Api.Web.Infrastructure;
 
