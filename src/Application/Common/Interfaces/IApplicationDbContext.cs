@@ -9,6 +9,7 @@ public interface IApplicationDbContext
     DbSet<PropertyImage> PropertyImages { get; }
     DbSet<QandAMessageThread> QandAMessageThreads { get; }
     DbSet<QandAMessage> QandAMessages { get; }
-
+    DbSet<PropertyVisitLog> PropertyVisitLogs { get; }
+    DbSet<PropertyMessageLog> PropertyMessageLogs { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }

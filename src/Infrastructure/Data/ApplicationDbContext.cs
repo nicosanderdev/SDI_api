@@ -15,6 +15,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<PropertyImage> PropertyImages => Set<PropertyImage>();
     public DbSet<QandAMessageThread> QandAMessageThreads => Set<QandAMessageThread>();
     public DbSet<QandAMessage> QandAMessages => Set<QandAMessage>();
+    public DbSet<PropertyVisitLog> PropertyVisitLogs => Set<PropertyVisitLog>();
+    public DbSet<PropertyMessageLog> PropertyMessageLogs => Set<PropertyMessageLog>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -55,6 +57,21 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
         builder.Entity<EstatePropertyDescription>(entity =>
         {
             // EstatePropertyDescription is owned by EstateProperty
+        });
+        
+        // Consider adding indexes to PropertyVisitLog.VisitedOnUtc, PropertyVisitLog.PropertyId,
+        // PropertyMessageLog.SentOnUtc, PropertyMessageLog.PropertyId for performance.
+        builder.Entity<PropertyVisitLog>(entity =>
+        {
+            entity.HasIndex(e => e.VisitedOnUtc);
+            entity.HasIndex(e => e.PropertyId);
+            entity.HasOne(e => e.Property).WithMany().HasForeignKey(e => e.PropertyId).IsRequired(false).OnDelete(DeleteBehavior.Cascade); // Or Restrict
+        });
+        builder.Entity<PropertyMessageLog>(entity =>
+        {
+            entity.HasIndex(e => e.SentOnUtc);
+            entity.HasIndex(e => e.PropertyId);
+            entity.HasOne(e => e.Property).WithMany().HasForeignKey(e => e.PropertyId).IsRequired(false).OnDelete(DeleteBehavior.Cascade); // Or Restrict
         });
     }
 }
