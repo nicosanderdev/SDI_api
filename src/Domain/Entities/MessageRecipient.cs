@@ -1,0 +1,22 @@
+﻿namespace SDI_Api.Domain.Entities;
+
+public class MessageRecipient : BaseAuditableEntity
+{
+    public Guid MessageId { get; set; }
+    public virtual Message Message { get; set; } = null!;
+
+    public Guid RecipientId { get; set; }
+    public virtual ApplicationUser Recipient { get; set; } = null!;
+
+    public DateTime ReceivedAtUtc { get; set; }
+    public bool IsRead { get; set; }
+    public bool HasBeenRepliedToByRecipient { get; set; } // User has replied to this received message (or a later one in thread)
+    public bool IsStarred { get; set; }
+    public bool IsArchived { get; set; }
+
+    public MessageRecipient()
+    {
+        Id = Guid.NewGuid();
+        ReceivedAtUtc = DateTime.UtcNow;
+    }
+}

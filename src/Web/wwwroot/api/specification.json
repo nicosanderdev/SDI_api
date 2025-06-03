@@ -66,6 +66,26 @@
           "EstateProperties"
         ],
         "operationId": "EstateProperties_GetEstateProperties",
+        "parameters": [
+          {
+            "name": "PageNumber",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 2
+          }
+        ],
         "responses": {
           "200": {
             "description": "",
@@ -86,11 +106,11 @@
         ],
         "operationId": "EstateProperties_CreateEstateProperty",
         "requestBody": {
-          "x-name": "estatePropertyDto",
+          "x-name": "command",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/EstatePropertyDto"
+                "$ref": "#/components/schemas/CreateEstatePropertyCommand"
               }
             }
           },
@@ -105,6 +125,363 @@
                 "schema": {
                   "type": "string",
                   "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/estate-properties/{id}": {
+      "get": {
+        "tags": [
+          "EstateProperties"
+        ],
+        "operationId": "EstateProperties_GetEstateProperty",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "EstateProperties"
+        ],
+        "operationId": "EstateProperties_UpdateEstateProperty",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          }
+        ],
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEstatePropertyCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 2
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "EstateProperties"
+        ],
+        "operationId": "EstateProperties_DeleteEstateProperty",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reports/monthly-summary": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "operationId": "Reports_GetMonthlySummary",
+        "parameters": [
+          {
+            "name": "Year",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "Month",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 2
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MonthlySummaryDataDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reports/totals": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "operationId": "Reports_GetGeneralTotals",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralTotalsDataDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reports/property-visits": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "operationId": "Reports_GetVisitsByProperty",
+        "parameters": [
+          {
+            "name": "Period",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "Page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 2
+          },
+          {
+            "name": "Limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 3
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VisitsByPropertyDataDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reports/properties/{propertyId}": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "operationId": "Reports_GetPropertySpecificReport",
+        "parameters": [
+          {
+            "name": "propertyId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "default": "last30days"
+            },
+            "x-position": 2
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PropertySpecificReportDataDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reports/dashboard-summary": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "operationId": "Reports_GetDashboardSummary",
+        "parameters": [
+          {
+            "name": "Period",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DashboardSummaryDataDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reports/daily-visits": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "operationId": "Reports_GetDailyVisits",
+        "parameters": [
+          {
+            "name": "Period",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          },
+          {
+            "name": "DateFormat",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 2
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DailyVisitDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reports/visits-by-source": {
+      "get": {
+        "tags": [
+          "Reports"
+        ],
+        "operationId": "Reports_GetVisitsBySource",
+        "parameters": [
+          {
+            "name": "Period",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/VisitSourceDto"
+                  }
                 }
               }
             }
@@ -129,9 +506,492 @@
           }
         }
       },
-      "EstatePropertyDto": {
+      "CreateEstatePropertyCommand": {
         "type": "object",
-        "additionalProperties": false
+        "additionalProperties": false,
+        "properties": {
+          "dto": {
+            "$ref": "#/components/schemas/CreateOrUpdateEstatePropertyDto"
+          }
+        }
+      },
+      "CreateOrUpdateEstatePropertyDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "address2": {
+            "type": "string",
+            "nullable": true
+          },
+          "city": {
+            "type": "string",
+            "nullable": true
+          },
+          "state": {
+            "type": "string",
+            "nullable": true
+          },
+          "zipCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "country": {
+            "type": "string",
+            "nullable": true
+          },
+          "isPublic": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "area": {
+            "type": "string",
+            "nullable": true
+          },
+          "price": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "bedrooms": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "bathrooms": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "visits": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "mainImage": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CreateOrUpdatePropertyImageDto"
+              }
+            ]
+          },
+          "propertyImages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreateOrUpdatePropertyImageDto"
+            }
+          },
+          "featuredDescriptionId": {
+            "type": "string",
+            "nullable": true
+          },
+          "estatePropertyDescriptions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CreateOrUpdateEstatePropertyDescriptionDto"
+            }
+          }
+        }
+      },
+      "CreateOrUpdatePropertyImageDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "url": {
+            "type": "string"
+          },
+          "altText": {
+            "type": "string",
+            "nullable": true
+          },
+          "isMain": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "estatePropertyId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "fileName": {
+            "type": "string"
+          },
+          "contentType": {
+            "type": "string"
+          },
+          "imageData": {
+            "type": "string",
+            "format": "byte"
+          },
+          "isPublic": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CreateOrUpdateEstatePropertyDescriptionDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "estatePropertyId": {
+            "type": "string",
+            "nullable": true
+          },
+          "availableFrom": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "availableTo": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "listedPrice": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "rentPrice": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "soldPrice": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        }
+      },
+      "UpdateEstatePropertyCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "estateProperty": {
+            "$ref": "#/components/schemas/CreateOrUpdateEstatePropertyDto"
+          },
+          "mainImage": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CreateOrUpdatePropertyImageDto"
+              }
+            ]
+          },
+          "propertyImages": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "$ref": "#/components/schemas/CreateOrUpdatePropertyImageDto"
+            }
+          },
+          "featuredDescriptionId": {
+            "type": "string",
+            "nullable": true
+          },
+          "estatePropertyDescriptions": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "$ref": "#/components/schemas/CreateOrUpdateEstatePropertyDescriptionDto"
+            }
+          }
+        }
+      },
+      "MonthlySummaryDataDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "visits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DateCountDto"
+            }
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DateCountDto"
+            }
+          }
+        }
+      },
+      "DateCountDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "date": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "GeneralTotalsDataDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "totalProperties": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalVisitsLifetime": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "totalMessagesLifetime": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "activeListings": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "averagePrice": {
+            "type": "number",
+            "format": "decimal",
+            "nullable": true
+          }
+        }
+      },
+      "VisitsByPropertyDataDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PropertyVisitStatDto"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "page": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "limit": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "PropertyVisitStatDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "propertyId": {
+            "type": "string"
+          },
+          "propertyTitle": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "visitCount": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "price": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "messages": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "messagesTrend": {
+            "type": "string",
+            "nullable": true
+          },
+          "visitsTrend": {
+            "type": "string",
+            "nullable": true
+          },
+          "conversion": {
+            "type": "string",
+            "nullable": true
+          },
+          "conversionTrend": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "PropertySpecificReportDataDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "propertyDetails": {
+            "$ref": "#/components/schemas/PropertyDetailsForReportDto"
+          },
+          "visitTrend": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DateCountDto"
+            }
+          },
+          "messageTrend": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DateCountDto"
+            }
+          },
+          "conversionRate": {
+            "type": "number",
+            "format": "decimal",
+            "nullable": true
+          },
+          "averageTimeToRespond": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "PropertyDetailsForReportDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string",
+            "nullable": true
+          },
+          "price": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string",
+            "nullable": true
+          },
+          "type": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "DashboardSummaryDataDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "visits": {
+            "$ref": "#/components/schemas/DashboardSummaryStatDto"
+          },
+          "messages": {
+            "$ref": "#/components/schemas/DashboardSummaryStatDto"
+          },
+          "totalProperties": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DashboardSummaryStatDto"
+              }
+            ]
+          },
+          "conversionRate": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/DashboardSummaryStatDto"
+              }
+            ]
+          }
+        }
+      },
+      "DashboardSummaryStatDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "currentPeriod": {
+            "type": "integer",
+            "format": "int64"
+          },
+          "percentageChange": {
+            "type": "number",
+            "format": "decimal",
+            "nullable": true
+          },
+          "changeDirection": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "DailyVisitDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "date": {
+            "type": "string"
+          },
+          "dayName": {
+            "type": "string",
+            "nullable": true
+          },
+          "visits": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "VisitSourceDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "source": {
+            "type": "string"
+          },
+          "visits": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "color": {
+            "type": "string",
+            "nullable": true
+          }
+        }
       }
     }
   }

@@ -2,10 +2,10 @@
 
 public class QandAMessageCreatedEvent : BaseEvent
 {
-    public QandAMessageCreatedEvent(QandAMessage item)
+    public QandAMessageCreatedEvent(Message item)
     {
         Item = item;
     }
 
-    public QandAMessage Item { get; }
+    public Message Item { get; }
 }

@@ -13,8 +13,9 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<EstateProperty> EstateProperties => Set<EstateProperty>();
     public DbSet<EstatePropertyDescription> EstatePropertyDescriptions => Set<EstatePropertyDescription>();
     public DbSet<PropertyImage> PropertyImages => Set<PropertyImage>();
-    public DbSet<QandAMessageThread> QandAMessageThreads => Set<QandAMessageThread>();
-    public DbSet<QandAMessage> QandAMessages => Set<QandAMessage>();
+    public DbSet<MessageThread> MessageThreads => Set<MessageThread>();
+    public DbSet<Message> Messages => Set<Message>();
+    public DbSet<MessageRecipient> MessageRecipients => Set<MessageRecipient>();
     public DbSet<PropertyVisitLog> PropertyVisitLogs => Set<PropertyVisitLog>();
     public DbSet<PropertyMessageLog> PropertyMessageLogs => Set<PropertyMessageLog>();
 
@@ -58,20 +59,69 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
         {
             // EstatePropertyDescription is owned by EstateProperty
         });
-        
+
         // Consider adding indexes to PropertyVisitLog.VisitedOnUtc, PropertyVisitLog.PropertyId,
         // PropertyMessageLog.SentOnUtc, PropertyMessageLog.PropertyId for performance.
         builder.Entity<PropertyVisitLog>(entity =>
         {
             entity.HasIndex(e => e.VisitedOnUtc);
             entity.HasIndex(e => e.PropertyId);
-            entity.HasOne(e => e.Property).WithMany().HasForeignKey(e => e.PropertyId).IsRequired(false).OnDelete(DeleteBehavior.Cascade); // Or Restrict
+            entity.HasOne(e => e.Property).WithMany().HasForeignKey(e => e.PropertyId).IsRequired(false)
+                .OnDelete(DeleteBehavior.Cascade); // Or Restrict
         });
+
         builder.Entity<PropertyMessageLog>(entity =>
         {
             entity.HasIndex(e => e.SentOnUtc);
             entity.HasIndex(e => e.PropertyId);
-            entity.HasOne(e => e.Property).WithMany().HasForeignKey(e => e.PropertyId).IsRequired(false).OnDelete(DeleteBehavior.Cascade); // Or Restrict
+            entity.HasOne(e => e.Property).WithMany().HasForeignKey(e => e.PropertyId).IsRequired(false)
+                .OnDelete(DeleteBehavior.Cascade); // Or Restrict
         });
+
+        builder.Entity<MessageThread>(entity =>
+        {
+            entity.HasMany(t => t.Messages)
+                .WithOne(m => m.Thread)
+                .HasForeignKey(m => m.ThreadId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(t => t.LastMessageAtUtc);
+            entity.HasIndex(t => t.PropertyId);
+        });
+
+        builder.Entity<Message>(entity =>
+        {
+            entity.HasOne(m => m.Sender)
+                .WithMany() // Assuming ApplicationUser has no direct collection of SentMessages
+                .HasForeignKey(m => m.SenderId)
+                .OnDelete(DeleteBehavior.Restrict); // Or Cascade if user deletion should remove messages
+
+            entity.HasOne(m => m.InReplyToMessage)
+                .WithMany() // A message doesn't have a collection of "replies to this"
+                .HasForeignKey(m => m.InReplyToMessageId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.SetNull); // If original message is deleted, replies don't point to it.
+
+            entity.HasMany(m => m.MessageRecipients)
+                .WithOne(mr => mr.Message)
+                .HasForeignKey(mr => mr.MessageId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasIndex(m => m.CreatedAtUtc);
+        });
+
+        builder.Entity<MessageRecipient>(entity =>
+        {
+            entity.HasKey(mr => mr.Id); // Explicitly define PK if not named 'Id' or '[ClassName]Id'
+            // Or composite key: entity.HasKey(mr => new { mr.MessageId, mr.RecipientId });
+            // If using composite key, then Id property is not needed on MessageRecipient.
+            // For simplicity, single Guid Id is used here.
+
+            entity.HasOne(mr => mr.Recipient)
+                .WithMany() // Assuming ApplicationUser has no direct collection of ReceivedMessages
+                .HasForeignKey(mr => mr.RecipientId)
+                .OnDelete(DeleteBehavior.Cascade); // If user deleted, their message statuses are gone.
+
+            entity.HasIndex(mr => new { mr.RecipientId, mr.IsRead, mr.IsArchived, mr.IsDeleted }); // For inbox counts
+            entity.HasIndex(mr => new { mr.RecipientId, mr.IsStarred, mr.IsDeleted }); // For starred counts
+        }); 
     }
 }

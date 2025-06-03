@@ -7,6 +7,6 @@ public class QandAMessageProfile : Profile
 {
     public QandAMessageProfile()
     {
-        CreateMap<SubmitQandAMessageRequest, QandAMessage>();
+        CreateMap<SubmitQandAMessageRequest, Message>();
     }
 }
