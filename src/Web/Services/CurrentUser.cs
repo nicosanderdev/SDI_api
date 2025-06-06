@@ -4,14 +4,23 @@ using SDI_Api.Application.Common.Interfaces;
 
 namespace SDI_Api.Web.Services;
 
-public class CurrentUser : IUser
+public class CurrentUser 
+    //: IUser
 {
-    private readonly IHttpContextAccessor _httpContextAccessor;
+    /* private readonly HttpContextAccessor _httpContextAccessor;
 
-    public CurrentUser(IHttpContextAccessor httpContextAccessor)
+    public CurrentUser(HttpContextAccessor httpContextAccessor)
     {
         _httpContextAccessor = httpContextAccessor;
     }
 
-    public string? Id => _httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+    private string? Id => _httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+    public string? getId() => Id;
+
+    public string? getUsername() => _httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.Email);
+
+    public string? getUserEmail() => getUsername();
+
+    public string? getPhoneNumber() => _httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.MobilePhone) 
+                                        ?? _httpContextAccessor.HttpContext?.User?.FindFirstValue(ClaimTypes.HomePhone);*/
 }

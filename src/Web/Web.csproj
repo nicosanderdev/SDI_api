@@ -73,7 +73,7 @@
         </Exec>
 
         <Message Text="$(NSwagOutput)" Condition="'$(NSwagExitCode)' == '0'" Importance="low"/>
-        <Error Text="$(NSwagOutput)" Condition="'$(NSwagExitCode)' != '0'"/>
+        <Error Text="NSwag failed with exit code $(NSwagExitCode): $(NSwagOutput)" Condition="'$(NSwagExitCode)' != '0'"/>
     </Target>
 
     <Target Name="PublishRunWebpack" AfterTargets="ComputeFilesToPublish">

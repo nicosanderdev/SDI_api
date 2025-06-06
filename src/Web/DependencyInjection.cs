@@ -12,10 +12,9 @@ public static class DependencyInjection
     public static void AddWebServices(this IHostApplicationBuilder builder)
     {
         builder.Services.AddDatabaseDeveloperPageExceptionFilter();
-
-        builder.Services.AddScoped<IUser, CurrentUser>();
-
-        builder.Services.AddHttpContextAccessor();
+        // builder.Services.AddHttpContextAccessor();
+        // builder.Services.AddScoped<IUser, CurrentUser>();
+        
         builder.Services.AddHealthChecks()
             .AddDbContextCheck<ApplicationDbContext>();
 

@@ -2,5 +2,11 @@
 
 public interface IUser
 {
-    string? Id { get; }
+    string? getId();
+
+    string? getUsername();
+
+    string? getUserEmail();
+    
+    string? getPhoneNumber();
 }

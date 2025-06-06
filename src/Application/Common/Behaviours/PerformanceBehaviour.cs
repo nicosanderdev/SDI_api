@@ -36,7 +36,7 @@ public class PerformanceBehaviour<TRequest, TResponse> : IPipelineBehavior<TRequ
         if (elapsedMilliseconds > 500)
         {
             var requestName = typeof(TRequest).Name;
-            var userId = _user.Id ?? string.Empty;
+            var userId = _user.getId() ?? string.Empty;
             var userName = string.Empty;
 
             if (!string.IsNullOrEmpty(userId))

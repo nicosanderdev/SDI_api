@@ -18,6 +18,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<MessageRecipient> MessageRecipients => Set<MessageRecipient>();
     public DbSet<PropertyVisitLog> PropertyVisitLogs => Set<PropertyVisitLog>();
     public DbSet<PropertyMessageLog> PropertyMessageLogs => Set<PropertyMessageLog>();
+    public DbSet<Member> Members => Set<Member>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -90,11 +91,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
 
         builder.Entity<Message>(entity =>
         {
-            entity.HasOne(m => m.Sender)
-                .WithMany() // Assuming ApplicationUser has no direct collection of SentMessages
-                .HasForeignKey(m => m.SenderId)
-                .OnDelete(DeleteBehavior.Restrict); // Or Cascade if user deletion should remove messages
-
             entity.HasOne(m => m.InReplyToMessage)
                 .WithMany() // A message doesn't have a collection of "replies to this"
                 .HasForeignKey(m => m.InReplyToMessageId)
@@ -115,13 +111,13 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
             // If using composite key, then Id property is not needed on MessageRecipient.
             // For simplicity, single Guid Id is used here.
 
-            entity.HasOne(mr => mr.Recipient)
-                .WithMany() // Assuming ApplicationUser has no direct collection of ReceivedMessages
-                .HasForeignKey(mr => mr.RecipientId)
-                .OnDelete(DeleteBehavior.Cascade); // If user deleted, their message statuses are gone.
-
             entity.HasIndex(mr => new { mr.RecipientId, mr.IsRead, mr.IsArchived, mr.IsDeleted }); // For inbox counts
             entity.HasIndex(mr => new { mr.RecipientId, mr.IsStarred, mr.IsDeleted }); // For starred counts
-        }); 
+        });
+        
+        builder.Entity<Member>(entity =>
+        {
+            entity.HasIndex(m => m.UserId).IsUnique(); // UserId should be unique in Members table
+        });
     }
 }

@@ -1,4 +1,6 @@
-﻿namespace SDI_Api.Application.MemberProfile.Commands;
+﻿using SDI_Api.Application.Common.Interfaces;
+
+namespace SDI_Api.Application.MemberProfile.Commands;
 
 public class ChangeUserPasswordCommand : IRequest<Unit>
 {
@@ -7,41 +9,29 @@ public class ChangeUserPasswordCommand : IRequest<Unit>
 
 public class ChangeUserPasswordCommandHandler : IRequestHandler<ChangeUserPasswordCommand, Unit>
 {
-    private readonly UserManager<ApplicationUser> _userManager;
     private readonly ICurrentUserService _currentUserService;
+    private readonly IIdentityService _identityService;
 
-    public ChangeUserPasswordCommandHandler(
-        UserManager<ApplicationUser> userManager,
-        ICurrentUserService currentUserService)
+    public ChangeUserPasswordCommandHandler(ICurrentUserService currentUserService, IIdentityService identityService)
     {
-        _userManager = userManager;
         _currentUserService = currentUserService;
+        _identityService = identityService;
     }
 
     public async Task<Unit> Handle(ChangeUserPasswordCommand request, CancellationToken cancellationToken)
     {
-        var userId = _currentUserService.GetUserIdGuid();
-        if (!userId.HasValue)
+        var userId = _currentUserService.GetUserId();
+        if (userId == Guid.Empty)
         {
             throw new UnauthorizedAccessException("User is not authenticated.");
         }
 
-        var user = await _userManager.FindByIdAsync(userId.Value.ToString());
-        if (user == null)
-        {
-            throw new NotFoundException(nameof(ApplicationUser), userId.Value);
-        }
+        var result = await _identityService.ChangePasswordAsync(userId.ToString(), request.PasswordData.OldPassword, request.PasswordData.NewPassword);
 
-        var changePasswordResult = await _userManager.ChangePasswordAsync(
-            user,
-            request.PasswordData.OldPassword,
-            request.PasswordData.NewPassword);
-
-        if (!changePasswordResult.Succeeded)
+        if (!result.Succeeded)
         {
-            var errors = string.Join(", ", changePasswordResult.Errors.Select(e => e.Description));
-            // Consider specific exceptions for "Invalid old password" vs "Password policy violation"
-            throw new FluentValidation.ValidationException(errors); // Or a custom exception
+            var errors = string.Join(", ", result.Errors.Select(e => e));
+            throw new FluentValidation.ValidationException(errors);
         }
 
         return Unit.Value;

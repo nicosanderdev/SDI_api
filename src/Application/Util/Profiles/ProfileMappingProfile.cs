@@ -1,4 +1,5 @@
 ﻿using Sdi_Api.Application.DTOs.Profile;
+using SDI_Api.Domain.Entities;
 
 namespace SDI_Api.Application.Util.Profiles;
 
@@ -6,10 +7,8 @@ namespace SDI_Api.Application.Util.Profiles;
 {
     public ProfileMappingProfile()
     {
-        // ApplicationUser to ProfileDataDto
-        CreateMap<ApplicationUser, ProfileDataDto>()
+        CreateMap<Member, ProfileDataDto>()
             .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.ToString()))
-            .ForMember(dest => dest.Phone, opt => opt.MapFrom(src => src.PhoneNumber))
             .ForPath(dest => dest.Address!.Street, opt => opt.MapFrom(src => src.Street))
             .ForPath(dest => dest.Address!.Street2, opt => opt.MapFrom(src => src.Street2))
             .ForPath(dest => dest.Address!.City, opt => opt.MapFrom(src => src.City))
@@ -23,17 +22,14 @@ namespace SDI_Api.Application.Util.Profiles;
                     if (dest.Address == null) dest.Address = new AddressDto();
                 }
             });
-
-
-        // AddressDto to ApplicationUser (for updating user from DTO)
-        CreateMap<AddressDto, ApplicationUser>()
+        
+        CreateMap<AddressDto, Member>()
             .ForMember(dest => dest.Street, opt => opt.MapFrom(src => src.Street))
             .ForMember(dest => dest.Street2, opt => opt.MapFrom(src => src.Street2))
             .ForMember(dest => dest.City, opt => opt.MapFrom(src => src.City))
             .ForMember(dest => dest.State, opt => opt.MapFrom(src => src.State))
             .ForMember(dest => dest.PostalCode, opt => opt.MapFrom(src => src.PostalCode))
             .ForMember(dest => dest.Country, opt => opt.MapFrom(src => src.Country))
-            // Ignore all other ApplicationUser members not part of AddressDto
             .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
 
 

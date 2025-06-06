@@ -12,5 +12,6 @@ public interface IApplicationDbContext
     DbSet<MessageRecipient> MessageRecipients { get; }
     DbSet<PropertyVisitLog> PropertyVisitLogs { get; }
     DbSet<PropertyMessageLog> PropertyMessageLogs { get; }
+    DbSet<Member> Members { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }

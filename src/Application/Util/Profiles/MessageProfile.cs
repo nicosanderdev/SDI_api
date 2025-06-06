@@ -14,7 +14,6 @@ public class MessageProfile : Profile
                 .ForMember(dest => dest.ThreadId, opt => opt.MapFrom(src => src.ThreadId.ToString()))
                 .ForMember(dest => dest.SenderId, opt => opt.MapFrom(src => src.SenderId.ToString()))
                 .ForMember(dest => dest.SenderName, opt => opt.MapFrom(src => $"{src.Sender.FirstName} {src.Sender.LastName}".Trim()))
-                .ForMember(dest => dest.SenderEmail, opt => opt.MapFrom(src => src.Sender.Email))
                 .ForMember(dest => dest.PropertyId, opt => opt.MapFrom(src => src.Thread.PropertyId.HasValue ? src.Thread.PropertyId.Value.ToString() : null))
                 .ForMember(dest => dest.PropertyTitle, opt => opt.MapFrom(src => src.Thread.Property != null ? src.Thread.Property.Title : null))
                 .ForMember(dest => dest.Subject, opt => opt.MapFrom(src => src.Thread.Subject))

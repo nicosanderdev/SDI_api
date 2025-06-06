@@ -1,3 +1,4 @@
+using Sdi_Api.Application;
 using SDI_Api.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);

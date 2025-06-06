@@ -20,7 +20,7 @@ public static class DependencyInjection
     {
         var connectionString = builder.Configuration.GetConnectionString("SDI_ApiDb");
         Guard.Against.Null(connectionString, message: "Connection string 'SDI_ApiDb' not found.");
-
+        
         builder.Services.AddScoped<ISaveChangesInterceptor, AuditableEntityInterceptor>();
         builder.Services.AddScoped<ISaveChangesInterceptor, DispatchDomainEventsInterceptor>();
 
@@ -85,6 +85,7 @@ public static class DependencyInjection
             .AddApiEndpoints();
 
         builder.Services.AddSingleton(TimeProvider.System);
+        builder.Services.AddScoped<IUser, ApplicationUser>();
         builder.Services.AddTransient<IIdentityService, IdentityService>();
 
         builder.Services.AddAuthorization(options =>

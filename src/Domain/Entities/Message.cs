@@ -9,7 +9,7 @@ public class Message : BaseAuditableEntity
     public virtual MessageThread Thread { get; set; } = null!;
 
     public Guid SenderId { get; set; }
-    public virtual ApplicationUser Sender { get; set; } = null!;
+    public Member Sender { get; set; } = null!;
 
     [Required]
     public string Body { get; set; } = string.Empty; // Full message content

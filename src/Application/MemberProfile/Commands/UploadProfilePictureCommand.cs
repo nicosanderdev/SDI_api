@@ -1,4 +1,8 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
+using SDI_Api.Application.Common.Interfaces;
+using SDI_Api.Domain.Entities;
 
 namespace SDI_Api.Application.MemberProfile.Commands;
 
@@ -9,35 +13,38 @@ public class UploadProfilePictureCommand : IRequest<UploadAvatarResponseDto>
 
 public class UploadProfilePictureCommandHandler : IRequestHandler<UploadProfilePictureCommand, UploadAvatarResponseDto>
 {
-    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IIdentityService _identityService;
     private readonly ICurrentUserService _currentUserService;
     private readonly IConfiguration _configuration; // To get base path for avatars
     private readonly IWebHostEnvironment _webHostEnvironment; // To get wwwroot path
+    private readonly IApplicationDbContext _context;
 
     public UploadProfilePictureCommandHandler(
-        UserManager<ApplicationUser> userManager,
+        IIdentityService identityService,
         ICurrentUserService currentUserService,
         IConfiguration configuration,
-        IWebHostEnvironment webHostEnvironment)
+        IWebHostEnvironment webHostEnvironment,
+        IApplicationDbContext context)
     {
-        _userManager = userManager;
+        _identityService = identityService;
         _currentUserService = currentUserService;
         _configuration = configuration;
         _webHostEnvironment = webHostEnvironment;
+        _context = context;
     }
 
     public async Task<UploadAvatarResponseDto> Handle(UploadProfilePictureCommand request, CancellationToken cancellationToken)
     {
-        var userId = _currentUserService.GetUserIdGuid();
-        if (!userId.HasValue)
+        var userId = _currentUserService.GetUserId();
+        if (userId == Guid.Empty)
         {
             throw new UnauthorizedAccessException("User is not authenticated.");
         }
 
-        var user = await _userManager.FindByIdAsync(userId.Value.ToString());
-        if (user == null)
+        var member = await _context.Members.FirstOrDefaultAsync(m => m.UserId == userId, cancellationToken);
+        if (member == null)
         {
-            throw new NotFoundException(nameof(ApplicationUser), userId.Value);
+            throw new NotFoundException(nameof(Member), userId.ToString());
         }
 
         if (request.AvatarFile == null || request.AvatarFile.Length == 0)
@@ -56,7 +63,7 @@ public class UploadProfilePictureCommandHandler : IRequestHandler<UploadProfileP
         // Define storage path. E.g., wwwroot/avatars/user_id/filename.ext
         // Ensure the 'Avatars' base path is configured or use a default.
         // string avatarBasePath = _configuration["StoragePaths:Avatars"] ?? "avatars"; // From appsettings.json
-        string userAvatarFolder = Path.Combine("avatars", userId.Value.ToString());
+        string userAvatarFolder = Path.Combine("avatars", userId.ToString());
         string fullPathFolder = Path.Combine(_webHostEnvironment.WebRootPath, userAvatarFolder);
 
         if (!Directory.Exists(fullPathFolder))
@@ -65,9 +72,9 @@ public class UploadProfilePictureCommandHandler : IRequestHandler<UploadProfileP
         }
 
         // Delete old avatar if exists and filename changes or if you want to ensure only one avatar
-        if (!string.IsNullOrEmpty(user.AvatarUrl))
+        if (!string.IsNullOrEmpty(member.AvatarUrl))
         {
-            var oldFileName = Path.GetFileName(new Uri(user.AvatarUrl, UriKind.RelativeOrAbsolute).LocalPath);
+            var oldFileName = Path.GetFileName(new Uri(member.AvatarUrl, UriKind.RelativeOrAbsolute).LocalPath);
             var oldFilePath = Path.Combine(fullPathFolder, oldFileName);
             if (File.Exists(oldFilePath) && Path.GetFileName(request.AvatarFile.FileName) != oldFileName) // Simple check
             {
@@ -83,22 +90,22 @@ public class UploadProfilePictureCommandHandler : IRequestHandler<UploadProfileP
         {
             await request.AvatarFile.CopyToAsync(stream, cancellationToken);
         }
-
-        // Construct the public URL. This depends on how wwwroot files are served.
+        
         // Assuming they are served directly from /
         var publicAvatarUrl = $"/{userAvatarFolder.Replace("\\", "/")}/{uniqueFileName}";
 
-        user.AvatarUrl = publicAvatarUrl;
-        var updateResult = await _userManager.UpdateAsync(user);
-
-        if (!updateResult.Succeeded)
+        member.AvatarUrl = publicAvatarUrl;
+        try
         {
-            // Clean up saved file if DB update fails
-            if (File.Exists(filePath)) try { File.Delete(filePath); } catch {/* Log error */}
-            var errors = string.Join(", ", updateResult.Errors.Select(e => e.Description));
+            var updateResult = await _context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException e)
+        {
+            if (File.Exists(filePath)) { File.Delete(filePath); }
+            var errors = string.Join(", ", e.Message);
             throw new Exception($"Avatar update failed: {errors}");
         }
-
+        
         return new UploadAvatarResponseDto { AvatarUrl = publicAvatarUrl };
     }
 }
