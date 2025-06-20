@@ -1,6 +1,6 @@
 ﻿using System.Globalization;
 using SDI_Api.Application.Common.Interfaces;
-using SDI_Api.Application.DTOs;
+using SDI_Api.Application.DTOs.Reports;
 using Sdi_Api.Application.Util;
 
 namespace Sdi_Api.Application.Reports.Queries;

@@ -1,5 +1,5 @@
 ﻿using System.Globalization;
-using SDI_Api.Application.DTOs;
+using SDI_Api.Application.DTOs.Reports;
 using SDI_Api.Domain.Entities;
 
 namespace SDI_Api.Application.Util.Profiles;

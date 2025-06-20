@@ -1,5 +1,7 @@
-using Sdi_Api.Application;
+using SDI_Api.Application;
 using SDI_Api.Infrastructure;
+using SDI_Api.Infrastructure.Identity;
+using SDI_Api.Web;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,10 +13,9 @@ builder.AddWebServices();
 
 var app = builder.Build();
 
+
 if (app.Environment.IsDevelopment())
 {
-    // await app.InitialiseDatabaseAsync();
-    
     app.UseSwagger();
     app.UseSwaggerUI(c =>
     {
@@ -28,6 +29,7 @@ else
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
 }
 
+
 app.UseHealthChecks("/health");
 app.UseHttpsRedirection();
 app.UseStaticFiles();
@@ -36,7 +38,16 @@ app.MapFallbackToFile("index.html");
 
 app.UseExceptionHandler(options => { });
 
-app.MapEndpoints();
+app.MapIdentityApi<ApplicationUser>();
+app.MapControllers();
+
+app.UseRouting();
+app.UseCors("FrontendCorsPolicy");
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+app.UseAntiforgery();
 
 app.Run();
 

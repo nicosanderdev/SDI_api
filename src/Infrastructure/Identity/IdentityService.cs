@@ -12,17 +12,20 @@ public class IdentityService : IIdentityService
     private readonly IUserClaimsPrincipalFactory<ApplicationUser> _userClaimsPrincipalFactory;
     private readonly IAuthorizationService _authorizationService;
     private readonly IApplicationDbContext _context;
+    private readonly SignInManager<ApplicationUser> _signInManager;
 
     public IdentityService(
         UserManager<ApplicationUser> userManager,
         IUserClaimsPrincipalFactory<ApplicationUser> userClaimsPrincipalFactory,
         IAuthorizationService authorizationService,
-        IApplicationDbContext context)
+        IApplicationDbContext context,
+        SignInManager<ApplicationUser> signInManager)
     {
         _userManager = userManager;
         _userClaimsPrincipalFactory = userClaimsPrincipalFactory;
         _authorizationService = authorizationService;
         _context = context;
+        _signInManager = signInManager;
     }
 
     public async Task<string?> GetUserNameAsync(string userId)
@@ -33,12 +36,47 @@ public class IdentityService : IIdentityService
 
     public async Task<IUser?> FindUserByIdAsync(string userId)
     {
-        return await _userManager.Users.FirstOrDefaultAsync(u => u.getId() == userId);
+        var user = await _userManager.Users.Where(u => u.Id == userId).FirstOrDefaultAsync();
+        if (user == null)
+        {
+            return null;
+        }
+
+        return user;
     }
 
     public async Task<IUser?> FindUserByEmailAsync(string email)
     {
-        return await _userManager.Users.FirstOrDefaultAsync(u => u.getUserEmail() == email);
+        var user = await _userManager.Users.Where(u => u.Email == email).FirstOrDefaultAsync();
+        if (user == null)
+        {
+            return null;
+        }
+
+        return user;
+    }
+    
+    public async Task<IUser?> FindUserByUsernameAsync(string username)
+    {
+        var user = await _userManager.Users.Where(u => u.UserName == username).FirstOrDefaultAsync();
+        if (user == null)
+        {
+            return null;
+        }
+
+        return user;
+    }
+
+    public async Task<bool> GetTwoFactorEnabledAsync(IUser user)
+    {
+        var userId = user.getId();
+        var userBD = await _userManager.Users.Where(u => u.Id == userId).FirstOrDefaultAsync();
+        if (userBD == null)
+        {
+            return false;
+        }
+
+        return userBD.TwoFactorEnabled;
     }
     
     public async Task<bool> CheckPasswordAsync(IUser user, string password)
@@ -53,6 +91,29 @@ public class IdentityService : IIdentityService
             return false;
         }
         return await _userManager.CheckPasswordAsync(existingUser, password);
+    }
+
+    public async Task<SignInResult> CheckPasswordSignInAsync(IUser? user, string password, bool lockoutOnFailure)
+    {
+        // TODO - revisar lógica
+        var userDb = user == null ? null : await _userManager.FindByIdAsync(user.getId()!);
+        if (userDb == null)
+        {
+            return SignInResult.Failed;
+        }
+        return await _signInManager.CheckPasswordSignInAsync(userDb, password, lockoutOnFailure);
+    }
+
+    public async Task<SignInResult> PasswordSignInAsync(IUser user, string password, bool isPersistent, bool lockoutOnFailure)
+    {
+        // TODO - revisar lógica
+        var userDb =  await _userManager.FindByIdAsync(user.getId()!);
+        if (userDb == null)
+        {
+            return SignInResult.Failed;
+        }
+
+        return await _signInManager.PasswordSignInAsync(userDb, password, isPersistent, lockoutOnFailure);
     }
 
     public async Task<(Result Result, string UserId)> CreateUserAsync(string email, string password, string? firstName, string? lastName, CancellationToken cancellationToken)
@@ -219,5 +280,15 @@ public class IdentityService : IIdentityService
         var principal = await _userClaimsPrincipalFactory.CreateAsync(user);
         var authResult = await _authorizationService.AuthorizeAsync(principal, policyName);
         return authResult.Succeeded;
+    }
+
+    public async Task<SignInResult> TwoFactorAuthenticatorSignInAsync(string twoFactorCode, bool isPersistent, bool rememberClient)
+    {
+        return await _signInManager.TwoFactorAuthenticatorSignInAsync(twoFactorCode, isPersistent, rememberClient);
+    }
+
+    public async Task<IUser?> GetTwoFactorAuthenticationUserAsync()
+    {
+        return await _signInManager.GetTwoFactorAuthenticationUserAsync();
     }
 }

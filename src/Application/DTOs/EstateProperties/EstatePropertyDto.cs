@@ -4,7 +4,7 @@ namespace Sdi_Api.Application.Dtos;
 
 public class EstatePropertyDto
 {
-    public string Id { get; set; } = string.Empty;
+    public Guid Id { get; set; }
     public string Title { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
     public string Type { get; set; } = string.Empty;
@@ -19,8 +19,10 @@ public class EstatePropertyDto
     public string? Area { get; set; }
     public bool Visits { get; set; } = false;
     public bool IsPublic { get; set; }
+    public string? OwnerId { get; set; }
+    public bool? IsDeleted { get; set; }
     public string? MainImageUrl { get; set; }
-    public string Created { get; set; } = string.Empty;
+    public DateTime Created { get; set; }
 
     public PropertyImageDto? MainImage { get; set; }
     public List<PropertyImageDto>? PropertyImages { get; set; }

@@ -1,5 +1,5 @@
 ﻿using SDI_Api.Application.Common.Interfaces;
-using SDI_Api.Application.DTOs;
+using SDI_Api.Application.DTOs.Reports;
 using Sdi_Api.Application.Util;
 using SDI_Api.Domain.Entities;
 

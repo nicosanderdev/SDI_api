@@ -6,8 +6,8 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.OpenApi.Models;
 using SDI_Api.Application.Common.Interfaces;
-using SDI_Api.Domain.Constants;
 using SDI_Api.Infrastructure.Data;
 using SDI_Api.Infrastructure.Data.Interceptors;
 using SDI_Api.Infrastructure.Identity;
@@ -30,7 +30,49 @@ public static class DependencyInjection
             options.UseNpgsql(connectionString);
         });
         
-        builder.Services.AddSwaggerGen();
+        builder.Services.AddCors(options =>
+        {
+            options.AddPolicy(name: "FrontendCorsPolicy",
+                policy =>
+                {
+                    policy.WithOrigins("http://localhost:5173")
+                        .AllowAnyHeader()
+                        .AllowAnyMethod()
+                        .AllowCredentials();
+                });
+        });
+        
+        builder.Services.AddSwaggerGen(c =>
+        {
+            c.SwaggerDoc("v1", new OpenApiInfo()
+            {
+                Title = "CookieAuth_API",
+                Version = "v1"
+            });
+
+            c.AddSecurityDefinition("cookieAuth", new OpenApiSecurityScheme
+            {
+                Name = ".AspNetCore.Cookies",
+                Type = SecuritySchemeType.ApiKey,
+                In = ParameterLocation.Cookie,
+                Description = "Authentication using cookies. Provide your auth cookie to authenticate."
+            });
+
+            c.AddSecurityRequirement(new OpenApiSecurityRequirement
+            {
+                {
+                    new OpenApiSecurityScheme
+                    {
+                        Reference = new OpenApiReference
+                        {
+                            Type = ReferenceType.SecurityScheme,
+                            Id = "cookieAuth"
+                        }
+                    },
+                    Array.Empty<string>()
+                }
+            });
+        });
         
         builder.Services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
 
@@ -59,24 +101,27 @@ public static class DependencyInjection
             .AddCookie(options =>
             {
                 options.Cookie.HttpOnly = true;
-                options.Cookie.SecurePolicy = CookieSecurePolicy.None;
-                options.LoginPath = "/loginpage";
+                options.Cookie.SameSite = SameSiteMode.None;
+                options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+                options.LoginPath = "/login";
+                options.LogoutPath = "/logout";
+                options.AccessDeniedPath = "/unauthorized";
                 options.ExpireTimeSpan = TimeSpan.FromHours(12);
                 options.SlidingExpiration = true;
+                
+                // THIS IS THE KEY PART TO PREVENT REDIRECTS
                 options.Events.OnRedirectToLogin = context =>
                 {
-                    context.Response.StatusCode = 401;
+                    context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                    return Task.CompletedTask;
+                };
+
+                options.Events.OnRedirectToAccessDenied = context =>
+                {
+                    context.Response.StatusCode = StatusCodes.Status403Forbidden;
                     return Task.CompletedTask;
                 };
             });
-        
-        builder.Services.ConfigureApplicationCookie(options =>
-        {
-            options.LoginPath = "/loginpage";
-            options.AccessDeniedPath = "/notauthorized";
-        });
-        
-        builder.Services.AddAuthorization();
         
         builder.Services
             .AddDefaultIdentity<ApplicationUser>()
@@ -88,7 +133,6 @@ public static class DependencyInjection
         builder.Services.AddScoped<IUser, ApplicationUser>();
         builder.Services.AddTransient<IIdentityService, IdentityService>();
 
-        builder.Services.AddAuthorization(options =>
-            options.AddPolicy(Policies.CanPurge, policy => policy.RequireRole(Roles.Administrator)));
+        builder.Services.AddAuthorization();
     }
 }

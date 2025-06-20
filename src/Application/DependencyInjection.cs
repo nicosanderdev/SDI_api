@@ -1,16 +1,16 @@
 ﻿using System.Reflection;
+using Microsoft.Extensions.DependencyInjection;
 using SDI_Api.Application.Common.Behaviours;
 using Microsoft.Extensions.Hosting;
 using SDI_Api.Application.Common.Interfaces;
 using SDI_Api.Application.Common.Security;
 
-namespace Microsoft.Extensions.DependencyInjection;
+namespace SDI_Api.Application;
 
 public static class DependencyInjection
 {
     public static void AddApplicationServices(this IHostApplicationBuilder builder)
     {
-        builder.Services.AddHttpContextAccessor();
         builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
         
         builder.Services.AddAutoMapper(Assembly.GetExecutingAssembly());

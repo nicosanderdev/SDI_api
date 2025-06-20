@@ -82,7 +82,6 @@ public class UploadProfilePictureCommandHandler : IRequestHandler<UploadProfileP
             }
         }
 
-
         var uniqueFileName = Guid.NewGuid().ToString() + extension; // Ensure unique filename
         var filePath = Path.Combine(fullPathFolder, uniqueFileName);
 

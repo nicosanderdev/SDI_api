@@ -16,22 +16,27 @@ public class EstatePropertyProfile : Profile
                 .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.ToString()));
 
             CreateMap<EstateProperty, EstatePropertyDto>()
-                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.ToString()))
-                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
-                .ForMember(dest => dest.Created, opt => opt.MapFrom(src => src.CreatedOnUtc.ToString("dd/MM/yyyy")))
-                .ForMember(dest => dest.MainImageUrl, opt => opt.MapFrom(src => 
-                    src.MainImage != null ? src.MainImage.Url :
-                    (src.PropertyImages != null && src.PropertyImages.Any(pi => pi.IsMain) ? src.PropertyImages.First(pi => pi.IsMain).Url :
-                    (src.PropertyImages != null && src.PropertyImages.Any() ? src.PropertyImages.OrderBy(pi => pi.Id).First().Url : null))
-                 ))
-                .ForMember(dest => dest.FeaturedDescriptionId, opt => opt.MapFrom(src => src.FeaturedDescriptionId.HasValue ? src.FeaturedDescriptionId.Value.ToString() : null))
-                .ForMember(dest => dest.MainImage, opt => opt.MapFrom(src => src.MainImage ?? (src.PropertyImages != null && src.PropertyImages.Any(pi => pi.IsMain) ? src.PropertyImages.First(pi => pi.IsMain) : null)))
+                // 1. Quita las conversiones .ToString(). Hazlas en la capa de presentación si es necesario.
+                //    Si los IDs son GUID en la entidad y string en el DTO, AutoMapper lo convierte automáticamente.
+                //    Si son int/long, lo mismo.
+                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id)) // Asumiendo que el DTO tiene un Id del mismo tipo o string
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString())) // .ToString() en un Enum SÍ suele funcionar
+
+                // 2. No formatees fechas aquí. Devuelve el DateTime y que el cliente/UI lo formatee.
+                .ForMember(dest => dest.Created, opt => opt.MapFrom(src => src.CreatedOnUtc)) // DTO.Created debe ser DateTime
+
+                // 3. Simplifica radicalmente la lógica de la URL de la imagen.
+                //    Esta versión es mucho más fácil de traducir a SQL.
+                .ForMember(dest => dest.MainImageUrl, opt => opt.MapFrom(src =>
+                    (src.MainImage!.Url) ?? src.PropertyImages!.OrderBy(pi => !pi.IsMain).ThenBy(pi => pi.Id).FirstOrDefault()!.Url
+                ))
+                
+                .ForMember(dest => dest.FeaturedDescriptionId, opt => opt.MapFrom(src => src.FeaturedDescriptionId))
+
+                // 6. Este mapeo anidado es correcto, siempre y cuando tengas un mapeo definido para
+                //    EstatePropertyDescription -> EstatePropertyDescriptionDto.
                 .ForMember(dest => dest.EstatePropertyDescriptions, opt => opt.MapFrom(src => src.EstatePropertyDescriptions));
-
-
-            // DTO to Entity (for Create/Update Commands)
-            // Note: Price, Area, Status parsing is handled in Command Handlers for more control.
-            //       AutoMapper can do it too but might be less flexible for complex strings.
+            
 
             CreateMap<CreateOrUpdatePropertyImageDto, PropertyImage>()
                 .ForMember(dest => dest.Id, opt => {
@@ -50,12 +55,7 @@ public class EstatePropertyProfile : Profile
                 .ForMember(dest => dest.Id, opt => { opt.PreCondition(src => string.IsNullOrEmpty(src.Id)); opt.MapFrom(_ => Guid.NewGuid()); }) // Generate new Guid if Id is null/empty
                 .ForMember(dest => dest.EstatePropertyId, opt => opt.Ignore()) // Set manually in handler
                 .ForMember(dest => dest.EstateProperty, opt => opt.Ignore());
-
-            // For Update command: mapping DTO to existing Entity
-            // CreateMap<UpdateEstatePropertyCommand, EstateProperty>()
-            // This is usually handled property by property in the handler for partial updates.
-            // If you map directly, you might overwrite existing values with nulls from the command.
-            // However, for nested DTOs to nested Entities, it's useful:
-            CreateMap<PropertyImage, CreateOrUpdatePropertyImageDto>(); // For current state to DTO in update handler
+            
+            CreateMap<PropertyImage, CreateOrUpdatePropertyImageDto>();
     }
 }

@@ -1,5 +1,4 @@
-﻿namespace SDI_Api.Application.DTOs;
-
+﻿namespace SDI_Api.Application.DTOs.Reports;
 public class PropertyDetailsForReportDto // Subset of EstatePropertyDto
 {
     public string Id { get; set; } = string.Empty;

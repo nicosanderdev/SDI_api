@@ -1,5 +1,4 @@
-﻿namespace SDI_Api.Application.DTOs;
-
+﻿namespace SDI_Api.Application.DTOs.Reports;
 public class PropertySpecificReportDataDto
 {
     public PropertyDetailsForReportDto PropertyDetails { get; set; } = new PropertyDetailsForReportDto();

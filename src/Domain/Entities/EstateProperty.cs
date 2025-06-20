@@ -42,6 +42,9 @@ public class EstateProperty : BaseAuditableEntity
     public Guid? FeaturedDescriptionId { get; set; }
     public virtual EstatePropertyDescription? FeaturedDescription { get; set; }
     public virtual ICollection<EstatePropertyDescription> EstatePropertyDescriptions { get; set; } = new List<EstatePropertyDescription>();
+    
+    public Guid? OwnerId { get; set; }
+    public Member Owner { get; set; } = null!;
 
     // Constructor
     public EstateProperty()

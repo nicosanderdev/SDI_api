@@ -4,7 +4,6 @@ using Sdi_Api.Application.DTOs.Messages;
 using SDI_Api.Application.Messages;
 using SDI_Api.Application.Messages.Commands;
 using SDI_Api.Application.Messages.Queries;
-using SDI_Api.Domain.Entities;
 using SDI_Api.Domain.Exceptions;
 using SendMessageDto = SDI_Api.Application.Messages.SendMessageDto;
 
@@ -59,7 +58,7 @@ public class MessagesController : ControllerBase
         catch (Exception ex) { return BadRequest(new { message = "Error sending message.", error = ex.Message }); }
     }
 
-    // --- Status Update Endpoints (Example: MarkAsRead) ---
+    // --- Status Update Endpoints ---
     [HttpPatch("{id}/read")]
     public async Task<IActionResult> MarkMessageAsRead(string id)
     {
@@ -69,7 +68,6 @@ public class MessagesController : ControllerBase
         return NoContent();
     }
     
-    // DELETE: api/messages/{id}
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteMessage(string id)
     {
@@ -78,7 +76,6 @@ public class MessagesController : ControllerBase
         return NoContent();
     }
     
-    // GET: api/messages/counts
     [HttpGet("counts")]
     public async Task<ActionResult<TabCountsDto>> GetMessageCounts()
     {

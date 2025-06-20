@@ -25,4 +25,9 @@ public class ApplicationUser : IdentityUser, IUser
     {
         return PhoneNumber;
     }
+
+    public bool isEmailConfirmed()
+    {
+        return EmailConfirmed;
+    }
 }

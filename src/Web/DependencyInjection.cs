@@ -1,37 +1,32 @@
 ﻿using Azure.Identity;
-using SDI_Api.Application.Common.Interfaces;
-using SDI_Api.Infrastructure.Data;
-using SDI_Api.Web.Services;
 using Microsoft.AspNetCore.Mvc;
+using SDI_Api.Infrastructure.Data;
 
-
-namespace Microsoft.Extensions.DependencyInjection;
+namespace SDI_Api.Web;
 
 public static class DependencyInjection
 {
     public static void AddWebServices(this IHostApplicationBuilder builder)
     {
         builder.Services.AddDatabaseDeveloperPageExceptionFilter();
-        // builder.Services.AddHttpContextAccessor();
-        // builder.Services.AddScoped<IUser, CurrentUser>();
         
         builder.Services.AddHealthChecks()
             .AddDbContextCheck<ApplicationDbContext>();
 
         builder.Services.AddExceptionHandler<CustomExceptionHandler>();
 
-        builder.Services.AddRazorPages();
+        builder.Services.AddControllers();
 
         // Customise default API behaviour
         builder.Services.Configure<ApiBehaviorOptions>(options =>
             options.SuppressModelStateInvalidFilter = true);
 
         builder.Services.AddEndpointsApiExplorer();
+        builder.Services.AddHttpContextAccessor();
 
         builder.Services.AddOpenApiDocument((configure, sp) =>
         {
             configure.Title = "SDI_Api API";
-
         });
     }
 

@@ -1,5 +1,5 @@
 ﻿using SDI_Api.Application.Common.Interfaces;
-using SDI_Api.Application.DTOs;
+using SDI_Api.Application.DTOs.Reports;
 using SDI_Api.Domain.Enums;
 
 namespace Sdi_Api.Application.Reports.Queries;

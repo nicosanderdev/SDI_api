@@ -8,8 +8,8 @@ using SDI_Api.Application.MemberProfile.Query;
 
 namespace SDI_Api.Web.Endpoints;
 
-[Authorize] // Ensure all actions require authentication
-[Route("api/profiles")]
+[Authorize]
+[Route("api/profile/")]
 [ApiController]
 public class ProfilesController : ControllerBase
 {
@@ -19,9 +19,8 @@ public class ProfilesController : ControllerBase
     {
         _sender = sender;
     }
-
-    // GET api/profiles/me
-    [HttpGet("me")]
+    
+    [HttpGet]
     public async Task<ActionResult<ProfileDataDto>> GetCurrentUserProfile()
     {
         try
@@ -39,13 +38,11 @@ public class ProfilesController : ControllerBase
         }
         catch (Exception ex)
         {
-            // Log ex
             return BadRequest(new { message = "Error fetching profile.", error = ex.Message });
         }
     }
-
-    // PUT api/profiles/me
-    [HttpPut("me")]
+    
+    [HttpPut]
     public async Task<ActionResult<ProfileDataDto>> UpdateCurrentUserProfile([FromBody] UpdateProfileDto profileUpdateData)
     {
         try
@@ -62,52 +59,48 @@ public class ProfilesController : ControllerBase
         {
             return Unauthorized(new { message = ex.Message });
         }
-        catch (FluentValidation.ValidationException ex) // If you use FluentValidation for command DTOs
+        catch (FluentValidation.ValidationException ex)
         {
              return BadRequest(new { message = "Validation failed.", errors = ex.Errors.Select(e => new {e.PropertyName, e.ErrorMessage}) });
         }
-        catch (Exception ex) // General exception from UserManager update etc.
+        catch (Exception ex)
         {
-            // Log ex
             return BadRequest(new { message = "Error updating profile.", error = ex.Message });
         }
     }
-
-    // POST api/profiles/me/change-password
-    [HttpPost("me/change-password")]
+    
+    [HttpPost("change-password")]
     public async Task<IActionResult> ChangeUserPassword([FromBody] ChangePasswordDto passwordData)
     {
         try
         {
             var command = new ChangeUserPasswordCommand { PasswordData = passwordData };
             await _sender.Send(command);
-            return NoContent(); // Or Ok("Password changed successfully");
+            return NoContent();
         }
         catch (NotFoundException ex)
         {
             return NotFound(new { message = ex.Message });
         }
-         catch (UnauthorizedAccessException ex)
+        catch (UnauthorizedAccessException ex)
         {
             return Unauthorized(new { message = ex.Message });
         }
-        catch (FluentValidation.ValidationException ex) // Catches Identity errors repackaged as ValidationException
+        catch (FluentValidation.ValidationException ex)
         {
-            return BadRequest(new { message = "Password change failed.", error = ex.Message }); // Can provide more detailed errors
+            return BadRequest(new { message = "Password change failed.", error = ex.Message });
         }
         catch (Exception ex)
         {
-            // Log ex
             return BadRequest(new { message = "Error changing password.", error = ex.Message });
         }
     }
-
-    // POST api/profiles/me/avatar
-    [HttpPost("me/avatar")]
-    [Consumes("multipart/form-data")] // Important for file uploads
+    
+    /* [HttpPost("avatar")]
+    [Consumes("multipart/form-data")]
     public async Task<ActionResult<UploadAvatarResponseDto>> UploadProfilePicture([FromForm] IFormFile avatarFile)
     {
-        if (avatarFile == null || avatarFile.Length == 0)
+        if (avatarFile.Length == 0)
         {
             return BadRequest(new { message = "No avatar file provided." });
         }
@@ -125,14 +118,13 @@ public class ProfilesController : ControllerBase
         {
             return Unauthorized(new { message = ex.Message });
         }
-        catch (ArgumentException ex) // For file type/size validation errors
+        catch (ArgumentException ex)
         {
             return BadRequest(new { message = ex.Message });
         }
         catch (Exception ex)
         {
-            // Log ex
             return BadRequest(new { message = "Error uploading avatar.", error = ex.Message });
         }
-    }
+    } */
 }

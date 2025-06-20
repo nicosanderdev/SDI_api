@@ -9,4 +9,6 @@ public interface IUser
     string? getUserEmail();
     
     string? getPhoneNumber();
+    
+    bool isEmailConfirmed();
 }

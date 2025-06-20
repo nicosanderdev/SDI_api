@@ -1,5 +1,5 @@
 ﻿using SDI_Api.Application.Common.Interfaces;
-using SDI_Api.Application.DTOs;
+using SDI_Api.Application.DTOs.Reports;
 using Sdi_Api.Application.Util;
 using SDI_Api.Domain.Entities;
 
@@ -57,15 +57,18 @@ public class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboardSumma
 
         if (percentageChange.HasValue)
         {
-            if (percentageChange > 0.5m) changeDirection = "increase"; // Use a small threshold for "increase"
-            else if (percentageChange < -0.5m) changeDirection = "decrease"; // Use a small threshold for "decrease"
+            if (percentageChange > 0.5m) changeDirection = "increase";
+            else if (percentageChange < -0.5m) changeDirection = "decrease";
         }
-        else if (current > 0 && previous == 0)
+        else
         {
-            changeDirection = "increase"; // Considered an increase if went from 0 to >0
+            if (current > 0 && previous == 0)
+            {
+                changeDirection = "increase";
+            }
+            percentageChange = decimal.Zero;
         }
-
-
+        
         return new DashboardSummaryStatDto
         {
             CurrentPeriod = current,
@@ -94,7 +97,9 @@ public class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboardSumma
         // If TotalProperties should also have a trend, you'd need to count active properties at the end of the *previous* period.
         // This is more complex as it requires a snapshot or creation date filtering.
         // For simplicity, TotalProperties stat here won't have PercentageChange.
-        var totalPropertiesStat = new DashboardSummaryStatDto { CurrentPeriod = totalActiveProps };
+        var totalPropertiesStat = new DashboardSummaryStatDto { CurrentPeriod = totalActiveProps,
+            PercentageChange = 0,
+            ChangeDirection = "neutral" };
 
 
         // Conversion Rate: (Total Messages / Total Visits) * 100

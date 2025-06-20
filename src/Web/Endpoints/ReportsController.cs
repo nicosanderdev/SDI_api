@@ -1,16 +1,18 @@
 ﻿using SDI_Api.Application.DTOs;
+using SDI_Api.Application.DTOs.Reports;
 using Sdi_Api.Application.Reports.Queries;
-
-namespace SDI_Api.Web.Endpoints;
-
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using System;
-using System.Collections.Generic; // For List<>
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+
+namespace SDI_Api.Web.Endpoints;
 
 [Route("api/reports")]
 [ApiController]
+[Authorize]
 public class ReportsController : ControllerBase
 {
     private readonly ISender _sender;
@@ -98,7 +100,7 @@ public class ReportsController : ControllerBase
     {
          try
         {
-            var result = await _sender.Send(query); // Query object now takes optional period
+            var result = await _sender.Send(query);
             return Ok(result);
         }
         catch (Exception ex)

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SDI_Api.Infrastructure.Data;
@@ -11,9 +12,11 @@ using SDI_Api.Infrastructure.Data;
 namespace SDI_Api.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250609164404_BasicEntities_InsertData")]
+    partial class BasicEntities_InsertData
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -221,9 +224,6 @@ namespace SDI_Api.Infrastructure.Migrations
                     b.Property<Guid?>("MainImageId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("OwnerId")
-                        .HasColumnType("uuid");
-
                     b.Property<decimal>("Price")
                         .HasColumnType("numeric");
 
@@ -256,8 +256,6 @@ namespace SDI_Api.Infrastructure.Migrations
                     b.HasIndex("FeaturedDescriptionId");
 
                     b.HasIndex("MainImageId");
-
-                    b.HasIndex("OwnerId");
 
                     b.ToTable("EstateProperties");
                 });
@@ -775,15 +773,9 @@ namespace SDI_Api.Infrastructure.Migrations
                         .HasForeignKey("MainImageId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("SDI_Api.Domain.Entities.Member", "Owner")
-                        .WithMany()
-                        .HasForeignKey("OwnerId");
-
                     b.Navigation("FeaturedDescription");
 
                     b.Navigation("MainImage");
-
-                    b.Navigation("Owner");
                 });
 
             modelBuilder.Entity("SDI_Api.Domain.Entities.EstatePropertyDescription", b =>

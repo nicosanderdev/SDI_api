@@ -1,5 +1,4 @@
-﻿namespace SDI_Api.Application.DTOs;
-
+﻿namespace SDI_Api.Application.DTOs.Reports;
 public class VisitsByPropertyDataDto // Corresponds to VisitsByPropertyParams for request
 {
     public List<PropertyVisitStatDto> Data { get; set; } = new List<PropertyVisitStatDto>();

@@ -1,5 +1,4 @@
-﻿namespace SDI_Api.Application.DTOs;
-
+﻿namespace SDI_Api.Application.DTOs.Reports;
 public class PropertyVisitStatDto
 {
     public string PropertyId { get; set; } = string.Empty;
