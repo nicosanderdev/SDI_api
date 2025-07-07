@@ -1,4 +1,5 @@
-﻿using SDI_Api.Application.EstateProperties.Commands;
+﻿using SDI_Api.Application.Dtos;
+using SDI_Api.Application.EstateProperties.Commands;
 using Sdi_Api.Application.EstateProperties.Commands.Validations;
 
 namespace SDI_Api.Application.EstateProperties.Validations;
@@ -11,9 +12,12 @@ public class CreateOrUpdateEstatePropertyDtoValidator : AbstractValidator<Create
             .NotEmpty().WithMessage("Title is required.")
             .MaximumLength(100).WithMessage("Title must be at most 100 characters.");
 
-        RuleFor(x => x.Price)
-            .NotEmpty().WithMessage("Price is required.")
-            .Matches(@"^\d+(\.\d{1,2})?$").WithMessage("Price must be a valid number format (e.g. 1234.56).");
+        RuleFor(x => x.RentPrice)
+            .NotEmpty().WithMessage("Rent Price is required.");
+        
+        RuleFor(x => x)
+            .Must(dto => dto.SalePrice > 0 || dto.RentPrice > 0)
+            .WithMessage("Either a Sale Price or a Rent Price must be provided.");
 
         RuleFor(x => x.Status)
             .NotEmpty().WithMessage("Status is required.");
@@ -34,9 +38,6 @@ public class CreateOrUpdateEstatePropertyDtoValidator : AbstractValidator<Create
             .MaximumLength(100).WithMessage("Country must be 100 characters or less.");
 
         RuleForEach(x => x.PropertyImages)
-            .SetValidator(new CreateOrUpdatePropertyImageDtoValidator());
-
-        RuleForEach(x => x.EstatePropertyDescriptions)
-            .SetValidator(new CreateOrUpdateEstatePropertyDescriptionDtoValidator());
+            .SetValidator(new CreateOrUpdatePropertyImageDtoValidator() as IValidator<PropertyImageDto>);
     }
 }

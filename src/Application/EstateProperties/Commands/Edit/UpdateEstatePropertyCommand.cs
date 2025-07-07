@@ -1,7 +1,5 @@
-﻿using System.Globalization;
-using SDI_Api.Application.Common.Interfaces;
+﻿using SDI_Api.Application.Common.Interfaces;
 using SDI_Api.Domain.Entities;
-using SDI_Api.Domain.Enums;
 
 namespace SDI_Api.Application.EstateProperties.Commands.Edit;
 
@@ -10,8 +8,8 @@ public class UpdateEstatePropertyCommand : IRequest<Unit>
     public CreateOrUpdateEstatePropertyDto EstateProperty { get; set; } = default!;
     public CreateOrUpdatePropertyImageDto? MainImage { get; set; }
     public List<CreateOrUpdatePropertyImageDto>? PropertyImages { get; set; }
-    public string? FeaturedDescriptionId { get; set; }
-    public List<CreateOrUpdateEstatePropertyDescriptionDto>? EstatePropertyDescriptions { get; set; }
+    public string? FeaturedValuesId { get; set; }
+    public CreateOrUpdateEstatePropertyValuesDto? FeaturedValues { get; set; }
 }
 
 public class UpdateEstatePropertyCommandHandler : IRequestHandler<UpdateEstatePropertyCommand, Unit>
@@ -29,90 +27,64 @@ public class UpdateEstatePropertyCommandHandler : IRequestHandler<UpdateEstatePr
     {
         var entity = await _context.EstateProperties
             .Include(p => p.PropertyImages)
-            .Include(p => p.EstatePropertyDescriptions)
+            .Include(p => p.EstatePropertyValues)
             .FirstOrDefaultAsync(p => p.Id == command.EstateProperty.Id, cancellationToken);
 
         if (entity == null)
         {
             throw new NotFoundException(nameof(EstateProperty), command.EstateProperty.Id.ToString());
         }
-
-        // Update simple properties if values are provided
-        if (command.EstateProperty.Title != null) entity.Title = command.EstateProperty.Title;
-        if (command.EstateProperty.Address != null) entity.Address = command.EstateProperty.Address;
-        if (command.EstateProperty.Address2 != null) entity.Address2 = command.EstateProperty.Address2;
-        if (command.EstateProperty.City != null) entity.City = command.EstateProperty.City;
-        if (command.EstateProperty.State != null) entity.State = command.EstateProperty.State;
-        if (command.EstateProperty.ZipCode != null) entity.ZipCode = command.EstateProperty.ZipCode;
-        if (command.EstateProperty.Country != null) entity.Country = command.EstateProperty.Country;
-        if (command.EstateProperty.IsPublic.HasValue) entity.IsPublic = command.EstateProperty.IsPublic.Value;
-        if (command.EstateProperty.Type != null) entity.Type = command.EstateProperty.Type;
-        entity.Bedrooms = command.EstateProperty.Bedrooms;
-        entity.Bathrooms = command.EstateProperty.Bathrooms;
-        if (command.EstateProperty.Visits.HasValue) entity.Visits = command.EstateProperty.Visits.Value;
-
-        if (command.EstateProperty.Price != null)
+        
+        _mapper.Map(command.EstateProperty, entity);
+        
+        if (command.FeaturedValues != null)
         {
-            if (decimal.TryParse(command.EstateProperty.Price.Replace("€", "").Replace(",", ""), NumberStyles.Any,
-                    CultureInfo.InvariantCulture, out decimal priceValue))
-                entity.Price = priceValue;
+            UpdatePropertyValues(command, entity);
         }
-
-        if (command.EstateProperty.Area != null)
-        {
-            var areaParts = command.EstateProperty.Area.TrimEnd('²').Split(new[] { 'm', 'M' }, StringSplitOptions.RemoveEmptyEntries);
-            if (areaParts.Length > 0 && decimal.TryParse(areaParts[0], NumberStyles.Any, CultureInfo.InvariantCulture,
-                    out decimal areaNum))
-            {
-                entity.AreaValue = areaNum;
-                entity.AreaUnit = command.EstateProperty.Area.Contains("m²") ? "m²" : (areaParts.Length > 1 ? areaParts[1] : "m²");
-            }
-        }
-
-        if (command.EstateProperty.Status != null && Enum.TryParse<PropertyStatus>(command.EstateProperty.Status, true, out var statusEnum))
-        {
-            entity.Status = statusEnum;
-        }
-
-        // Handle PropertyImages synchronization
+        
         if (command.PropertyImages != null)
         {
             UpdatePropertyImages(entity, command.PropertyImages, command.MainImage);
         }
-        else if (command.MainImage != null) // Only main image info changed
+        else if (command.MainImage != null)
         {
             UpdatePropertyImages(entity,
                 entity.PropertyImages.Select(pi => _mapper.Map<CreateOrUpdatePropertyImageDto>(pi)).ToList(),
                 command.MainImage);
         }
-
-        // Handle EstatePropertyDescriptions synchronization
-        if (command.EstatePropertyDescriptions != null)
-        {
-            UpdatePropertyDescriptions(entity, command.EstatePropertyDescriptions);
-        }
-
-        // Handle FeaturedDescriptionId
-        if (command.FeaturedDescriptionId != null) // Client explicitly sets this
-        {
-            if (command.FeaturedDescriptionId.Equals("null", StringComparison.OrdinalIgnoreCase) ||
-                string.IsNullOrEmpty(command.FeaturedDescriptionId))
-            {
-                entity.FeaturedDescriptionId = null;
-            }
-            else if (Guid.TryParse(command.FeaturedDescriptionId, out Guid featDescId))
-            {
-                // Ensure this description ID exists within the property's descriptions
-                if (entity.EstatePropertyDescriptions.Any(d => d.Id == featDescId))
-                {
-                    entity.FeaturedDescriptionId = featDescId;
-                }
-                // else: ID provided does not belong to this property's descriptions. Error or ignore? For now, ignore.
-            }
-        }
-
+        
         await _context.SaveChangesAsync(cancellationToken);
         return Unit.Value;
+    }
+
+    private void UpdatePropertyValues(UpdateEstatePropertyCommand command, EstateProperty entity)
+    {
+        Guid valueId = Guid.Empty;
+        // Check if the provided featured value has an ID
+        bool hasId = !string.IsNullOrEmpty(command.FeaturedValues!.Id) && 
+                     Guid.TryParse(command.FeaturedValues.Id, out valueId);
+
+        if (hasId)
+        {
+            var existingValues = entity.EstatePropertyValues.FirstOrDefault(v => v.Id == valueId);
+
+            if (existingValues != null)
+            {
+                existingValues = _mapper.Map<EstatePropertyValues>(command.FeaturedValues);
+                entity.Id = existingValues.Id;
+            }
+            else
+            {
+                throw new NotFoundException(nameof(EstatePropertyValues), valueId.ToString());
+            }
+        }
+        else
+        {
+            var newValues = _mapper.Map<EstatePropertyValues>(command.FeaturedValues);
+            newValues.EstatePropertyId = entity.Id;
+            entity.EstatePropertyValues.Add(newValues);
+            entity.Id = newValues.Id;
+        }
     }
     
     private void UpdatePropertyImages(EstateProperty entity, List<CreateOrUpdatePropertyImageDto> imageDtos, CreateOrUpdatePropertyImageDto? mainImageDto)
@@ -120,16 +92,15 @@ public class UpdateEstatePropertyCommandHandler : IRequestHandler<UpdateEstatePr
         var existingImages = entity.PropertyImages.ToList();
         var imagesToRemove = new List<PropertyImage>();
         Guid? newMainImageId = entity.MainImageId;
-
-        // Process main image DTO first if provided
+        
         if (mainImageDto != null)
         {
-            if (!string.IsNullOrEmpty(mainImageDto.Id) && Guid.TryParse(mainImageDto.Id, out Guid mainImgGuid)) // Existing main image potentially updated
+            if (!string.IsNullOrEmpty(mainImageDto.Id) && Guid.TryParse(mainImageDto.Id, out Guid mainImgGuid))
             {
                 var existingMain = existingImages.FirstOrDefault(i => i.Id == mainImgGuid);
                 if (existingMain != null)
                 {
-                    _mapper.Map(mainImageDto, existingMain); // Update its properties
+                    _mapper.Map(mainImageDto, existingMain);
                     existingMain.IsMain = true;
                     newMainImageId = existingMain.Id;
                 }
@@ -172,9 +143,7 @@ public class UpdateEstatePropertyCommandHandler : IRequestHandler<UpdateEstatePr
         {
             // If the main image DTO was processed and it matches this entity, skip (already handled)
             if (mainImageDto != null && !string.IsNullOrEmpty(mainImageDto.Id) && Guid.TryParse(mainImageDto.Id, out Guid mainDtoId) && mainDtoId == imgEntity.Id)
-            {
                 continue;
-            }
 
             var dto = imageDtos.FirstOrDefault(d => d.Id != null && Guid.TryParse(d.Id, out Guid dtoId) && dtoId == imgEntity.Id);
             if (dto == null) // Not in DTO list, mark for removal
@@ -245,48 +214,6 @@ public class UpdateEstatePropertyCommandHandler : IRequestHandler<UpdateEstatePr
             entity.MainImageId = entity.PropertyImages.First().Id;
         } else if (!entity.PropertyImages.Any()) {
             entity.MainImageId = null;
-        }
-    }
-
-    private void UpdatePropertyDescriptions(EstateProperty entity, List<CreateOrUpdateEstatePropertyDescriptionDto> descriptionDtos)
-    {
-        var existingDescriptions = entity.EstatePropertyDescriptions.ToList();
-        var descriptionsToRemove = new List<EstatePropertyDescription>();
-
-        foreach (var descEntity in existingDescriptions)
-        {
-            var dto = descriptionDtos.FirstOrDefault(d => d.Id != null && Guid.TryParse(d.Id, out Guid dtoId) && dtoId == descEntity.Id);
-            if (dto == null)
-            {
-                descriptionsToRemove.Add(descEntity);
-            }
-            else
-            {
-                _mapper.Map(dto, descEntity); // Update
-            }
-        }
-
-        foreach (var descToRemove in descriptionsToRemove)
-        {
-            _context.EstatePropertyDescriptions.Remove(descToRemove);
-            entity.EstatePropertyDescriptions.Remove(descToRemove);
-             if (entity.FeaturedDescriptionId == descToRemove.Id) entity.FeaturedDescriptionId = null;
-        }
-
-        foreach (var descDto in descriptionDtos)
-        {
-            bool isExisting = false;
-            if (!string.IsNullOrEmpty(descDto.Id) && Guid.TryParse(descDto.Id, out Guid dtoId))
-            {
-               isExisting = existingDescriptions.Any(ed => ed.Id == dtoId);
-            }
-
-            if (!isExisting) // Add new
-            {
-                var newDesc = _mapper.Map<EstatePropertyDescription>(descDto);
-                newDesc.EstatePropertyId = entity.Id;
-                entity.EstatePropertyDescriptions.Add(newDesc);
-            }
         }
     }
 }

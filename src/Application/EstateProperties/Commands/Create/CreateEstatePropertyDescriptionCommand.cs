@@ -19,8 +19,8 @@ public class CreateEstatePropertyDescriptionCommandHandler : IRequestHandler<Cre
     public async Task Handle(CreateEstatePropertyDescriptionCommand command, CancellationToken cancellationToken)
     {
         var request = command.request;
-        var estatePropertyDescription = _mapper.Map<EstatePropertyDescription>(request);
-        _context.EstatePropertyDescriptions.Add(estatePropertyDescription);
+        var estatePropertyDescription = _mapper.Map<EstatePropertyValues>(request);
+        _context.EstatePropertyValues.Add(estatePropertyDescription);
         await _context.SaveChangesAsync(cancellationToken);
     }
 }

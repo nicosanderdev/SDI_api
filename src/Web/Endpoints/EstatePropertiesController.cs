@@ -1,5 +1,7 @@
 ﻿using AutoMapper;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SDI_Api.Application.Common.Interfaces;
 using SDI_Api.Application.EstateProperties.Commands.Create;
 using SDI_Api.Application.EstateProperties.Commands.Delete;
 using SDI_Api.Application.EstateProperties.Commands.Edit;
@@ -7,20 +9,25 @@ using SDI_Api.Application.EstateProperties.Queries;
 
 namespace SDI_Api.Web.Endpoints;
 
-[Route("api/properties")]
 [ApiController]
+[Route("api/properties")]
 public class EstatePropertiesController : ControllerBase
 {
     private readonly ISender _sender;
     private readonly IMapper _mapper;
+    private readonly IEmailService _emailService;
 
-    public EstatePropertiesController(ISender sender, IMapper mapper)
+    public EstatePropertiesController(ISender sender, IMapper mapper, IEmailService emailService)
     {
         _sender = sender;
         _mapper = mapper;
+        _emailService = emailService;
     }
 
+    [AllowAnonymous]
     [HttpGet]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetEstateProperties([FromQuery] GetEstatePropertiesQuery query)
     {
         try
@@ -34,6 +41,7 @@ public class EstatePropertiesController : ControllerBase
         }
     }
 
+    [AllowAnonymous]
     [HttpGet("{id}")]
     public async Task<IActionResult> GetEstateProperty([FromRoute] string id)
     {
@@ -56,6 +64,8 @@ public class EstatePropertiesController : ControllerBase
     }
 
     [HttpPost]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateEstateProperty([FromBody] CreateEstatePropertyCommand command)
     {
         try
@@ -70,12 +80,13 @@ public class EstatePropertiesController : ControllerBase
         }
         catch (Exception ex)
         {
-             // Log the exception ex
             return BadRequest(new { message = "Error creating property.", error = ex.Message });
         }
     }
 
     [HttpPut("{id}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UpdateEstateProperty([FromRoute] string id, [FromBody] UpdateEstatePropertyCommand command)
     {
         if (!Guid.TryParse(id, out var guidId))
@@ -107,6 +118,8 @@ public class EstatePropertiesController : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> DeleteEstateProperty([FromRoute] string id)
     {
         if (!Guid.TryParse(id, out var guidId))
@@ -124,7 +137,6 @@ public class EstatePropertiesController : ControllerBase
         }
         catch (Exception ex)
         {
-            // Log the exception ex
             return BadRequest(new { message = $"Error deleting property {id}.", error = ex.Message });
         }
     }

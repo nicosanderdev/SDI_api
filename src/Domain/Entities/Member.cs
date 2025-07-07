@@ -14,7 +14,7 @@ public class Member : BaseAuditableEntity
     public string? LastName { get; set; }
 
     [MaxLength(100)]
-    public string? Title { get; set; } // e.g., "Real Estate Agent", "Client"
+    public string? Title { get; set; }
 
     [MaxLength(2048)]
     public string? AvatarUrl { get; set; }
@@ -27,7 +27,7 @@ public class Member : BaseAuditableEntity
     [MaxLength(100)]
     public string? City { get; set; }
     [MaxLength(100)]
-    public string? State { get; set; } // Or Province
+    public string? State { get; set; }
     [MaxLength(20)]
     public string? PostalCode { get; set; }
     [MaxLength(100)]

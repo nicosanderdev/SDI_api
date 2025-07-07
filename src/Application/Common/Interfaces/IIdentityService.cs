@@ -16,12 +16,13 @@ public interface IIdentityService
     Task<bool> CheckPasswordAsync(IUser user, string password);
     Task<(Result Result, string UserId)> CreateUserAsync(string email, string password, string? firstName, string? lastName, CancellationToken cancellationToken); // Modified to include names for Member creation
     Task<Result> DeleteUserAsync(string userId);
+    
     // --- Email & Phone ---
     Task<Result> SetEmailAsync(string userId, string newEmail);
     Task<string> GenerateEmailConfirmationTokenAsync(IUser user);
     Task<Result> ConfirmEmailAsync(string userId, string token);
     Task<Result> SetPhoneNumberAsync(string userId, string? phoneNumber);
-    // Add phone confirmation methods if needed
+    
     // --- Password Management ---
     Task<Result> ChangePasswordAsync(string userId, string oldPassword, string newPassword);
     Task<SignInResult> CheckPasswordSignInAsync(IUser? user, string password, bool lockoutOnFailure);
@@ -34,7 +35,10 @@ public interface IIdentityService
     Task<Result> RemoveFromRoleAsync(string userId, string role);
     Task<IList<string>> GetUserRolesAsync(string userId);
     Task<bool> AuthorizeAsync(string userId, string policyName);
+    
     // --- SignIn & Authentication ---
     Task<SignInResult> TwoFactorAuthenticatorSignInAsync(string twoFactorCode, bool isPersistent, bool rememberClient);
     Task<IUser?> GetTwoFactorAuthenticationUserAsync();
+    Task<Result> EnableTwoFactorAuthenticationAsync(string userId);
+    Task<(string sharedKey, string authenticatorUri)> GenerateTwoFactorAuthenticatorKeyAsync(IUser user);
 }

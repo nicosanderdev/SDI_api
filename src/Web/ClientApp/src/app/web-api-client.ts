@@ -606,6 +606,12 @@ export interface IAuthClient {
     auth_Login(command: LoginCommand): Observable<LoginResultDto>;
     auth_Logout(): Observable<FileResponse>;
     auth_Verify(): Observable<UserDto>;
+    auth_ForgotPasswordCustom(command: ForgotPasswordCommand): Observable<FileResponse>;
+    auth_ResetPasswordCustom(command: ResetPasswordCommand): Observable<void>;
+    auth_ConfirmEmailCustom(command: ConfirmEmailCommand): Observable<void>;
+    auth_ResendConfirmationEmailCustom(dto: ResendConfirmationEmailDto): Observable<void>;
+    auth_GenerateTwoFactorKeyCustom(): Observable<GenerateTwoFactorKeyResponse>;
+    auth_EnableTwoFactorAuthCustom(request: Enable2faRequest): Observable<void>;
 }
 
 @Injectable({
@@ -786,14 +792,345 @@ export class AuthClient implements IAuthClient {
         }
         return _observableOf(null as any);
     }
+
+    auth_ForgotPasswordCustom(command: ForgotPasswordCommand): Observable<FileResponse> {
+        let url_ = this.baseUrl + "/api/auth/forgot-password-custom";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(command);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/octet-stream"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processAuth_ForgotPasswordCustom(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processAuth_ForgotPasswordCustom(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<FileResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<FileResponse>;
+        }));
+    }
+
+    protected processAuth_ForgotPasswordCustom(response: HttpResponseBase): Observable<FileResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200 || status === 206) {
+            const contentDisposition = response.headers ? response.headers.get("content-disposition") : undefined;
+            let fileNameMatch = contentDisposition ? /filename\*=(?:(\\?['"])(.*?)\1|(?:[^\s]+'.*?')?([^;\n]*))/g.exec(contentDisposition) : undefined;
+            let fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[3] || fileNameMatch[2] : undefined;
+            if (fileName) {
+                fileName = decodeURIComponent(fileName);
+            } else {
+                fileNameMatch = contentDisposition ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition) : undefined;
+                fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[1] : undefined;
+            }
+            return _observableOf({ fileName: fileName, data: responseBlob as any, status: status, headers: _headers });
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    auth_ResetPasswordCustom(command: ResetPasswordCommand): Observable<void> {
+        let url_ = this.baseUrl + "/api/auth/reset-password-custom";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(command);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processAuth_ResetPasswordCustom(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processAuth_ResetPasswordCustom(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processAuth_ResetPasswordCustom(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            let resultData400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result400 = Result.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    auth_ConfirmEmailCustom(command: ConfirmEmailCommand): Observable<void> {
+        let url_ = this.baseUrl + "/api/auth/confirm-email-custom";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(command);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processAuth_ConfirmEmailCustom(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processAuth_ConfirmEmailCustom(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processAuth_ConfirmEmailCustom(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            let resultData400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result400 = Result.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    auth_ResendConfirmationEmailCustom(dto: ResendConfirmationEmailDto): Observable<void> {
+        let url_ = this.baseUrl + "/api/auth/resend-confirmation-email-custom";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(dto);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processAuth_ResendConfirmationEmailCustom(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processAuth_ResendConfirmationEmailCustom(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processAuth_ResendConfirmationEmailCustom(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            let resultData400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result400 = ProblemDetails.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    auth_GenerateTwoFactorKeyCustom(): Observable<GenerateTwoFactorKeyResponse> {
+        let url_ = this.baseUrl + "/api/auth/2fa/generate-custom";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processAuth_GenerateTwoFactorKeyCustom(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processAuth_GenerateTwoFactorKeyCustom(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<GenerateTwoFactorKeyResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<GenerateTwoFactorKeyResponse>;
+        }));
+    }
+
+    protected processAuth_GenerateTwoFactorKeyCustom(response: HttpResponseBase): Observable<GenerateTwoFactorKeyResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result200 = GenerateTwoFactorKeyResponse.fromJS(resultData200);
+            return _observableOf(result200);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            let resultData401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result401 = ProblemDetails.fromJS(resultData401);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result401);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    auth_EnableTwoFactorAuthCustom(request: Enable2faRequest): Observable<void> {
+        let url_ = this.baseUrl + "/api/auth/2fa/enable-custom";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(request);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processAuth_EnableTwoFactorAuthCustom(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processAuth_EnableTwoFactorAuthCustom(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processAuth_EnableTwoFactorAuthCustom(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            let resultData400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result400 = Result.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
 }
 
 export interface IEstatePropertiesClient {
     estateProperties_GetEstateProperties(pageNumber: number | undefined, pageSize: number | undefined, filter_IsDeleted: boolean | null | undefined, filter_OwnerId: string | null | undefined, filter_CreatedAfter: Date | null | undefined, filter_CreatedBefore: Date | null | undefined, filter_Status: string | null | undefined, filter_SearchTerm: string | null | undefined): Observable<FileResponse>;
-    estateProperties_CreateEstateProperty(command: CreateEstatePropertyCommand): Observable<FileResponse>;
+    estateProperties_CreateEstateProperty(command: CreateEstatePropertyCommand): Observable<void>;
     estateProperties_GetEstateProperty(id: string): Observable<FileResponse>;
-    estateProperties_UpdateEstateProperty(id: string, command: UpdateEstatePropertyCommand): Observable<FileResponse>;
-    estateProperties_DeleteEstateProperty(id: string): Observable<FileResponse>;
+    estateProperties_UpdateEstateProperty(id: string, command: UpdateEstatePropertyCommand): Observable<void>;
+    estateProperties_DeleteEstateProperty(id: string): Observable<void>;
 }
 
 @Injectable({
@@ -881,7 +1218,7 @@ export class EstatePropertiesClient implements IEstatePropertiesClient {
         return _observableOf(null as any);
     }
 
-    estateProperties_CreateEstateProperty(command: CreateEstatePropertyCommand): Observable<FileResponse> {
+    estateProperties_CreateEstateProperty(command: CreateEstatePropertyCommand): Observable<void> {
         let url_ = this.baseUrl + "/api/properties";
         url_ = url_.replace(/[?&]$/, "");
 
@@ -893,7 +1230,6 @@ export class EstatePropertiesClient implements IEstatePropertiesClient {
             responseType: "blob",
             headers: new HttpHeaders({
                 "Content-Type": "application/json",
-                "Accept": "application/octet-stream"
             })
         };
 
@@ -904,31 +1240,31 @@ export class EstatePropertiesClient implements IEstatePropertiesClient {
                 try {
                     return this.processEstateProperties_CreateEstateProperty(response_ as any);
                 } catch (e) {
-                    return _observableThrow(e) as any as Observable<FileResponse>;
+                    return _observableThrow(e) as any as Observable<void>;
                 }
             } else
-                return _observableThrow(response_) as any as Observable<FileResponse>;
+                return _observableThrow(response_) as any as Observable<void>;
         }));
     }
 
-    protected processEstateProperties_CreateEstateProperty(response: HttpResponseBase): Observable<FileResponse> {
+    protected processEstateProperties_CreateEstateProperty(response: HttpResponseBase): Observable<void> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
             (response as any).error instanceof Blob ? (response as any).error : undefined;
 
         let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
-        if (status === 200 || status === 206) {
-            const contentDisposition = response.headers ? response.headers.get("content-disposition") : undefined;
-            let fileNameMatch = contentDisposition ? /filename\*=(?:(\\?['"])(.*?)\1|(?:[^\s]+'.*?')?([^;\n]*))/g.exec(contentDisposition) : undefined;
-            let fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[3] || fileNameMatch[2] : undefined;
-            if (fileName) {
-                fileName = decodeURIComponent(fileName);
-            } else {
-                fileNameMatch = contentDisposition ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition) : undefined;
-                fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[1] : undefined;
-            }
-            return _observableOf({ fileName: fileName, data: responseBlob as any, status: status, headers: _headers });
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            let resultData400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result400 = ProblemDetails.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
@@ -992,7 +1328,7 @@ export class EstatePropertiesClient implements IEstatePropertiesClient {
         return _observableOf(null as any);
     }
 
-    estateProperties_UpdateEstateProperty(id: string, command: UpdateEstatePropertyCommand): Observable<FileResponse> {
+    estateProperties_UpdateEstateProperty(id: string, command: UpdateEstatePropertyCommand): Observable<void> {
         let url_ = this.baseUrl + "/api/properties/{id}";
         if (id === undefined || id === null)
             throw new Error("The parameter 'id' must be defined.");
@@ -1007,7 +1343,6 @@ export class EstatePropertiesClient implements IEstatePropertiesClient {
             responseType: "blob",
             headers: new HttpHeaders({
                 "Content-Type": "application/json",
-                "Accept": "application/octet-stream"
             })
         };
 
@@ -1018,31 +1353,31 @@ export class EstatePropertiesClient implements IEstatePropertiesClient {
                 try {
                     return this.processEstateProperties_UpdateEstateProperty(response_ as any);
                 } catch (e) {
-                    return _observableThrow(e) as any as Observable<FileResponse>;
+                    return _observableThrow(e) as any as Observable<void>;
                 }
             } else
-                return _observableThrow(response_) as any as Observable<FileResponse>;
+                return _observableThrow(response_) as any as Observable<void>;
         }));
     }
 
-    protected processEstateProperties_UpdateEstateProperty(response: HttpResponseBase): Observable<FileResponse> {
+    protected processEstateProperties_UpdateEstateProperty(response: HttpResponseBase): Observable<void> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
             (response as any).error instanceof Blob ? (response as any).error : undefined;
 
         let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
-        if (status === 200 || status === 206) {
-            const contentDisposition = response.headers ? response.headers.get("content-disposition") : undefined;
-            let fileNameMatch = contentDisposition ? /filename\*=(?:(\\?['"])(.*?)\1|(?:[^\s]+'.*?')?([^;\n]*))/g.exec(contentDisposition) : undefined;
-            let fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[3] || fileNameMatch[2] : undefined;
-            if (fileName) {
-                fileName = decodeURIComponent(fileName);
-            } else {
-                fileNameMatch = contentDisposition ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition) : undefined;
-                fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[1] : undefined;
-            }
-            return _observableOf({ fileName: fileName, data: responseBlob as any, status: status, headers: _headers });
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            let resultData400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result400 = ProblemDetails.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
@@ -1051,7 +1386,7 @@ export class EstatePropertiesClient implements IEstatePropertiesClient {
         return _observableOf(null as any);
     }
 
-    estateProperties_DeleteEstateProperty(id: string): Observable<FileResponse> {
+    estateProperties_DeleteEstateProperty(id: string): Observable<void> {
         let url_ = this.baseUrl + "/api/properties/{id}";
         if (id === undefined || id === null)
             throw new Error("The parameter 'id' must be defined.");
@@ -1062,7 +1397,6 @@ export class EstatePropertiesClient implements IEstatePropertiesClient {
             observe: "response",
             responseType: "blob",
             headers: new HttpHeaders({
-                "Accept": "application/octet-stream"
             })
         };
 
@@ -1073,31 +1407,31 @@ export class EstatePropertiesClient implements IEstatePropertiesClient {
                 try {
                     return this.processEstateProperties_DeleteEstateProperty(response_ as any);
                 } catch (e) {
-                    return _observableThrow(e) as any as Observable<FileResponse>;
+                    return _observableThrow(e) as any as Observable<void>;
                 }
             } else
-                return _observableThrow(response_) as any as Observable<FileResponse>;
+                return _observableThrow(response_) as any as Observable<void>;
         }));
     }
 
-    protected processEstateProperties_DeleteEstateProperty(response: HttpResponseBase): Observable<FileResponse> {
+    protected processEstateProperties_DeleteEstateProperty(response: HttpResponseBase): Observable<void> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
             (response as any).error instanceof Blob ? (response as any).error : undefined;
 
         let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
-        if (status === 200 || status === 206) {
-            const contentDisposition = response.headers ? response.headers.get("content-disposition") : undefined;
-            let fileNameMatch = contentDisposition ? /filename\*=(?:(\\?['"])(.*?)\1|(?:[^\s]+'.*?')?([^;\n]*))/g.exec(contentDisposition) : undefined;
-            let fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[3] || fileNameMatch[2] : undefined;
-            if (fileName) {
-                fileName = decodeURIComponent(fileName);
-            } else {
-                fileNameMatch = contentDisposition ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition) : undefined;
-                fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[1] : undefined;
-            }
-            return _observableOf({ fileName: fileName, data: responseBlob as any, status: status, headers: _headers });
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            let resultData400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result400 = ProblemDetails.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
@@ -2815,6 +3149,286 @@ export interface ILoginCommand {
     rememberMe?: boolean;
 }
 
+export class ForgotPasswordCommand implements IForgotPasswordCommand {
+    email?: string | undefined;
+
+    constructor(data?: IForgotPasswordCommand) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.email = _data["email"];
+        }
+    }
+
+    static fromJS(data: any): ForgotPasswordCommand {
+        data = typeof data === 'object' ? data : {};
+        let result = new ForgotPasswordCommand();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["email"] = this.email;
+        return data;
+    }
+}
+
+export interface IForgotPasswordCommand {
+    email?: string | undefined;
+}
+
+export class Result implements IResult {
+    succeeded?: boolean;
+    errors?: string[];
+
+    constructor(data?: IResult) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.succeeded = _data["succeeded"];
+            if (Array.isArray(_data["errors"])) {
+                this.errors = [] as any;
+                for (let item of _data["errors"])
+                    this.errors!.push(item);
+            }
+        }
+    }
+
+    static fromJS(data: any): Result {
+        data = typeof data === 'object' ? data : {};
+        let result = new Result();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["succeeded"] = this.succeeded;
+        if (Array.isArray(this.errors)) {
+            data["errors"] = [];
+            for (let item of this.errors)
+                data["errors"].push(item);
+        }
+        return data;
+    }
+}
+
+export interface IResult {
+    succeeded?: boolean;
+    errors?: string[];
+}
+
+export class ResetPasswordCommand implements IResetPasswordCommand {
+    email?: string;
+    token?: string;
+    newPassword?: string;
+
+    constructor(data?: IResetPasswordCommand) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.email = _data["email"];
+            this.token = _data["token"];
+            this.newPassword = _data["newPassword"];
+        }
+    }
+
+    static fromJS(data: any): ResetPasswordCommand {
+        data = typeof data === 'object' ? data : {};
+        let result = new ResetPasswordCommand();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["email"] = this.email;
+        data["token"] = this.token;
+        data["newPassword"] = this.newPassword;
+        return data;
+    }
+}
+
+export interface IResetPasswordCommand {
+    email?: string;
+    token?: string;
+    newPassword?: string;
+}
+
+export class ConfirmEmailCommand implements IConfirmEmailCommand {
+    userId?: string;
+    token?: string;
+
+    constructor(data?: IConfirmEmailCommand) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.userId = _data["userId"];
+            this.token = _data["token"];
+        }
+    }
+
+    static fromJS(data: any): ConfirmEmailCommand {
+        data = typeof data === 'object' ? data : {};
+        let result = new ConfirmEmailCommand();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["userId"] = this.userId;
+        data["token"] = this.token;
+        return data;
+    }
+}
+
+export interface IConfirmEmailCommand {
+    userId?: string;
+    token?: string;
+}
+
+export class ResendConfirmationEmailDto implements IResendConfirmationEmailDto {
+    email!: string;
+
+    constructor(data?: IResendConfirmationEmailDto) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.email = _data["email"];
+        }
+    }
+
+    static fromJS(data: any): ResendConfirmationEmailDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new ResendConfirmationEmailDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["email"] = this.email;
+        return data;
+    }
+}
+
+export interface IResendConfirmationEmailDto {
+    email: string;
+}
+
+export class GenerateTwoFactorKeyResponse implements IGenerateTwoFactorKeyResponse {
+    sharedKey?: string;
+    authenticatorUri?: string;
+
+    constructor(data?: IGenerateTwoFactorKeyResponse) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.sharedKey = _data["sharedKey"];
+            this.authenticatorUri = _data["authenticatorUri"];
+        }
+    }
+
+    static fromJS(data: any): GenerateTwoFactorKeyResponse {
+        data = typeof data === 'object' ? data : {};
+        let result = new GenerateTwoFactorKeyResponse();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["sharedKey"] = this.sharedKey;
+        data["authenticatorUri"] = this.authenticatorUri;
+        return data;
+    }
+}
+
+export interface IGenerateTwoFactorKeyResponse {
+    sharedKey?: string;
+    authenticatorUri?: string;
+}
+
+export class Enable2faRequest implements IEnable2faRequest {
+    code!: string;
+
+    constructor(data?: IEnable2faRequest) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.code = _data["code"];
+        }
+    }
+
+    static fromJS(data: any): Enable2faRequest {
+        data = typeof data === 'object' ? data : {};
+        let result = new Enable2faRequest();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["code"] = this.code;
+        return data;
+    }
+}
+
+export interface IEnable2faRequest {
+    code: string;
+}
+
 export class CreateEstatePropertyCommand implements ICreateEstatePropertyCommand {
     dto?: CreateOrUpdateEstatePropertyDto;
 
@@ -2853,27 +3467,288 @@ export interface ICreateEstatePropertyCommand {
 
 export class CreateOrUpdateEstatePropertyDto implements ICreateOrUpdateEstatePropertyDto {
     id?: string;
-    address?: string | undefined;
-    address2?: string | undefined;
-    city?: string | undefined;
-    state?: string | undefined;
-    zipCode?: string | undefined;
-    country?: string | undefined;
-    isPublic?: boolean | undefined;
-    title?: string | undefined;
-    area?: string | undefined;
-    price?: string | undefined;
-    status?: string | undefined;
-    type?: string | undefined;
+    streetName!: string;
+    houseNumber!: string;
+    neighborhood?: string | undefined;
+    city!: string;
+    state!: string;
+    zipCode!: string;
+    country!: string;
+    location!: LocationDto;
+    title!: string;
+    type!: string;
+    areaValue?: number;
+    areaUnit?: number;
     bedrooms?: number;
     bathrooms?: number;
-    visits?: number | undefined;
-    mainImage?: CreateOrUpdatePropertyImageDto | undefined;
-    propertyImages?: CreateOrUpdatePropertyImageDto[];
-    featuredDescriptionId?: string | undefined;
-    estatePropertyDescriptions?: CreateOrUpdateEstatePropertyDescriptionDto[];
+    hasGarage!: boolean;
+    garageSpaces!: number;
+    visits?: number;
+    createdOnUtc!: Date;
+    images!: string[];
+    publicDeed!: string;
+    propertyPlans!: string;
+    taxReceipts!: string;
+    otherDocuments?: string[] | undefined;
+    mainImage?: string | undefined;
+    mainImageUrl?: string | undefined;
+    propertyImages?: PropertyImageDto[] | undefined;
+    ownerId?: string | undefined;
+    description!: string;
+    availableFrom?: Date;
+    arePetsAllowed?: boolean;
+    capacity?: number;
+    currency?: Currency;
+    salePrice?: number | undefined;
+    rentPrice?: number | undefined;
+    hasCommonExpenses?: boolean;
+    commonExpensesAmount?: number | undefined;
+    isElectricityIncluded?: boolean;
+    isWaterIncluded?: boolean;
+    isPriceVisible?: boolean;
+    status?: PropertyStatus;
+    isActive?: boolean;
+    isPropertyVisible?: boolean;
 
     constructor(data?: ICreateOrUpdateEstatePropertyDto) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+        if (!data) {
+            this.location = new LocationDto();
+            this.images = [];
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.id = _data["id"];
+            this.streetName = _data["streetName"];
+            this.houseNumber = _data["houseNumber"];
+            this.neighborhood = _data["neighborhood"];
+            this.city = _data["city"];
+            this.state = _data["state"];
+            this.zipCode = _data["zipCode"];
+            this.country = _data["country"];
+            this.location = _data["location"] ? LocationDto.fromJS(_data["location"]) : new LocationDto();
+            this.title = _data["title"];
+            this.type = _data["type"];
+            this.areaValue = _data["areaValue"];
+            this.areaUnit = _data["areaUnit"];
+            this.bedrooms = _data["bedrooms"];
+            this.bathrooms = _data["bathrooms"];
+            this.hasGarage = _data["hasGarage"];
+            this.garageSpaces = _data["garageSpaces"];
+            this.visits = _data["visits"];
+            this.createdOnUtc = _data["createdOnUtc"] ? new Date(_data["createdOnUtc"].toString()) : <any>undefined;
+            if (Array.isArray(_data["images"])) {
+                this.images = [] as any;
+                for (let item of _data["images"])
+                    this.images!.push(item);
+            }
+            this.publicDeed = _data["publicDeed"];
+            this.propertyPlans = _data["propertyPlans"];
+            this.taxReceipts = _data["taxReceipts"];
+            if (Array.isArray(_data["otherDocuments"])) {
+                this.otherDocuments = [] as any;
+                for (let item of _data["otherDocuments"])
+                    this.otherDocuments!.push(item);
+            }
+            this.mainImage = _data["mainImage"];
+            this.mainImageUrl = _data["mainImageUrl"];
+            if (Array.isArray(_data["propertyImages"])) {
+                this.propertyImages = [] as any;
+                for (let item of _data["propertyImages"])
+                    this.propertyImages!.push(PropertyImageDto.fromJS(item));
+            }
+            this.ownerId = _data["ownerId"];
+            this.description = _data["description"];
+            this.availableFrom = _data["availableFrom"] ? new Date(_data["availableFrom"].toString()) : <any>undefined;
+            this.arePetsAllowed = _data["arePetsAllowed"];
+            this.capacity = _data["capacity"];
+            this.currency = _data["currency"];
+            this.salePrice = _data["salePrice"];
+            this.rentPrice = _data["rentPrice"];
+            this.hasCommonExpenses = _data["hasCommonExpenses"];
+            this.commonExpensesAmount = _data["commonExpensesAmount"];
+            this.isElectricityIncluded = _data["isElectricityIncluded"];
+            this.isWaterIncluded = _data["isWaterIncluded"];
+            this.isPriceVisible = _data["isPriceVisible"];
+            this.status = _data["status"];
+            this.isActive = _data["isActive"];
+            this.isPropertyVisible = _data["isPropertyVisible"];
+        }
+    }
+
+    static fromJS(data: any): CreateOrUpdateEstatePropertyDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new CreateOrUpdateEstatePropertyDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["id"] = this.id;
+        data["streetName"] = this.streetName;
+        data["houseNumber"] = this.houseNumber;
+        data["neighborhood"] = this.neighborhood;
+        data["city"] = this.city;
+        data["state"] = this.state;
+        data["zipCode"] = this.zipCode;
+        data["country"] = this.country;
+        data["location"] = this.location ? this.location.toJSON() : <any>undefined;
+        data["title"] = this.title;
+        data["type"] = this.type;
+        data["areaValue"] = this.areaValue;
+        data["areaUnit"] = this.areaUnit;
+        data["bedrooms"] = this.bedrooms;
+        data["bathrooms"] = this.bathrooms;
+        data["hasGarage"] = this.hasGarage;
+        data["garageSpaces"] = this.garageSpaces;
+        data["visits"] = this.visits;
+        data["createdOnUtc"] = this.createdOnUtc ? this.createdOnUtc.toISOString() : <any>undefined;
+        if (Array.isArray(this.images)) {
+            data["images"] = [];
+            for (let item of this.images)
+                data["images"].push(item);
+        }
+        data["publicDeed"] = this.publicDeed;
+        data["propertyPlans"] = this.propertyPlans;
+        data["taxReceipts"] = this.taxReceipts;
+        if (Array.isArray(this.otherDocuments)) {
+            data["otherDocuments"] = [];
+            for (let item of this.otherDocuments)
+                data["otherDocuments"].push(item);
+        }
+        data["mainImage"] = this.mainImage;
+        data["mainImageUrl"] = this.mainImageUrl;
+        if (Array.isArray(this.propertyImages)) {
+            data["propertyImages"] = [];
+            for (let item of this.propertyImages)
+                data["propertyImages"].push(item.toJSON());
+        }
+        data["ownerId"] = this.ownerId;
+        data["description"] = this.description;
+        data["availableFrom"] = this.availableFrom ? this.availableFrom.toISOString() : <any>undefined;
+        data["arePetsAllowed"] = this.arePetsAllowed;
+        data["capacity"] = this.capacity;
+        data["currency"] = this.currency;
+        data["salePrice"] = this.salePrice;
+        data["rentPrice"] = this.rentPrice;
+        data["hasCommonExpenses"] = this.hasCommonExpenses;
+        data["commonExpensesAmount"] = this.commonExpensesAmount;
+        data["isElectricityIncluded"] = this.isElectricityIncluded;
+        data["isWaterIncluded"] = this.isWaterIncluded;
+        data["isPriceVisible"] = this.isPriceVisible;
+        data["status"] = this.status;
+        data["isActive"] = this.isActive;
+        data["isPropertyVisible"] = this.isPropertyVisible;
+        return data;
+    }
+}
+
+export interface ICreateOrUpdateEstatePropertyDto {
+    id?: string;
+    streetName: string;
+    houseNumber: string;
+    neighborhood?: string | undefined;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
+    location: LocationDto;
+    title: string;
+    type: string;
+    areaValue?: number;
+    areaUnit?: number;
+    bedrooms?: number;
+    bathrooms?: number;
+    hasGarage: boolean;
+    garageSpaces: number;
+    visits?: number;
+    createdOnUtc: Date;
+    images: string[];
+    publicDeed: string;
+    propertyPlans: string;
+    taxReceipts: string;
+    otherDocuments?: string[] | undefined;
+    mainImage?: string | undefined;
+    mainImageUrl?: string | undefined;
+    propertyImages?: PropertyImageDto[] | undefined;
+    ownerId?: string | undefined;
+    description: string;
+    availableFrom?: Date;
+    arePetsAllowed?: boolean;
+    capacity?: number;
+    currency?: Currency;
+    salePrice?: number | undefined;
+    rentPrice?: number | undefined;
+    hasCommonExpenses?: boolean;
+    commonExpensesAmount?: number | undefined;
+    isElectricityIncluded?: boolean;
+    isWaterIncluded?: boolean;
+    isPriceVisible?: boolean;
+    status?: PropertyStatus;
+    isActive?: boolean;
+    isPropertyVisible?: boolean;
+}
+
+export class LocationDto implements ILocationDto {
+    lat?: number;
+    lng?: number;
+
+    constructor(data?: ILocationDto) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.lat = _data["lat"];
+            this.lng = _data["lng"];
+        }
+    }
+
+    static fromJS(data: any): LocationDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new LocationDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["lat"] = this.lat;
+        data["lng"] = this.lng;
+        return data;
+    }
+}
+
+export interface ILocationDto {
+    lat?: number;
+    lng?: number;
+}
+
+export class PropertyImageDto implements IPropertyImageDto {
+    id?: string | undefined;
+    url?: string;
+    altText?: string | undefined;
+    isMain?: boolean | undefined;
+    estatePropertyId?: string;
+    fileName?: string;
+    contentType?: string;
+    imageData?: string;
+    isPublic?: boolean;
+
+    constructor(data?: IPropertyImageDto) {
         if (data) {
             for (var property in data) {
                 if (data.hasOwnProperty(property))
@@ -2885,21 +3760,86 @@ export class CreateOrUpdateEstatePropertyDto implements ICreateOrUpdateEstatePro
     init(_data?: any) {
         if (_data) {
             this.id = _data["id"];
-            this.address = _data["address"];
-            this.address2 = _data["address2"];
-            this.city = _data["city"];
-            this.state = _data["state"];
-            this.zipCode = _data["zipCode"];
-            this.country = _data["country"];
+            this.url = _data["url"];
+            this.altText = _data["altText"];
+            this.isMain = _data["isMain"];
+            this.estatePropertyId = _data["estatePropertyId"];
+            this.fileName = _data["fileName"];
+            this.contentType = _data["contentType"];
+            this.imageData = _data["imageData"];
             this.isPublic = _data["isPublic"];
-            this.title = _data["title"];
-            this.area = _data["area"];
-            this.price = _data["price"];
-            this.status = _data["status"];
-            this.type = _data["type"];
-            this.bedrooms = _data["bedrooms"];
-            this.bathrooms = _data["bathrooms"];
-            this.visits = _data["visits"];
+        }
+    }
+
+    static fromJS(data: any): PropertyImageDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new PropertyImageDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["id"] = this.id;
+        data["url"] = this.url;
+        data["altText"] = this.altText;
+        data["isMain"] = this.isMain;
+        data["estatePropertyId"] = this.estatePropertyId;
+        data["fileName"] = this.fileName;
+        data["contentType"] = this.contentType;
+        data["imageData"] = this.imageData;
+        data["isPublic"] = this.isPublic;
+        return data;
+    }
+}
+
+export interface IPropertyImageDto {
+    id?: string | undefined;
+    url?: string;
+    altText?: string | undefined;
+    isMain?: boolean | undefined;
+    estatePropertyId?: string;
+    fileName?: string;
+    contentType?: string;
+    imageData?: string;
+    isPublic?: boolean;
+}
+
+export enum Currency {
+    USD = 0,
+    UYU = 1,
+    BRL = 2,
+    EUR = 3,
+    GBP = 4,
+}
+
+export enum PropertyStatus {
+    Sale = 0,
+    Rent = 1,
+    Reserved = 2,
+    Sold = 3,
+    Unavailable = 4,
+}
+
+export class UpdateEstatePropertyCommand implements IUpdateEstatePropertyCommand {
+    estateProperty?: CreateOrUpdateEstatePropertyDto;
+    mainImage?: CreateOrUpdatePropertyImageDto | undefined;
+    propertyImages?: CreateOrUpdatePropertyImageDto[] | undefined;
+    featuredDescriptionId?: string | undefined;
+    estatePropertyDescriptions?: CreateOrUpdateEstatePropertyDescriptionDto[] | undefined;
+
+    constructor(data?: IUpdateEstatePropertyCommand) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.estateProperty = _data["estateProperty"] ? CreateOrUpdateEstatePropertyDto.fromJS(_data["estateProperty"]) : <any>undefined;
             this.mainImage = _data["mainImage"] ? CreateOrUpdatePropertyImageDto.fromJS(_data["mainImage"]) : <any>undefined;
             if (Array.isArray(_data["propertyImages"])) {
                 this.propertyImages = [] as any;
@@ -2915,31 +3855,16 @@ export class CreateOrUpdateEstatePropertyDto implements ICreateOrUpdateEstatePro
         }
     }
 
-    static fromJS(data: any): CreateOrUpdateEstatePropertyDto {
+    static fromJS(data: any): UpdateEstatePropertyCommand {
         data = typeof data === 'object' ? data : {};
-        let result = new CreateOrUpdateEstatePropertyDto();
+        let result = new UpdateEstatePropertyCommand();
         result.init(data);
         return result;
     }
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["id"] = this.id;
-        data["address"] = this.address;
-        data["address2"] = this.address2;
-        data["city"] = this.city;
-        data["state"] = this.state;
-        data["zipCode"] = this.zipCode;
-        data["country"] = this.country;
-        data["isPublic"] = this.isPublic;
-        data["title"] = this.title;
-        data["area"] = this.area;
-        data["price"] = this.price;
-        data["status"] = this.status;
-        data["type"] = this.type;
-        data["bedrooms"] = this.bedrooms;
-        data["bathrooms"] = this.bathrooms;
-        data["visits"] = this.visits;
+        data["estateProperty"] = this.estateProperty ? this.estateProperty.toJSON() : <any>undefined;
         data["mainImage"] = this.mainImage ? this.mainImage.toJSON() : <any>undefined;
         if (Array.isArray(this.propertyImages)) {
             data["propertyImages"] = [];
@@ -2956,27 +3881,12 @@ export class CreateOrUpdateEstatePropertyDto implements ICreateOrUpdateEstatePro
     }
 }
 
-export interface ICreateOrUpdateEstatePropertyDto {
-    id?: string;
-    address?: string | undefined;
-    address2?: string | undefined;
-    city?: string | undefined;
-    state?: string | undefined;
-    zipCode?: string | undefined;
-    country?: string | undefined;
-    isPublic?: boolean | undefined;
-    title?: string | undefined;
-    area?: string | undefined;
-    price?: string | undefined;
-    status?: string | undefined;
-    type?: string | undefined;
-    bedrooms?: number;
-    bathrooms?: number;
-    visits?: number | undefined;
+export interface IUpdateEstatePropertyCommand {
+    estateProperty?: CreateOrUpdateEstatePropertyDto;
     mainImage?: CreateOrUpdatePropertyImageDto | undefined;
-    propertyImages?: CreateOrUpdatePropertyImageDto[];
+    propertyImages?: CreateOrUpdatePropertyImageDto[] | undefined;
     featuredDescriptionId?: string | undefined;
-    estatePropertyDescriptions?: CreateOrUpdateEstatePropertyDescriptionDto[];
+    estatePropertyDescriptions?: CreateOrUpdateEstatePropertyDescriptionDto[] | undefined;
 }
 
 export class CreateOrUpdatePropertyImageDto implements ICreateOrUpdatePropertyImageDto {
@@ -3109,74 +4019,6 @@ export interface ICreateOrUpdateEstatePropertyDescriptionDto {
     rentPrice?: number;
     soldPrice?: number;
     isActive?: boolean;
-}
-
-export class UpdateEstatePropertyCommand implements IUpdateEstatePropertyCommand {
-    estateProperty?: CreateOrUpdateEstatePropertyDto;
-    mainImage?: CreateOrUpdatePropertyImageDto | undefined;
-    propertyImages?: CreateOrUpdatePropertyImageDto[] | undefined;
-    featuredDescriptionId?: string | undefined;
-    estatePropertyDescriptions?: CreateOrUpdateEstatePropertyDescriptionDto[] | undefined;
-
-    constructor(data?: IUpdateEstatePropertyCommand) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(_data?: any) {
-        if (_data) {
-            this.estateProperty = _data["estateProperty"] ? CreateOrUpdateEstatePropertyDto.fromJS(_data["estateProperty"]) : <any>undefined;
-            this.mainImage = _data["mainImage"] ? CreateOrUpdatePropertyImageDto.fromJS(_data["mainImage"]) : <any>undefined;
-            if (Array.isArray(_data["propertyImages"])) {
-                this.propertyImages = [] as any;
-                for (let item of _data["propertyImages"])
-                    this.propertyImages!.push(CreateOrUpdatePropertyImageDto.fromJS(item));
-            }
-            this.featuredDescriptionId = _data["featuredDescriptionId"];
-            if (Array.isArray(_data["estatePropertyDescriptions"])) {
-                this.estatePropertyDescriptions = [] as any;
-                for (let item of _data["estatePropertyDescriptions"])
-                    this.estatePropertyDescriptions!.push(CreateOrUpdateEstatePropertyDescriptionDto.fromJS(item));
-            }
-        }
-    }
-
-    static fromJS(data: any): UpdateEstatePropertyCommand {
-        data = typeof data === 'object' ? data : {};
-        let result = new UpdateEstatePropertyCommand();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["estateProperty"] = this.estateProperty ? this.estateProperty.toJSON() : <any>undefined;
-        data["mainImage"] = this.mainImage ? this.mainImage.toJSON() : <any>undefined;
-        if (Array.isArray(this.propertyImages)) {
-            data["propertyImages"] = [];
-            for (let item of this.propertyImages)
-                data["propertyImages"].push(item.toJSON());
-        }
-        data["featuredDescriptionId"] = this.featuredDescriptionId;
-        if (Array.isArray(this.estatePropertyDescriptions)) {
-            data["estatePropertyDescriptions"] = [];
-            for (let item of this.estatePropertyDescriptions)
-                data["estatePropertyDescriptions"].push(item.toJSON());
-        }
-        return data;
-    }
-}
-
-export interface IUpdateEstatePropertyCommand {
-    estateProperty?: CreateOrUpdateEstatePropertyDto;
-    mainImage?: CreateOrUpdatePropertyImageDto | undefined;
-    propertyImages?: CreateOrUpdatePropertyImageDto[] | undefined;
-    featuredDescriptionId?: string | undefined;
-    estatePropertyDescriptions?: CreateOrUpdateEstatePropertyDescriptionDto[] | undefined;
 }
 
 export class PaginatedMessageResultDto implements IPaginatedMessageResultDto {
@@ -3909,7 +4751,7 @@ export class PropertyVisitStatDto implements IPropertyVisitStatDto {
     propertyTitle?: string;
     address?: string | undefined;
     visitCount?: number;
-    price?: string | undefined;
+    price?: number | undefined;
     status?: string | undefined;
     messages?: number | undefined;
     messagesTrend?: string | undefined;
@@ -3971,7 +4813,7 @@ export interface IPropertyVisitStatDto {
     propertyTitle?: string;
     address?: string | undefined;
     visitCount?: number;
-    price?: string | undefined;
+    price?: number | undefined;
     status?: string | undefined;
     messages?: number | undefined;
     messagesTrend?: string | undefined;

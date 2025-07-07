@@ -17,12 +17,10 @@ public class GetEstatePropertyQueryHandler : IRequestHandler<GetEstatePropertyQu
     public async Task<EstateProperty> Handle(GetEstatePropertyQuery request, CancellationToken cancellationToken)
     {
         return await _context.EstateProperties.Where(ep =>
-                ep.IsPublic && !ep.IsDeleted && ep.Id == request.estatePropertyId)
-            .Include(ep => ep.FeaturedDescription)
+                !ep.IsDeleted && ep.Id == request.estatePropertyId)
+            .Include(ep => ep.FeaturedValues)
             .Include(ep => ep.MainImage)
             .Include(ep => ep.PropertyImages)
-            /* .Include(ep => ep.MessageThreads)!
-                .ThenInclude(mt => mt.Messages)*/
             .FirstAsync(cancellationToken);
     }
 }

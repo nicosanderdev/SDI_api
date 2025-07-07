@@ -5,7 +5,7 @@ public class PropertyVisitStatDto
     public string PropertyTitle { get; set; } = string.Empty;
     public string? Address { get; set; }
     public int VisitCount { get; set; }
-    public string? Price { get; set; }
+    public decimal? Price { get; set; }
     public string? Status { get; set; }
     public int? Messages { get; set; }
     public string? MessagesTrend { get; set; } // 'up' | 'down' | 'flat'

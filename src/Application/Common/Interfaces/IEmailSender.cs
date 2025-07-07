@@ -1,6 +1,8 @@
-﻿namespace SDI_Api.Application.Common.Interfaces;
+﻿using SDI_Api.Application.Common.Models; // Assuming Result is here
 
-public interface IEmailSender
+namespace SDI_Api.Application.Common.Interfaces;
+
+public interface IEmailService
 {
-    Task SendEmailAsync(string email, string subject, string htmlMessage);
+    Task<Result> SendEmailAsync(string toEmail, string subject, string body, bool isHtml = true);
 }

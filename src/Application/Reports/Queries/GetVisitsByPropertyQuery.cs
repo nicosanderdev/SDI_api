@@ -42,10 +42,10 @@ public class GetVisitsByPropertyQueryHandler : IRequestHandler<GetVisitsByProper
                   {
                       PropertyId = prop.Id.ToString(),
                       PropertyTitle = prop.Title,
-                      Address = prop.Address, // Or a formatted address string
+                      Address = prop.StreetName + prop.HouseNumber, // Or a formatted address string
                       VisitCount = visitStat.VisitCount,
-                      Price = prop.Price.ToString("C", CultureInfo.GetCultureInfo("eur")), // Adjust formatting
-                      Status = prop.Status.ToString(),
+                      Price = prop.FeaturedValues!.RentPrice ?? prop.FeaturedValues!.SalePrice,
+                      Status = prop.FeaturedValues!.Status.ToString(),
                       // Messages, Trends, Conversion would require more complex queries or separate calculations
                       Messages = _context.PropertyMessageLogs.Count(m => m.PropertyId == prop.Id && m.SentOnUtc >= startDate && m.SentOnUtc <= endDate), // Example, can be intensive
                       // Trends and conversion are complex and typically calculated with more historical data or specific logic

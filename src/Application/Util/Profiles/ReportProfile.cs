@@ -10,15 +10,16 @@ public class ReportProfile : Profile
     {
         // Mapping EstateProperty to PropertyDetailsForReportDto
         CreateMap<EstateProperty, PropertyDetailsForReportDto>()
-            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.ToString()))
-            .ForMember(dest => dest.Price, opt => opt.MapFrom(src => src.Price.ToString("C", CultureInfo.GetCultureInfo("eur")))) // Adjust as needed
-            .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.Status.ToString()))
-            .ForMember(dest => dest.Address, opt => opt.MapFrom(src => 
+            .ForMember(dest => dest.Id, 
+                opt => opt.MapFrom(src => src.Id.ToString()))
+            .ForMember(dest => dest.Price, 
+                opt => opt.MapFrom(src => src.FeaturedValues!.SalePrice.ToString()))
+            .ForMember(dest => dest.Status,
+                opt => opt.MapFrom(src => src.FeaturedValues!.Status.ToString()))
+            .ForMember(dest => dest.Address,
+                opt => opt.MapFrom(src => 
                 // Example of concatenating address parts, adjust as needed
-                string.Join(", ", new[] { src.Address, src.City, src.State }.Where(s => !string.IsNullOrEmpty(s)))
+                string.Join(", ", new[] { src.StreetName + src.HouseNumber, src.City, src.State }.Where(s => !string.IsNullOrEmpty(s)))
             ));
-
-        // Other mappings if needed, e.g., from intermediate query results to DTOs,
-        // but many queries above project directly to DTOs.
     }
 }

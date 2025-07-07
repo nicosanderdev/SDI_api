@@ -1,11 +1,11 @@
 ﻿namespace SDI_Api.Domain.Events;
 
-public class EstatePropertyDescriptionCreatedEvent : BaseEvent
+public class EstatePropertyValuesCreatedEvent : BaseEvent
 {
-    public EstatePropertyDescriptionCreatedEvent(EstatePropertyDescription item)
+    public EstatePropertyValuesCreatedEvent(EstatePropertyValues item)
     {
         Item = item;
     }
 
-    public EstatePropertyDescription Item { get; }
+    public EstatePropertyValues Item { get; }
 }

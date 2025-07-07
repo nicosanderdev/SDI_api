@@ -1,6 +1,6 @@
 ﻿using SDI_Api.Application.Common.Interfaces;
-using Sdi_Api.Application.Dtos;
 using SDI_Api.Domain.Entities;
+using YourProject.Dto.Properties;
 
 namespace SDI_Api.Application.EstateProperties.Queries;
 
@@ -22,8 +22,8 @@ public class GetEstatePropertyByIdQueryHandler : IRequestHandler<GetEstateProper
         var entity = await _context.EstateProperties
             .Include(p => p.MainImage)
             .Include(p => p.PropertyImages)
-            .Include(p => p.FeaturedDescription)
-            .Include(p => p.EstatePropertyDescriptions)
+            .Include(p => p.FeaturedValues)
+            .Include(p => p.EstatePropertyValues)
             .AsNoTracking()
             .FirstOrDefaultAsync(p => p.Id == request.id, cancellationToken);
 

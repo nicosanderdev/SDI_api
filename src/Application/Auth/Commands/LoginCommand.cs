@@ -16,11 +16,15 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResultDto>
 {
     private readonly IIdentityService _identityService;
     private readonly IMapper _mapper;
+    private readonly IEmailService _emailService;
+    private readonly IEmailTemplateProvider _emailTemplateProvider;
 
-    public LoginCommandHandler(IIdentityService identityService, IMapper mapper)
+    public LoginCommandHandler(IIdentityService identityService, IMapper mapper, IEmailService emailService, IEmailTemplateProvider emailTemplateProvider)
     {
         _identityService = identityService;
         _mapper = mapper;
+        _emailService = emailService;
+        _emailTemplateProvider = emailTemplateProvider;
     }
 
     public async Task<LoginResultDto> Handle(LoginCommand request, CancellationToken cancellationToken)
@@ -61,8 +65,12 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResultDto>
         var userAuth = _mapper.Map<IUser>(user);
         
         var checkPasswordResult = await _identityService.CheckPasswordSignInAsync(userAuth, request.Password!, lockoutOnFailure: true);
-        
-        if (checkPasswordResult.RequiresTwoFactor)
+        return await CreateLoginResultDto(checkPasswordResult, userAuth);
+    }
+    
+    private async Task<LoginResultDto> CreateLoginResultDto(SignInResult result, IUser user)
+    {
+        if (result.RequiresTwoFactor)
         {
             return new LoginResultDto
             {
@@ -70,12 +78,6 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResultDto>
                 Requires2FA = true
             };
         }
-
-        return await CreateLoginResultDto(checkPasswordResult, userAuth);
-    }
-    
-    private async Task<LoginResultDto> CreateLoginResultDto(SignInResult result, IUser user)
-    {
         if (result.Succeeded)
         {
             var roles = await _identityService.GetUserRolesAsync(user.getId()!);
@@ -94,18 +96,28 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResultDto>
                 }
             };
         }
-        
+
         if (result.IsLockedOut)
         {
-            return new LoginResultDto { Succeeded = false, ErrorMessage = "This account has been locked out due to too many failed login attempts." };
+            return new LoginResultDto
+            {
+                Succeeded = false,
+                ErrorMessage = "This account has been locked out due to too many failed login attempts."
+            };
         }
-
         if (result.IsNotAllowed)
         {
-             return new LoginResultDto { Succeeded = false, ErrorMessage = "Login is not allowed. Please confirm your email address." };
+             return new LoginResultDto
+             {
+                 Succeeded = false, 
+                 ErrorMessage = "Login is not allowed. Please confirm your email address."
+             };
         }
-
         // Generic failure for incorrect password or other issues.
-        return new LoginResultDto { Succeeded = false, ErrorMessage = "Invalid credentials." };
+        return new LoginResultDto
+        {
+            Succeeded = false, 
+            ErrorMessage = "Invalid credentials."
+        };
     }
 }

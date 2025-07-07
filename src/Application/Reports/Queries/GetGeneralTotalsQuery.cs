@@ -23,15 +23,16 @@ public class GetGeneralTotalsQueryHandler : IRequestHandler<GetGeneralTotalsQuer
             
         var activeListingStatuses = new[] { PropertyStatus.Sale, PropertyStatus.Rent };
         var activeListings = await _context.EstateProperties
-            .CountAsync(p => p.IsPublic && activeListingStatuses.Contains(p.Status), cancellationToken);
+            .CountAsync(p => p.FeaturedValues!.IsPropertyVisible && activeListingStatuses.Contains(p.FeaturedValues!.Status), cancellationToken);
             
         decimal? averagePrice = null;
-        if (await _context.EstateProperties.AnyAsync(p => p.IsPublic && p.Status == PropertyStatus.Sale, cancellationToken))
+        // TODO - revisar
+        /* if (await _context.EstateProperties.AnyAsync(p => p.FeaturedValues!.IsPropertyVisible && p.Status == PropertyStatus.Sale, cancellationToken))
         {
             averagePrice = await _context.EstateProperties
-                .Where(p => p.IsPublic && p.Status == PropertyStatus.Sale)
+                .Where(p => p.FeaturedValues!.IsPropertyVisible && p.FeaturedValues!.Status == PropertyStatus.Sale)
                 .AverageAsync(p => p.Price, cancellationToken);
-        }
+        }*/
         
         return new GeneralTotalsDataDto
         {

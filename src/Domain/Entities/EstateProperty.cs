@@ -1,13 +1,17 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Data.Common;
 
 namespace SDI_Api.Domain.Entities;
 
 public class EstateProperty : BaseAuditableEntity
 {
+    // Address
     [MaxLength(255)]
-    public string? Address { get; set; }
-    [MaxLength(255)]
-    public string? Address2 { get; set; }
+    public string? StreetName { get; set; }
+    [MaxLength(25)]
+    public string? HouseNumber { get; set; }
+    [MaxLength(100)]
+    public string? Neighborhood { get; set; }
     [MaxLength(100)]
     public string? City { get; set; }
     [MaxLength(100)]
@@ -16,33 +20,35 @@ public class EstateProperty : BaseAuditableEntity
     public string? ZipCode { get; set; }
     [MaxLength(100)]
     public string? Country { get; set; }
-    public bool IsPublic { get; set; } = true;
+    public decimal LocationLatitude { get; set; }
+    public decimal LocationLongitude { get; set; }
 
+    // Property description
     [Required]
     [MaxLength(200)]
     public string Title { get; set; } = string.Empty;
-
-    public decimal Price { get; set; } // Store as decimal
-    public PropertyStatus Status { get; set; }
     [MaxLength(100)]
-    public string Type { get; set; } = string.Empty; // e.g., "Apartamento", "Casa"
+    public PropertyType Type { get; set; }
     public decimal AreaValue { get; set; } // e.g., 95
     [MaxLength(10)]
-    public string AreaUnit { get; set; } = "m²"; // e.g., "m²"
-
+    public AreaUnit AreaUnit { get; set; }
     public int Bedrooms { get; set; }
     public int Bathrooms { get; set; }
-    public DateTime CreatedOnUtc { get; set; } = DateTime.UtcNow;
+    public bool HasGarage { get; set; }
+    public int GarageSpaces { get; set; } = 0;
+    
+    // Other info
     public int? Visits { get; set; }
+    public DateTime CreatedOnUtc { get; set; } = DateTime.UtcNow;
 
+    // Relationships
+    public List<PropertyDocument> Documents { get; set; } = new List<PropertyDocument>();
     public Guid? MainImageId { get; set; }
     public virtual PropertyImage? MainImage { get; set; }
     public virtual ICollection<PropertyImage> PropertyImages { get; set; } = new List<PropertyImage>();
-
     public Guid? FeaturedDescriptionId { get; set; }
-    public virtual EstatePropertyDescription? FeaturedDescription { get; set; }
-    public virtual ICollection<EstatePropertyDescription> EstatePropertyDescriptions { get; set; } = new List<EstatePropertyDescription>();
-    
+    public virtual EstatePropertyValues? FeaturedValues { get; set; }
+    public virtual ICollection<EstatePropertyValues> EstatePropertyValues { get; set; } = new List<EstatePropertyValues>();
     public Guid? OwnerId { get; set; }
     public Member Owner { get; set; } = null!;
 

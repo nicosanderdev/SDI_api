@@ -3,6 +3,7 @@ using SDI_Api.Application.Common.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using NotFoundException = SDI_Api.Application.Common.Exceptions.NotFoundException;
 
 namespace SDI_Api.Infrastructure.Identity;
 
@@ -38,9 +39,7 @@ public class IdentityService : IIdentityService
     {
         var user = await _userManager.Users.Where(u => u.Id == userId).FirstOrDefaultAsync();
         if (user == null)
-        {
             return null;
-        }
 
         return user;
     }
@@ -49,9 +48,7 @@ public class IdentityService : IIdentityService
     {
         var user = await _userManager.Users.Where(u => u.Email == email).FirstOrDefaultAsync();
         if (user == null)
-        {
             return null;
-        }
 
         return user;
     }
@@ -60,9 +57,7 @@ public class IdentityService : IIdentityService
     {
         var user = await _userManager.Users.Where(u => u.UserName == username).FirstOrDefaultAsync();
         if (user == null)
-        {
             return null;
-        }
 
         return user;
     }
@@ -72,9 +67,7 @@ public class IdentityService : IIdentityService
         var userId = user.getId();
         var userBD = await _userManager.Users.Where(u => u.Id == userId).FirstOrDefaultAsync();
         if (userBD == null)
-        {
             return false;
-        }
 
         return userBD.TwoFactorEnabled;
     }
@@ -82,36 +75,26 @@ public class IdentityService : IIdentityService
     public async Task<bool> CheckPasswordAsync(IUser user, string password)
     {
         if (string.IsNullOrEmpty(password) || string.IsNullOrEmpty(user.getUserEmail()))
-        {
             return false;
-        }
         var existingUser = await _userManager.FindByEmailAsync(user.getUserEmail()!);
         if (existingUser == null)
-        {
             return false;
-        }
         return await _userManager.CheckPasswordAsync(existingUser, password);
     }
 
     public async Task<SignInResult> CheckPasswordSignInAsync(IUser? user, string password, bool lockoutOnFailure)
     {
-        // TODO - revisar lógica
         var userDb = user == null ? null : await _userManager.FindByIdAsync(user.getId()!);
         if (userDb == null)
-        {
             return SignInResult.Failed;
-        }
         return await _signInManager.CheckPasswordSignInAsync(userDb, password, lockoutOnFailure);
     }
 
     public async Task<SignInResult> PasswordSignInAsync(IUser user, string password, bool isPersistent, bool lockoutOnFailure)
     {
-        // TODO - revisar lógica
         var userDb =  await _userManager.FindByIdAsync(user.getId()!);
         if (userDb == null)
-        {
             return SignInResult.Failed;
-        }
 
         return await _signInManager.PasswordSignInAsync(userDb, password, isPersistent, lockoutOnFailure);
     }
@@ -120,9 +103,7 @@ public class IdentityService : IIdentityService
     {
         var existingUser = await _userManager.FindByEmailAsync(email);
         if (existingUser != null)
-        {
             return (Result.Failure(["User with this email already exists."]), string.Empty);
-        }
 
         var user = new ApplicationUser()
         {
@@ -148,9 +129,7 @@ public class IdentityService : IIdentityService
     {
         var user = await _userManager.FindByIdAsync(userId);
         if (user == null)
-        {
             return Result.Success();
-        }
         var identityResult = await _userManager.DeleteAsync(user);
         return identityResult.ToApplicationResult();
     }
@@ -166,9 +145,7 @@ public class IdentityService : IIdentityService
         // Check if new email is already in use by another user
         var existingUserWithNewEmail = await _userManager.FindByEmailAsync(newEmail);
         if (existingUserWithNewEmail != null && existingUserWithNewEmail.getId() != userId)
-        {
             return Result.Failure(["This email address is already in use."]);
-        }
         
         // Note: UserManager.SetEmailAsync also sets EmailConfirmed to false.
         // You might need to handle re-confirmation.
@@ -197,7 +174,8 @@ public class IdentityService : IIdentityService
     public async Task<Result> ConfirmEmailAsync(string userId, string token)
     {
         var user = await _userManager.FindByIdAsync(userId);
-        if (user == null) return Result.Failure(["User not found."]);
+        if (user == null) 
+            return Result.Failure(["User not found."]);
         
         var result = await _userManager.ConfirmEmailAsync(user, token);
         return result.ToApplicationResult();
@@ -206,7 +184,8 @@ public class IdentityService : IIdentityService
     public async Task<Result> SetPhoneNumberAsync(string userId, string? phoneNumber)
     {
         var user = await _userManager.FindByIdAsync(userId);
-        if (user == null) return Result.Failure(["User not found."]);
+        if (user == null) 
+            return Result.Failure(["User not found."]);
         
         // Similarly, SetPhoneNumberAsync sets PhoneNumberConfirmed to false.
         var result = await _userManager.SetPhoneNumberAsync(user, phoneNumber);
@@ -217,7 +196,8 @@ public class IdentityService : IIdentityService
     public async Task<Result> ChangePasswordAsync(string userId, string oldPassword, string newPassword)
     {
         var user = await _userManager.FindByIdAsync(userId);
-        if (user == null) return Result.Failure(["User not found."]);
+        if (user == null) 
+            return Result.Failure(["User not found."]);
 
         var result = await _userManager.ChangePasswordAsync(user, oldPassword, newPassword);
         return result.ToApplicationResult();
@@ -226,7 +206,8 @@ public class IdentityService : IIdentityService
     public async Task<string> GeneratePasswordResetTokenAsync(IUser user)
     {
         var userDb = await _userManager.FindByIdAsync(user.getId()!);
-        if (userDb == null) return Result.Failure(["User not found."]).ToString()!;
+        if (userDb == null) 
+            return Result.Failure(["User not found."]).ToString()!;
         
         return await _userManager.GeneratePasswordResetTokenAsync(userDb);
     }
@@ -234,7 +215,8 @@ public class IdentityService : IIdentityService
     public async Task<Result> ResetPasswordAsync(string userId, string token, string newPassword)
     {
         var user = await _userManager.FindByIdAsync(userId);
-        if (user == null) return Result.Failure(["User not found."]);
+        if (user == null) 
+            return Result.Failure(["Invalid token or email."]);
 
         var result = await _userManager.ResetPasswordAsync(user, token, newPassword);
         return result.ToApplicationResult();
@@ -250,7 +232,8 @@ public class IdentityService : IIdentityService
     public async Task<Result> AddToRoleAsync(string userId, string role)
     {
         var user = await _userManager.FindByIdAsync(userId);
-        if (user == null) return Result.Failure(["User not found."]);
+        if (user == null) 
+            return Result.Failure(["User not found."]);
 
         var result = await _userManager.AddToRoleAsync(user, role);
         return result.ToApplicationResult();
@@ -259,7 +242,8 @@ public class IdentityService : IIdentityService
     public async Task<Result> RemoveFromRoleAsync(string userId, string role)
     {
         var user = await _userManager.FindByIdAsync(userId);
-        if (user == null) return Result.Failure(["User not found."]);
+        if (user == null) 
+            return Result.Failure(["User not found."]);
 
         var result = await _userManager.RemoveFromRoleAsync(user, role);
         return result.ToApplicationResult();
@@ -268,14 +252,16 @@ public class IdentityService : IIdentityService
     public async Task<IList<string>> GetUserRolesAsync(string userId)
     {
         var user = await _userManager.FindByIdAsync(userId);
-        if (user == null) return new List<string>();
+        if (user == null) 
+            return new List<string>();
         return await _userManager.GetRolesAsync(user);
     }
 
     public async Task<bool> AuthorizeAsync(string userId, string policyName)
     {
         var user = await _userManager.FindByIdAsync(userId);
-        if (user == null) return false;
+        if (user == null) 
+            return false;
 
         var principal = await _userClaimsPrincipalFactory.CreateAsync(user);
         var authResult = await _authorizationService.AuthorizeAsync(principal, policyName);
@@ -290,5 +276,44 @@ public class IdentityService : IIdentityService
     public async Task<IUser?> GetTwoFactorAuthenticationUserAsync()
     {
         return await _signInManager.GetTwoFactorAuthenticationUserAsync();
+    }
+
+    public async Task<Result> EnableTwoFactorAuthenticationAsync(string userId)
+    {
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null) 
+            return Result.Failure(["User not found."]);
+        user.TwoFactorEnabled = true;
+        await _userManager.UpdateAsync(user);
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// Generates a new authenticator key for the specified user, invalidating any previous keys.
+    /// </summary>
+    /// <param name="user">The user for whom to generate the key.</param>
+    /// <returns>A tuple containing the new shared key and the authenticator URI for QR code generation.</returns>
+    public async Task<(string sharedKey, string authenticatorUri)> GenerateTwoFactorAuthenticatorKeyAsync(IUser user)
+    {
+        // TODO: see comments
+        var appUser = await _userManager.FindByIdAsync(user.getId()!);
+        if (appUser == null)
+            throw new NotFoundException($"User with ID '{user.getId()}' not found.");
+
+        // Reset the authenticator key for the user. This invalidates any previously configured authenticator apps
+        await _userManager.ResetAuthenticatorKeyAsync(appUser);
+        
+        var newSharedKey = await _userManager.GetAuthenticatorKeyAsync(appUser);
+        if (string.IsNullOrEmpty(newSharedKey))
+            throw new InvalidOperationException("Failed to retrieve the newly generated authenticator key.");
+
+        // Get the user's email to construct the authenticator URI
+        var email = await _userManager.GetEmailAsync(appUser);
+        var appName = "SDI_Api"; // configurable (from app settings)
+
+        // Generate the authenticator URI (otpauth://totp/AppName:user@example.com?secret=...)
+        var authenticatorUri = appName + "test";
+
+        return (newSharedKey, authenticatorUri);
     }
 }

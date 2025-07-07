@@ -5,7 +5,10 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using SDI_Api.Application.Auth.Commands;
+using SDI_Api.Application.Auth.Queries;
 using SDI_Api.Application.Common.Interfaces;
+using SDI_Api.Application.Common.Models;
+using SDI_Api.Application.DTOs.Auth;
 using SDI_Api.Infrastructure.Identity;
 using SDI_Api.Web.DTOs;
 
@@ -66,12 +69,11 @@ public class AuthController : ControllerBase
         return Ok(result);
     }
     
-    
     [HttpPost("logout")]
     [Authorize]
     public async Task<IActionResult> Logout()
     {
-        await HttpContext.SignOutAsync();
+        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
         return Ok(new { message = "Logged out successfully." });
     }
     
@@ -100,5 +102,93 @@ public class AuthController : ControllerBase
             Is2FAEnabled = false,
             Roles = roles
         });
+    }
+    
+    [HttpPost("forgot-password-custom")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ForgotPasswordCustom([FromBody] ForgotPasswordCommand command)
+    {
+        await _sender.Send(command);
+        return Ok(new { message = "If an account with this email exists, a password reset link has been sent." });
+    }
+    
+    [HttpPost("reset-password-custom")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(Result), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ResetPasswordCustom([FromBody] ResetPasswordCommand command)
+    {
+        var result = await _sender.Send(command);
+
+        if (!result.Succeeded)
+            return BadRequest(result);
+
+        return Ok(new { message = "Your password has been reset successfully." });
+    }
+
+    [HttpPost("confirm-email-custom")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(Result), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ConfirmEmailCustom([FromBody] ConfirmEmailCommand command)
+    {
+        var result = await _sender.Send(command);
+
+        if (!result.Succeeded)
+        {
+            return BadRequest(result);
+        }
+
+        return Ok(new { message = "Your email has been confirmed successfully." });
+    }
+    
+    [HttpPost("resend-confirmation-email-custom")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ResendConfirmationEmailCustom([FromBody] ResendConfirmationEmailDto dto)
+    {
+        var command = new ResendConfirmationEmailCommand(dto.Email);
+        await _sender.Send(command);
+
+        // For security, always return the same message regardless of the outcome.
+        return Ok(new { message = "If an account with this email exists and is unconfirmed, a new verification email has been sent." });
+    }
+
+    [HttpPost("2fa/generate-custom")]
+    [Authorize]
+    [ProducesResponseType(typeof(GenerateTwoFactorKeyResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GenerateTwoFactorKeyCustom()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            return Unauthorized();
+        }
+
+        var query = new GenerateTwoFactorKeyQuery(userId);
+        var result = await _sender.Send(query);
+
+        return Ok(result);
+    }
+
+    [HttpPost("2fa/enable-custom")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(Result), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> EnableTwoFactorAuthCustom([FromBody] Enable2faRequest request)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+            return Unauthorized();
+
+        var command = new EnableTwoFactorAuthCommand(userId, request.Code);
+        var result = await _sender.Send(command);
+        if (!result.Succeeded)
+            return BadRequest(result);
+
+        return Ok(new { message = "Two-factor authentication has been enabled successfully." });
     }
 }

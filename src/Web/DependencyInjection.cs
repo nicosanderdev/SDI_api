@@ -1,6 +1,9 @@
 ﻿using Azure.Identity;
 using Microsoft.AspNetCore.Mvc;
+using SDI_Api.Application.Common.Interfaces;
 using SDI_Api.Infrastructure.Data;
+using Sdi_Api.Infrastructure.Email;
+using SDI_Api.Infrastructure.Email;
 
 namespace SDI_Api.Web;
 
@@ -16,14 +19,13 @@ public static class DependencyInjection
         builder.Services.AddExceptionHandler<CustomExceptionHandler>();
 
         builder.Services.AddControllers();
-
-        // Customise default API behaviour
+        
         builder.Services.Configure<ApiBehaviorOptions>(options =>
             options.SuppressModelStateInvalidFilter = true);
 
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddHttpContextAccessor();
-
+        
         builder.Services.AddOpenApiDocument((configure, sp) =>
         {
             configure.Title = "SDI_Api API";

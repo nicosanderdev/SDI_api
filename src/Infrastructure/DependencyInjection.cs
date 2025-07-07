@@ -10,6 +10,7 @@ using Microsoft.OpenApi.Models;
 using SDI_Api.Application.Common.Interfaces;
 using SDI_Api.Infrastructure.Data;
 using SDI_Api.Infrastructure.Data.Interceptors;
+using SDI_Api.Infrastructure.Email;
 using SDI_Api.Infrastructure.Identity;
 
 namespace SDI_Api.Infrastructure;
@@ -20,7 +21,7 @@ public static class DependencyInjection
     {
         var connectionString = builder.Configuration.GetConnectionString("SDI_ApiDb");
         Guard.Against.Null(connectionString, message: "Connection string 'SDI_ApiDb' not found.");
-        
+
         builder.Services.AddScoped<ISaveChangesInterceptor, AuditableEntityInterceptor>();
         builder.Services.AddScoped<ISaveChangesInterceptor, DispatchDomainEventsInterceptor>();
 
@@ -29,7 +30,7 @@ public static class DependencyInjection
             options.AddInterceptors(sp.GetServices<ISaveChangesInterceptor>());
             options.UseNpgsql(connectionString);
         });
-        
+
         builder.Services.AddCors(options =>
         {
             options.AddPolicy(name: "FrontendCorsPolicy",
@@ -41,40 +42,34 @@ public static class DependencyInjection
                         .AllowCredentials();
                 });
         });
-        
+
         builder.Services.AddSwaggerGen(c =>
         {
-            c.SwaggerDoc("v1", new OpenApiInfo()
-            {
-                Title = "CookieAuth_API",
-                Version = "v1"
-            });
+            c.SwaggerDoc("v1", new OpenApiInfo() { Title = "CookieAuth_API", Version = "v1" });
 
-            c.AddSecurityDefinition("cookieAuth", new OpenApiSecurityScheme
-            {
-                Name = ".AspNetCore.Cookies",
-                Type = SecuritySchemeType.ApiKey,
-                In = ParameterLocation.Cookie,
-                Description = "Authentication using cookies. Provide your auth cookie to authenticate."
-            });
+            c.AddSecurityDefinition("cookieAuth",
+                new OpenApiSecurityScheme
+                {
+                    Name = ".AspNetCore.Cookies",
+                    Type = SecuritySchemeType.ApiKey,
+                    In = ParameterLocation.Cookie,
+                    Description = "Authentication using cookies. Provide your auth cookie to authenticate."
+                });
 
             c.AddSecurityRequirement(new OpenApiSecurityRequirement
             {
                 {
                     new OpenApiSecurityScheme
                     {
-                        Reference = new OpenApiReference
-                        {
-                            Type = ReferenceType.SecurityScheme,
-                            Id = "cookieAuth"
-                        }
+                        Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "cookieAuth" }
                     },
                     Array.Empty<string>()
                 }
             });
         });
-        
-        builder.Services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<ApplicationDbContext>());
+
+        builder.Services.AddScoped<IApplicationDbContext>(provider =>
+            provider.GetRequiredService<ApplicationDbContext>());
 
         builder.Services.AddScoped<ApplicationDbContextInitialiser>();
 
@@ -91,7 +86,7 @@ public static class DependencyInjection
             options.SignIn.RequireConfirmedPhoneNumber = false;
             options.User.RequireUniqueEmail = true;
         });
-        
+
         builder.Services.AddAuthentication(option =>
             {
                 option.DefaultAuthenticateScheme = CookieAuthenticationDefaults.AuthenticationScheme;
@@ -103,12 +98,13 @@ public static class DependencyInjection
                 options.Cookie.HttpOnly = true;
                 options.Cookie.SameSite = SameSiteMode.None;
                 options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+                options.Cookie.Path = "/";
                 options.LoginPath = "/login";
                 options.LogoutPath = "/logout";
                 options.AccessDeniedPath = "/unauthorized";
                 options.ExpireTimeSpan = TimeSpan.FromHours(12);
                 options.SlidingExpiration = true;
-                
+
                 // THIS IS THE KEY PART TO PREVENT REDIRECTS
                 options.Events.OnRedirectToLogin = context =>
                 {
@@ -122,7 +118,7 @@ public static class DependencyInjection
                     return Task.CompletedTask;
                 };
             });
-        
+
         builder.Services
             .AddDefaultIdentity<ApplicationUser>()
             .AddRoles<IdentityRole>()
@@ -133,6 +129,10 @@ public static class DependencyInjection
         builder.Services.AddScoped<IUser, ApplicationUser>();
         builder.Services.AddTransient<IIdentityService, IdentityService>();
 
+        builder.Services.AddSingleton<IEmailTemplateProvider, EmailTemplateProvider>();
+        builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection("EmailSettings"));
+        builder.Services.AddTransient<IEmailService, EmailService>();
+        
         builder.Services.AddAuthorization();
     }
 }

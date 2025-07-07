@@ -448,6 +448,209 @@
         }
       }
     },
+    "/api/auth/forgot-password-custom": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "Auth_ForgotPasswordCustom",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotPasswordCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/reset-password-custom": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "Auth_ResetPasswordCustom",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Result"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/confirm-email-custom": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "Auth_ConfirmEmailCustom",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmEmailCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Result"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/resend-confirmation-email-custom": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "Auth_ResendConfirmationEmailCustom",
+        "requestBody": {
+          "x-name": "dto",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResendConfirmationEmailDto"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/2fa/generate-custom": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "Auth_GenerateTwoFactorKeyCustom",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerateTwoFactorKeyResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/2fa/enable-custom": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "Auth_EnableTwoFactorAuthCustom",
+        "requestBody": {
+          "x-name": "request",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Enable2faRequest"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Result"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/properties": {
       "get": {
         "tags": [
@@ -563,12 +766,14 @@
         },
         "responses": {
           "200": {
+            "description": ""
+          },
+          "400": {
             "description": "",
             "content": {
-              "application/octet-stream": {
+              "application/json": {
                 "schema": {
-                  "type": "string",
-                  "format": "binary"
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -637,12 +842,14 @@
         },
         "responses": {
           "200": {
+            "description": ""
+          },
+          "400": {
             "description": "",
             "content": {
-              "application/octet-stream": {
+              "application/json": {
                 "schema": {
-                  "type": "string",
-                  "format": "binary"
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -667,12 +874,14 @@
         ],
         "responses": {
           "200": {
+            "description": ""
+          },
+          "400": {
             "description": "",
             "content": {
-              "application/octet-stream": {
+              "application/json": {
                 "schema": {
-                  "type": "string",
-                  "format": "binary"
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1541,6 +1750,98 @@
           }
         }
       },
+      "ForgotPasswordCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "Result": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "succeeded": {
+            "type": "boolean"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ResetPasswordCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "token": {
+            "type": "string"
+          },
+          "newPassword": {
+            "type": "string"
+          }
+        }
+      },
+      "ConfirmEmailCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "token": {
+            "type": "string"
+          }
+        }
+      },
+      "ResendConfirmationEmailDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "email"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "minLength": 1
+          }
+        }
+      },
+      "GenerateTwoFactorKeyResponse": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "sharedKey": {
+            "type": "string"
+          },
+          "authenticatorUri": {
+            "type": "string"
+          }
+        }
+      },
+      "Enable2faRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "code"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "maxLength": 7,
+            "minLength": 6
+          }
+        }
+      },
       "CreateEstatePropertyCommand": {
         "type": "object",
         "additionalProperties": false,
@@ -1553,58 +1854,76 @@
       "CreateOrUpdateEstatePropertyDto": {
         "type": "object",
         "additionalProperties": false,
+        "required": [
+          "streetName",
+          "houseNumber",
+          "city",
+          "state",
+          "zipCode",
+          "country",
+          "location",
+          "title",
+          "type",
+          "hasGarage",
+          "garageSpaces",
+          "createdOnUtc",
+          "images",
+          "publicDeed",
+          "propertyPlans",
+          "taxReceipts",
+          "description"
+        ],
         "properties": {
           "id": {
             "type": "string",
             "format": "guid"
           },
-          "address": {
+          "streetName": {
             "type": "string",
-            "nullable": true
+            "minLength": 5
           },
-          "address2": {
+          "houseNumber": {
+            "type": "string",
+            "minLength": 1
+          },
+          "neighborhood": {
             "type": "string",
             "nullable": true
           },
           "city": {
             "type": "string",
-            "nullable": true
+            "minLength": 1
           },
           "state": {
             "type": "string",
-            "nullable": true
+            "minLength": 1
           },
           "zipCode": {
             "type": "string",
-            "nullable": true
+            "minLength": 1
           },
           "country": {
             "type": "string",
-            "nullable": true
+            "minLength": 1
           },
-          "isPublic": {
-            "type": "boolean",
-            "nullable": true
+          "location": {
+            "$ref": "#/components/schemas/LocationDto"
           },
           "title": {
             "type": "string",
-            "nullable": true
-          },
-          "area": {
-            "type": "string",
-            "nullable": true
-          },
-          "price": {
-            "type": "string",
-            "nullable": true
-          },
-          "status": {
-            "type": "string",
-            "nullable": true
+            "minLength": 1
           },
           "type": {
             "type": "string",
-            "nullable": true
+            "minLength": 1
+          },
+          "areaValue": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "areaUnit": {
+            "type": "integer",
+            "format": "int32"
           },
           "bedrooms": {
             "type": "integer",
@@ -1614,10 +1933,223 @@
             "type": "integer",
             "format": "int32"
           },
+          "hasGarage": {
+            "type": "boolean"
+          },
+          "garageSpaces": {
+            "type": "integer",
+            "format": "int32"
+          },
           "visits": {
             "type": "integer",
-            "format": "int32",
+            "format": "int32"
+          },
+          "createdOnUtc": {
+            "type": "string",
+            "format": "date-time",
+            "minLength": 1
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "binary"
+            }
+          },
+          "publicDeed": {
+            "type": "string",
+            "format": "binary",
+            "minLength": 1
+          },
+          "propertyPlans": {
+            "type": "string",
+            "format": "binary",
+            "minLength": 1
+          },
+          "taxReceipts": {
+            "type": "string",
+            "format": "binary",
+            "minLength": 1
+          },
+          "otherDocuments": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "type": "string",
+              "format": "binary"
+            }
+          },
+          "mainImage": {
+            "type": "string",
+            "format": "binary",
             "nullable": true
+          },
+          "mainImageUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "propertyImages": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "$ref": "#/components/schemas/PropertyImageDto"
+            }
+          },
+          "ownerId": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1000,
+            "minLength": 1
+          },
+          "availableFrom": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "arePetsAllowed": {
+            "type": "boolean"
+          },
+          "capacity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Currency"
+          },
+          "salePrice": {
+            "type": "number",
+            "format": "decimal",
+            "nullable": true
+          },
+          "rentPrice": {
+            "type": "number",
+            "format": "decimal",
+            "nullable": true
+          },
+          "hasCommonExpenses": {
+            "type": "boolean"
+          },
+          "commonExpensesAmount": {
+            "type": "number",
+            "format": "decimal",
+            "nullable": true
+          },
+          "isElectricityIncluded": {
+            "type": "boolean"
+          },
+          "isWaterIncluded": {
+            "type": "boolean"
+          },
+          "isPriceVisible": {
+            "type": "boolean"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PropertyStatus"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "isPropertyVisible": {
+            "type": "boolean"
+          }
+        }
+      },
+      "LocationDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "lat": {
+            "type": "number",
+            "format": "double"
+          },
+          "lng": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
+      "PropertyImageDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "url": {
+            "type": "string"
+          },
+          "altText": {
+            "type": "string",
+            "nullable": true
+          },
+          "isMain": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "estatePropertyId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "fileName": {
+            "type": "string"
+          },
+          "contentType": {
+            "type": "string"
+          },
+          "imageData": {
+            "type": "string",
+            "format": "byte"
+          },
+          "isPublic": {
+            "type": "boolean"
+          }
+        }
+      },
+      "Currency": {
+        "type": "integer",
+        "description": "",
+        "x-enumNames": [
+          "USD",
+          "UYU",
+          "BRL",
+          "EUR",
+          "GBP"
+        ],
+        "enum": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "PropertyStatus": {
+        "type": "integer",
+        "description": "",
+        "x-enumNames": [
+          "Sale",
+          "Rent",
+          "Reserved",
+          "Sold",
+          "Unavailable"
+        ],
+        "enum": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ]
+      },
+      "UpdateEstatePropertyCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "estateProperty": {
+            "$ref": "#/components/schemas/CreateOrUpdateEstatePropertyDto"
           },
           "mainImage": {
             "nullable": true,
@@ -1629,6 +2161,7 @@
           },
           "propertyImages": {
             "type": "array",
+            "nullable": true,
             "items": {
               "$ref": "#/components/schemas/CreateOrUpdatePropertyImageDto"
             }
@@ -1639,6 +2172,7 @@
           },
           "estatePropertyDescriptions": {
             "type": "array",
+            "nullable": true,
             "items": {
               "$ref": "#/components/schemas/CreateOrUpdateEstatePropertyDescriptionDto"
             }
@@ -1719,41 +2253,6 @@
           },
           "isActive": {
             "type": "boolean"
-          }
-        }
-      },
-      "UpdateEstatePropertyCommand": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "estateProperty": {
-            "$ref": "#/components/schemas/CreateOrUpdateEstatePropertyDto"
-          },
-          "mainImage": {
-            "nullable": true,
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/CreateOrUpdatePropertyImageDto"
-              }
-            ]
-          },
-          "propertyImages": {
-            "type": "array",
-            "nullable": true,
-            "items": {
-              "$ref": "#/components/schemas/CreateOrUpdatePropertyImageDto"
-            }
-          },
-          "featuredDescriptionId": {
-            "type": "string",
-            "nullable": true
-          },
-          "estatePropertyDescriptions": {
-            "type": "array",
-            "nullable": true,
-            "items": {
-              "$ref": "#/components/schemas/CreateOrUpdateEstatePropertyDescriptionDto"
-            }
           }
         }
       },
@@ -2150,7 +2649,8 @@
             "format": "int32"
           },
           "price": {
-            "type": "string",
+            "type": "number",
+            "format": "decimal",
             "nullable": true
           },
           "status": {

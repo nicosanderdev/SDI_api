@@ -11,7 +11,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
 {
     public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options) { }
     public DbSet<EstateProperty> EstateProperties => Set<EstateProperty>();
-    public DbSet<EstatePropertyDescription> EstatePropertyDescriptions => Set<EstatePropertyDescription>();
+    public DbSet<EstatePropertyValues> EstatePropertyValues => Set<EstatePropertyValues>();
     public DbSet<PropertyImage> PropertyImages => Set<PropertyImage>();
     public DbSet<MessageThread> MessageThreads => Set<MessageThread>();
     public DbSet<Message> Messages => Set<Message>();
@@ -19,6 +19,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<PropertyVisitLog> PropertyVisitLogs => Set<PropertyVisitLog>();
     public DbSet<PropertyMessageLog> PropertyMessageLogs => Set<PropertyMessageLog>();
     public DbSet<Member> Members => Set<Member>();
+    public DbSet<PropertyDocument> PropertyDocuments => Set<PropertyDocument>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -33,7 +34,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
                 .HasForeignKey(pi => pi.EstatePropertyId)
                 .OnDelete(DeleteBehavior.Cascade); // Or Restrict, SetNull
 
-            entity.HasMany(e => e.EstatePropertyDescriptions)
+            entity.HasMany(e => e.EstatePropertyValues)
                 .WithOne(pd => pd.EstateProperty)
                 .HasForeignKey(pd => pd.EstatePropertyId)
                 .OnDelete(DeleteBehavior.Cascade);
@@ -44,7 +45,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
                 .OnDelete(DeleteBehavior.SetNull) // If main image deleted, set FK to null
                 .IsRequired(false);
 
-            entity.HasOne(e => e.FeaturedDescription)
+            entity.HasOne(e => e.FeaturedValues)
                 .WithMany()
                 .HasForeignKey(e => e.FeaturedDescriptionId)
                 .OnDelete(DeleteBehavior.SetNull)
@@ -56,7 +57,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
             // PropertyImage is owned by EstateProperty
         });
 
-        builder.Entity<EstatePropertyDescription>(entity =>
+        builder.Entity<EstatePropertyValues>(entity =>
         {
             // EstatePropertyDescription is owned by EstateProperty
         });

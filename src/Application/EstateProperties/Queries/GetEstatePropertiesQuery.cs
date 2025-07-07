@@ -1,9 +1,9 @@
 ﻿using SDI_Api.Application.Common.Interfaces;
 using SDI_Api.Application.Common.Models;
-using Sdi_Api.Application.Dtos;
 using SDI_Api.Application.DTOs.EstateProperties;
 using SDI_Api.Domain.Entities;
 using SDI_Api.Domain.Enums;
+using YourProject.Dto.Properties;
 
 namespace SDI_Api.Application.EstateProperties.Queries;
 
@@ -29,9 +29,7 @@ public class GetEstatePropertiesQueryHandler : IRequestHandler<GetEstateProperti
     {
         IQueryable<EstateProperty> query = _context.EstateProperties
             .Include(p => p.MainImage)
-            .Include(p => p.PropertyImages)
-            .Include(p => p.FeaturedDescription)
-            .Include(p => p.EstatePropertyDescriptions)
+            .Include(p => p.FeaturedValues)
             .AsNoTracking();
 
         // === START OF NEW FILTERING LOGIC ===
@@ -47,12 +45,10 @@ public class GetEstatePropertiesQueryHandler : IRequestHandler<GetEstateProperti
         {
             query = query.Where(p => p.OwnerId.ToString() == filter.OwnerId);
         }
-        
         if (!string.IsNullOrEmpty(filter.Status) && Enum.TryParse<PropertyStatus>(filter.Status, true, out var statusEnum))
         {
-            query = query.Where(p => p.Status == statusEnum);
+            query = query.Where(p => p.FeaturedValues!.Status == statusEnum);
         }
-        
         if (filter.CreatedAfter.HasValue)
         {
             query = query.Where(p => p.CreatedOnUtc >= filter.CreatedAfter.Value);
@@ -67,11 +63,10 @@ public class GetEstatePropertiesQueryHandler : IRequestHandler<GetEstateProperti
             var term = filter.SearchTerm.ToLower().Trim();
             query = query.Where(p => 
                 p.Title.ToLower().Contains(term) ||
-                (p.Address != null && p.Address.ToLower().Contains(term)) ||
+                (p.StreetName != null && p.StreetName.ToLower().Contains(term)) ||
                 (p.City != null && p.City.ToLower().Contains(term))
             );
         }
-            
         
         query = query.OrderByDescending(p => p.CreatedOnUtc);
         var result = await PaginatedResult<EstateProperty>.CreateAsync(query, request.PageNumber, request.PageSize);
