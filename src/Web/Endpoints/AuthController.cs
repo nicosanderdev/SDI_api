@@ -78,7 +78,7 @@ public class AuthController : ControllerBase
     }
     
     [HttpGet("verify")]
-    [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(UserAuthDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [Authorize]
     public async Task<IActionResult> Verify()
@@ -92,7 +92,7 @@ public class AuthController : ControllerBase
         }
         var roles = await _identityService.GetUserRolesAsync(user.getId()!);
     
-        return Ok(new UserDto
+        return Ok(new UserAuthDto
         {
             Id = user.getId()!,
             UserName = user.getUsername()!,

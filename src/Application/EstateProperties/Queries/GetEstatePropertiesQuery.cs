@@ -32,31 +32,22 @@ public class GetEstatePropertiesQueryHandler : IRequestHandler<GetEstateProperti
             .Include(p => p.FeaturedValues)
             .AsNoTracking();
 
-        // === START OF NEW FILTERING LOGIC ===
-
         var filter = request.Filter;
         
         if (filter.IsDeleted.HasValue)
-        {
             query = query.Where(p => p.IsDeleted == filter.IsDeleted.Value);
-        }
-        
+            
         if (!string.IsNullOrEmpty(filter.OwnerId))
-        {
             query = query.Where(p => p.OwnerId.ToString() == filter.OwnerId);
-        }
+        
         if (!string.IsNullOrEmpty(filter.Status) && Enum.TryParse<PropertyStatus>(filter.Status, true, out var statusEnum))
-        {
             query = query.Where(p => p.FeaturedValues!.Status == statusEnum);
-        }
+
         if (filter.CreatedAfter.HasValue)
-        {
             query = query.Where(p => p.CreatedOnUtc >= filter.CreatedAfter.Value);
-        }
+
         if (filter.CreatedBefore.HasValue)
-        {
             query = query.Where(p => p.CreatedOnUtc <= filter.CreatedBefore.Value);
-        }
         
         if (!string.IsNullOrWhiteSpace(filter.SearchTerm))
         {

@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using SDI_Api.Application.Common.Interfaces;
-using SDI_Api.Web.DTOs;
+using SDI_Api.Application.DTOs.Auth;
 
 namespace SDI_Api.Application.Auth.Commands;
 
@@ -84,7 +84,7 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResultDto>
             return new LoginResultDto
             {
                 Succeeded = true,
-                User = new UserDto
+                User = new UserAuthDto
                 {
                     Id = user.getId(),
                     UserName = user.getUsername(),

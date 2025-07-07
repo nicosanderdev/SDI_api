@@ -10,6 +10,7 @@ public interface IIdentityService
     // --- ApplicationUser Management ---
     Task<string?> GetUserNameAsync(string userId);
     Task<IUser?> FindUserByIdAsync(string userId);
+    Task<IEnumerable<IUser>> FindUsersByIdListAsync(List<string> ids);
     Task<IUser?> FindUserByEmailAsync(string email);
     Task<IUser?> FindUserByUsernameAsync(string username);
     Task<bool> GetTwoFactorEnabledAsync(IUser user);

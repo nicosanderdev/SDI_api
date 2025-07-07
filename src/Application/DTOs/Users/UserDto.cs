@@ -1,11 +1,15 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace SDI_Api.Domain.Entities;
+namespace SDI_Api.Application.DTOs.Users;
 
-public class Member : BaseAuditableEntity
+/// <summary>
+/// Data transfer object for user data returned by the API.
+/// </summary>
+public class UserDto
 {
-    [Required]
-    public Guid UserId { get; set; }
+    [MaxLength(100)]
+    public string? Id { get; set; }
+    // Member
     [MaxLength(100)]
     public string? FirstName { get; set; }
     [MaxLength(100)]
@@ -14,8 +18,6 @@ public class Member : BaseAuditableEntity
     public string? Title { get; set; }
     [MaxLength(2048)]
     public string? AvatarUrl { get; set; }
-
-    // Address Fields
     [MaxLength(255)]
     public string? Street { get; set; }
     [MaxLength(255)]
@@ -28,11 +30,19 @@ public class Member : BaseAuditableEntity
     public string? PostalCode { get; set; }
     [MaxLength(100)]
     public string? Country { get; set; }
-
-    public Member()
-    {
-        Id = Guid.NewGuid();
-        Created = DateTime.UtcNow;
-        LastModified = DateTime.UtcNow;
-    }
+    
+    // User credentials
+    [Required]
+    public string? UserId { get; set; }
+    [Required]
+    [MaxLength(100)]
+    public string? Email { get; set; }
+    [Required]
+    public bool EmailConfirmed { get; set; }
+    [Required]
+    [MaxLength(100)]
+    public string? Password { get; set; }
+    public long PhoneNumber { get; set; }
+    [Required]
+    public bool TwoFactorEnabled { get; set; }
 }

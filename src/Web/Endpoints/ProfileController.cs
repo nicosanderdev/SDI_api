@@ -69,6 +69,7 @@ public class ProfilesController : ControllerBase
         }
     }
     
+    // TODO - move to auth controller
     [HttpPost("change-password")]
     public async Task<IActionResult> ChangeUserPassword([FromBody] ChangePasswordDto passwordData)
     {
@@ -96,7 +97,7 @@ public class ProfilesController : ControllerBase
         }
     }
     
-    /* [HttpPost("avatar")]
+    [HttpPost("avatar")]
     [Consumes("multipart/form-data")]
     public async Task<ActionResult<UploadAvatarResponseDto>> UploadProfilePicture([FromForm] IFormFile avatarFile)
     {
@@ -126,5 +127,5 @@ public class ProfilesController : ControllerBase
         {
             return BadRequest(new { message = "Error uploading avatar.", error = ex.Message });
         }
-    } */
+    }
 }

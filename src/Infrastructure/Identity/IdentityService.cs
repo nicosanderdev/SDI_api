@@ -35,6 +35,11 @@ public class IdentityService : IIdentityService
         return user?.getUsername();
     }
 
+    public async Task<IEnumerable<IUser>> FindUsersByIdListAsync(List<string> ids)
+    {
+        return await _userManager.Users.Where(u => ids.Contains(u.Id)).ToListAsync();
+    }
+
     public async Task<IUser?> FindUserByIdAsync(string userId)
     {
         var user = await _userManager.Users.Where(u => u.Id == userId).FirstOrDefaultAsync();

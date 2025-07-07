@@ -29,7 +29,7 @@ public class GetMessagesQueryHandler : IRequestHandler<GetMessagesQuery, Paginat
 
     public async Task<PaginatedMessageResultDto> Handle(GetMessagesQuery request, CancellationToken cancellationToken)
     {
-        var currentUserIdString = _currentUserService.GetUserId(); // Assuming UserId is string
+        var currentUserIdString = _currentUserService.GetUserId();
         if (currentUserIdString != Guid.Empty)
         {
             throw new UnauthorizedAccessException("User is not authenticated.");
@@ -38,7 +38,7 @@ public class GetMessagesQueryHandler : IRequestHandler<GetMessagesQuery, Paginat
         IQueryable<MessageRecipient> query = _context.MessageRecipients
             .Include(mr => mr.Message)
                 .ThenInclude(m => m.Sender)
-                    // .ThenInclude(s => s.Member) // Include Member for Sender's profile info
+                    // .ThenInclude(s => s.Member)
             .Include(mr => mr.Message)
                 .ThenInclude(m => m.Thread)
                     .ThenInclude(t => t.Property)

@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 using SDI_Api.Application.Common.Interfaces;
 using SDI_Api.Application.Common.Models;
-using IConfigurationProvider = AutoMapper.IConfigurationProvider;
 
 namespace SDI_Api.Application.Auth.Commands;
 
@@ -17,14 +16,14 @@ public class ResendConfirmationEmailCommandHandler : IRequestHandler<ResendConfi
 {
     private readonly IIdentityService _identityService;
     private readonly IEmailService _emailService;
-    private readonly IEmailTemplateProvider _emailTempalteProvider; // Service to generate frontend URLs
+    private readonly IEmailTemplateProvider _emailTemplateProvider; // Service to generate frontend URLs
     private readonly IConfiguration _configuration;
 
-    public ResendConfirmationEmailCommandHandler(IIdentityService identityService, IEmailService emailService, IEmailTemplateProvider emailTempalteProvider, IConfiguration configuration)
+    public ResendConfirmationEmailCommandHandler(IIdentityService identityService, IEmailService emailService, IEmailTemplateProvider emailTemplateProvider, IConfiguration configuration)
     {
         _identityService = identityService;
         _emailService = emailService;
-        _emailTempalteProvider = emailTempalteProvider;
+        _emailTemplateProvider = emailTemplateProvider;
         _configuration = configuration;
     }
 
@@ -42,7 +41,7 @@ public class ResendConfirmationEmailCommandHandler : IRequestHandler<ResendConfi
             if (string.IsNullOrEmpty(confirmationLink))
                 throw new InvalidOperationException("Confirmation Link is not configured in appsettings.json.");
             
-            var emailBody = _emailTempalteProvider.GetConfirmationEmailBody(confirmationLink);
+            var emailBody = _emailTemplateProvider.GetConfirmationEmailBody(confirmationLink);
             await _emailService.SendEmailAsync(
                 toEmail: user.getUserEmail()!,
                 subject: "Confirm Your Email Address",
