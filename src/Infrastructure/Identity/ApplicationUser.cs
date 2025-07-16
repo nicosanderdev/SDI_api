@@ -30,4 +30,9 @@ public class ApplicationUser : IdentityUser, IUser
     {
         return EmailConfirmed;
     }
+
+    public bool isTwoFactorEnabled()
+    {
+        return TwoFactorEnabled;
+    }
 }

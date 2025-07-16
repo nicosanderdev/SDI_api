@@ -1,4 +1,5 @@
-﻿using Sdi_Api.Application.DTOs.Profile;
+﻿using SDI_Api.Application.Common.Interfaces;
+using Sdi_Api.Application.DTOs.Profile;
 using SDI_Api.Domain.Entities;
 
 namespace SDI_Api.Application.Util.Profiles;
@@ -32,6 +33,10 @@ namespace SDI_Api.Application.Util.Profiles;
             .ForMember(dest => dest.Country, opt => opt.MapFrom(src => src.Country))
             .ForAllMembers(opts => opts.Condition((src, dest, srcMember) => srcMember != null));
 
+        CreateMap<IUser, ProfileDataDto>()
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.getId()))
+            .ForMember(dest => dest.Phone, opt => opt.MapFrom(src => src.getPhoneNumber()))
+            .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.getUserEmail()));
 
         // UpdateProfileDto to ApplicationUser (used selectively in handler, or with explicit member mapping if desired)
         // For now, the handler maps property by property for more control.
@@ -42,7 +47,7 @@ namespace SDI_Api.Application.Util.Profiles;
             .ForMember(dest => dest.LastName, opt => opt.Condition(src => src.LastName != null))
             .ForMember(dest => dest.Title, opt => opt.Condition(src => src.Title != null))
             // Email and Phone are handled specially by UserManager
-            .ForMember(dest => dest.Email, opt => opt.Ignore()) 
+            .ForMember(dest => dest.Email, opt => opt.Ignore())
             .ForMember(dest => dest.PhoneNumber, opt => opt.Ignore())
             // Address is mapped separately if ProfileUpdateData.Address is not null
             .ForPath(dest => dest.Street, opt => opt.MapFrom(src => src.Address != null ? src.Address.Street : default))

@@ -26,7 +26,7 @@ public class EstateProperty : BaseAuditableEntity
     // Property description
     [Required]
     [MaxLength(200)]
-    public string Title { get; set; } = string.Empty;
+    public string Title { get; set; } = "";
     [MaxLength(100)]
     public PropertyType Type { get; set; }
     public decimal AreaValue { get; set; } // e.g., 95
@@ -46,8 +46,6 @@ public class EstateProperty : BaseAuditableEntity
     public Guid? MainImageId { get; set; }
     public virtual PropertyImage? MainImage { get; set; }
     public virtual ICollection<PropertyImage> PropertyImages { get; set; } = new List<PropertyImage>();
-    public Guid? FeaturedDescriptionId { get; set; }
-    public virtual EstatePropertyValues? FeaturedValues { get; set; }
     public virtual ICollection<EstatePropertyValues> EstatePropertyValues { get; set; } = new List<EstatePropertyValues>();
     public Guid? OwnerId { get; set; }
     public Member Owner { get; set; } = null!;

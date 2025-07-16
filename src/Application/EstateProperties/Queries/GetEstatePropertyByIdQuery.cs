@@ -1,12 +1,12 @@
 ﻿using SDI_Api.Application.Common.Interfaces;
+using SDI_Api.Application.DTOs.EstateProperties;
 using SDI_Api.Domain.Entities;
-using YourProject.Dto.Properties;
 
 namespace SDI_Api.Application.EstateProperties.Queries;
 
-public sealed record GetEstatePropertyByIdQuery(Guid id) : IRequest<EstatePropertyDto>;
+public sealed record GetEstatePropertyByIdQuery(Guid id) : IRequest<PublicEstatePropertyDto>;
 
-public class GetEstatePropertyByIdQueryHandler : IRequestHandler<GetEstatePropertyByIdQuery, EstatePropertyDto>
+public class GetEstatePropertyByIdQueryHandler : IRequestHandler<GetEstatePropertyByIdQuery, PublicEstatePropertyDto>
 {
     private readonly IApplicationDbContext _context;
     private readonly IMapper _mapper;
@@ -17,12 +17,11 @@ public class GetEstatePropertyByIdQueryHandler : IRequestHandler<GetEstateProper
         _mapper = mapper;
     }
 
-    public async Task<EstatePropertyDto> Handle(GetEstatePropertyByIdQuery request, CancellationToken cancellationToken)
+    public async Task<PublicEstatePropertyDto> Handle(GetEstatePropertyByIdQuery request, CancellationToken cancellationToken)
     {
         var entity = await _context.EstateProperties
             .Include(p => p.MainImage)
             .Include(p => p.PropertyImages)
-            .Include(p => p.FeaturedValues)
             .Include(p => p.EstatePropertyValues)
             .AsNoTracking()
             .FirstOrDefaultAsync(p => p.Id == request.id, cancellationToken);
@@ -32,6 +31,6 @@ public class GetEstatePropertyByIdQueryHandler : IRequestHandler<GetEstateProper
             throw new NotFoundException(nameof(EstateProperty), request.id.ToString());
         }
 
-        return _mapper.Map<EstatePropertyDto>(entity);
+        return _mapper.Map<PublicEstatePropertyDto>(entity);
     }
 }

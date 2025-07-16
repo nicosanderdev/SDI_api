@@ -1,18 +1,18 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.Text.Json.Serialization;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http;
+using System.ComponentModel.DataAnnotations;
 using SDI_Api.Application.Dtos;
-using SDI_Api.Application.DTOs.EstateProperties;
 using SDI_Api.Domain.Enums;
 
-namespace SDI_Api.Application.EstateProperties.Commands;
+namespace SDI_Api.Application.DTOs.EstateProperties;
 
-public class CreateOrUpdateEstatePropertyDto
+/// <summary>
+/// Represents the data transfer object for fetching users estate property info.
+/// </summary>
+public class UsersEstatePropertyDto
 {
-      /// /////////////////
+    /////////////////////
     // Estate Property //
-    /// /////////////////
+    /////////////////////
     public Guid Id { get; set; }
     
     // Address
@@ -54,15 +54,9 @@ public class CreateOrUpdateEstatePropertyDto
     public string Country { get; set; } = string.Empty;
     /// <summary>
     /// Maps to 'location' object.
-    /// Note: The Zod 'refine' validation (checking for default coords)
     /// should be handled in the API controller or a service layer.
     /// </summary>
-    [FromForm(Name = "Location")]
-    public string? LocationString { get; set; }
-
-    // This property will hold the deserialized object.
-    // We ignore it for model binding purposes as we will populate it manually.
-    [JsonIgnore]
+    [Required]
     public LocationDto? Location { get; set; }
 
     // Description
@@ -71,7 +65,7 @@ public class CreateOrUpdateEstatePropertyDto
     /// Maps to 'title'.
     /// </summary>
     [Required]
-    public string Title { get; set; } = "";
+    public string? Title { get; set; }
     /// <summary>
     /// Maps to 'type'.
     /// </summary>
@@ -88,10 +82,12 @@ public class CreateOrUpdateEstatePropertyDto
     /// <summary>
     /// Maps to 'bedrooms'.
     /// </summary>
+    [Range(0, int.MaxValue)]
     public int Bedrooms { get; set; }
     /// <summary>
     /// Maps to 'bathrooms'.
     /// </summary>
+    [Range(0, double.MaxValue)]
     public int Bathrooms { get; set; }
     /// <summary>
     /// Maps to 'hasGarage'.
@@ -111,22 +107,50 @@ public class CreateOrUpdateEstatePropertyDto
     /// <summary>
     /// Maps to 'createdOnUtc'.
     /// </summary>
+    [Required]
     public DateTime CreatedOnUtc { get; set; } = DateTime.UtcNow;
     
     // Relationships
-    public List<IFormFile> Documents { get; set; } = new List<IFormFile>();
+    
     /// <summary>
-    /// Maps to 'mainImage'. This is the primary image file to be uploaded.
+    /// Maps to 'images'. This property will be populated from a multipart/form-data request.
+    /// Represents the list of files to be uploaded.
+    /// </summary>
+    [Required]
+    public List<IFormFile> Images { get; set; } = new();
+    /// <summary>
+    /// Maps to 'publicDeed'. The file to be uploaded.
+    /// </summary>
+    [Required]
+    public IFormFile PublicDeed { get; set; } = null!;
+    /// <summary>
+    /// Maps to 'propertyPlans'. The file to be uploaded.
+    /// </summary>
+    [Required]
+    public IFormFile PropertyPlans { get; set; } = null!;
+    /// <summary>
+    /// Maps to 'taxReceipts'. The file to be uploaded.
+    /// </summary>
+    [Required]
+    public IFormFile TaxReceipts { get; set; } = null!;
+    /// <summary>
+    /// Maps to optional 'otherDocuments'. A list of additional files to upload.
+    /// </summary>
+    public List<IFormFile>? OtherDocuments { get; set; }
+    /// <summary>
+    /// Maps to optional 'mainImage'. This is the primary image file to be uploaded.
+    /// </summary>
+    public IFormFile? MainImage { get; set; }
+    /// <summary>
+    /// The URL of the main image after it has been uploaded and processed.
+    /// This is for reading data, not for uploading.
     /// </summary>
     public string? MainImageUrl { get; set; }
     /// <summary>
     /// A list of DTOs representing the processed images, including their URLs.
     /// This is for reading data, not for uploading.
     /// </summary>
-    public List<IFormFile> Images { get; set; } = new List<IFormFile>();
-    /// <summary>
-    /// A string representing the owner ID.
-    /// </summary>
+    public List<PropertyImageDto>? PropertyImages { get; set; }
     public string? OwnerId { get; set; }
     
     ///////////////////////////
@@ -136,6 +160,7 @@ public class CreateOrUpdateEstatePropertyDto
     /// <summary>
     /// Maps to 'description' enum.
     /// </summary>
+    [Required]
     [MaxLength(1000)]
     public string? Description { get; set; }
     /// <summary>

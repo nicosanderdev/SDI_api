@@ -21,8 +21,15 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, U
     private readonly IEmailService _emailService;
     private readonly IEmailTemplateProvider _emailTemplateProvider;
     private readonly IConfiguration _configuration;
+    private readonly IEmailConfirmationTokenService _tokenService;
 
-    public RegisterUserCommandHandler(IMapper mapper, IIdentityService identityService, IApplicationDbContext context, IEmailService emailService, IEmailTemplateProvider emailTemplateProvider, IConfiguration configuration)
+    public RegisterUserCommandHandler(IMapper mapper, 
+        IIdentityService identityService, 
+        IApplicationDbContext context, 
+        IEmailService emailService, 
+        IEmailTemplateProvider emailTemplateProvider, 
+        IConfiguration configuration,
+        IEmailConfirmationTokenService tokenService)
     {
         _mapper = mapper;
         _identityService = identityService;
@@ -30,6 +37,7 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, U
         _emailService = emailService;
         _emailTemplateProvider = emailTemplateProvider;
         _configuration = configuration;
+        _tokenService = tokenService;
     }
     
     public async Task<UserDto> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
@@ -51,7 +59,7 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, U
             UserId = Guid.Parse(userId),
             FirstName = request.RegisterUserDto.FirstName,
             LastName = request.RegisterUserDto.LastName,
-            AvatarUrl = "https://via.placeholder.com/150" 
+            AvatarUrl = "https://placehold.co/150x150" 
         };
 
         _context.Members.Add(member);
@@ -60,12 +68,14 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, U
         var user = await _identityService.FindUserByIdAsync(userId);
         if (user is null)
             throw new NotFoundException($"A user with the ID '{userId}' could not be found after creation.");
-
+        
+        // Send email for confirmation
         var confirmationLink = _configuration["AppUrls:ReactAppConfirmationUrl"];
+        var token = _tokenService.GenerateToken(userId);
         if (string.IsNullOrEmpty(confirmationLink))
             throw new InvalidOperationException("Confirmation Link is not configured in appsettings.json.");
             
-        var emailBody = _emailTemplateProvider.GetConfirmationEmailBody(confirmationLink);
+        var emailBody = _emailTemplateProvider.GetConfirmationEmailBody(confirmationLink+$"?token={token}");
         await _emailService.SendEmailAsync(
             toEmail: user.getUserEmail()!,
             subject: "Confirm Your Email Address",

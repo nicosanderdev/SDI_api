@@ -2,7 +2,8 @@
 
 namespace SDI_Api.Application.Common.Behaviours;
 
-public class UnhandledExceptionBehaviour<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse> where TRequest : notnull
+public class UnhandledExceptionBehaviour<TRequest, TResponse> 
+    : IPipelineBehavior<TRequest, TResponse> where TRequest : notnull
 {
     private readonly ILogger<TRequest> _logger;
 
@@ -11,18 +12,38 @@ public class UnhandledExceptionBehaviour<TRequest, TResponse> : IPipelineBehavio
         _logger = logger;
     }
 
-    public async Task<TResponse> Handle(TRequest request, RequestHandlerDelegate<TResponse> next, CancellationToken cancellationToken)
+    public async Task<TResponse> Handle(
+        TRequest request, 
+        RequestHandlerDelegate<TResponse> next, 
+        CancellationToken cancellationToken)
     {
         try
         {
             return await next();
         }
+        catch (FluentValidation.ValidationException ex)
+        {
+            _logger.LogWarning(ex, "Validation failed for request {RequestName} {@Request}", typeof(TRequest).Name, request);
+            throw;
+        }
+        catch (NotFoundException ex)
+        {
+            _logger.LogWarning(ex, "Not Found: {RequestName} {@Request}", typeof(TRequest).Name, request);
+            throw;
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Unauthorized access in request {RequestName} {@Request}", typeof(TRequest).Name, request);
+            throw;
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, "Invalid argument in request {RequestName} {@Request}", typeof(TRequest).Name, request);
+            throw;
+        }
         catch (Exception ex)
         {
-            var requestName = typeof(TRequest).Name;
-
-            _logger.LogError(ex, "SDI_Api Request: Unhandled Exception for Request {Name} {@Request}", requestName, request);
-
+            _logger.LogError(ex, "Unhandled exception for request {RequestName} {@Request}", typeof(TRequest).Name, request);
             throw;
         }
     }

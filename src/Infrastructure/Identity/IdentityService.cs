@@ -117,17 +117,24 @@ public class IdentityService : IIdentityService
             Email = email,
             EmailConfirmed = false
         };
-
+        
         var identityResult = await _userManager.CreateAsync(user, password);
-        return !identityResult.Succeeded ? (identityResult.ToApplicationResult(), string.Empty) :
-            //    await _userManager.DeleteAsync(user); // Best effort cleanup
-            //    return (Result.Failure(new[] { "Failed to create user profile.", ex.Message }), string.Empty);
-            (Result.Success(), user.getId()!);
+        if (identityResult.Succeeded)
+        {
+            var identityRoleResult = await _userManager.AddToRoleAsync(user, "USER");
+            return (Result.Success(), user.getId()!);
+        }
+        return (identityResult.ToApplicationResult(), string.Empty);
     }
 
     public Task<Result> DeleteUserAsync(string userId)
     {
         throw new NotImplementedException();
+    }
+
+    public Task SignOutAsync()
+    {
+        return _signInManager.SignOutAsync();
     }
 
     public async Task<Result> DeleteUserAsync(string userId, CancellationToken cancellationToken)
@@ -176,13 +183,14 @@ public class IdentityService : IIdentityService
         return await _userManager.GenerateEmailConfirmationTokenAsync(userDb);
     }
 
-    public async Task<Result> ConfirmEmailAsync(string userId, string token)
+    public async Task<Result> ConfirmEmailAsync(string userId)
     {
         var user = await _userManager.FindByIdAsync(userId);
         if (user == null) 
             return Result.Failure(["User not found."]);
-        
-        var result = await _userManager.ConfirmEmailAsync(user, token);
+
+        user.EmailConfirmed = true;
+        var result = await _userManager.UpdateAsync(user);
         return result.ToApplicationResult();
     }
 
@@ -192,7 +200,6 @@ public class IdentityService : IIdentityService
         if (user == null) 
             return Result.Failure(["User not found."]);
         
-        // Similarly, SetPhoneNumberAsync sets PhoneNumberConfirmed to false.
         var result = await _userManager.SetPhoneNumberAsync(user, phoneNumber);
         return result.ToApplicationResult();
     }
@@ -273,9 +280,13 @@ public class IdentityService : IIdentityService
         return authResult.Succeeded;
     }
 
-    public async Task<SignInResult> TwoFactorAuthenticatorSignInAsync(string twoFactorCode, bool isPersistent, bool rememberClient)
+    public async Task<SignInResult> TwoFactorAuthenticatorSignInAsync(string userId, string twoFactorCode)
     {
-        return await _signInManager.TwoFactorAuthenticatorSignInAsync(twoFactorCode, isPersistent, rememberClient);
+        var user = await _userManager.FindByIdAsync(userId);
+        var result = await _userManager.VerifyTwoFactorTokenAsync(user!, TokenOptions.DefaultEmailProvider, twoFactorCode);
+        if (!result)
+            return SignInResult.Failed;
+        return SignInResult.Success;
     }
 
     public async Task<IUser?> GetTwoFactorAuthenticationUserAsync()
@@ -300,25 +311,20 @@ public class IdentityService : IIdentityService
     /// <returns>A tuple containing the new shared key and the authenticator URI for QR code generation.</returns>
     public async Task<(string sharedKey, string authenticatorUri)> GenerateTwoFactorAuthenticatorKeyAsync(IUser user)
     {
-        // TODO: see comments
         var appUser = await _userManager.FindByIdAsync(user.getId()!);
         if (appUser == null)
             throw new NotFoundException($"User with ID '{user.getId()}' not found.");
-
-        // Reset the authenticator key for the user. This invalidates any previously configured authenticator apps
-        await _userManager.ResetAuthenticatorKeyAsync(appUser);
         
-        var newSharedKey = await _userManager.GetAuthenticatorKeyAsync(appUser);
-        if (string.IsNullOrEmpty(newSharedKey))
-            throw new InvalidOperationException("Failed to retrieve the newly generated authenticator key.");
-
-        // Get the user's email to construct the authenticator URI
+        var token = await _userManager.GenerateTwoFactorTokenAsync(appUser, TokenOptions.DefaultEmailProvider);
+        if (string.IsNullOrEmpty(token))
+            throw new InvalidOperationException("Failed to generate the newly generated 2fa token.");
+        
         var email = await _userManager.GetEmailAsync(appUser);
-        var appName = "SDI_Api"; // configurable (from app settings)
+        var appName = "SDI_Api";
 
         // Generate the authenticator URI (otpauth://totp/AppName:user@example.com?secret=...)
         var authenticatorUri = appName + "test";
 
-        return (newSharedKey, authenticatorUri);
+        return (token, authenticatorUri);
     }
 }

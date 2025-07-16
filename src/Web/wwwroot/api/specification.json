@@ -355,7 +355,49 @@
         }
       }
     },
-    "/api/auth/loginCustom": {
+    "/api/auth/register": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "Auth_RegisterUser",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterUserCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserAuthDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/login-custom": {
       "post": {
         "tags": [
           "Auth"
@@ -397,7 +439,7 @@
         }
       }
     },
-    "/api/auth/logout": {
+    "/api/auth/logout-custom": {
       "post": {
         "tags": [
           "Auth"
@@ -405,15 +447,7 @@
         "operationId": "Auth_Logout",
         "responses": {
           "200": {
-            "description": "",
-            "content": {
-              "application/octet-stream": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
-              }
-            }
+            "description": ""
           }
         }
       }
@@ -430,7 +464,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/UserDto"
+                  "$ref": "#/components/schemas/UserAuthDto"
                 }
               }
             }
@@ -552,23 +586,11 @@
       }
     },
     "/api/auth/resend-confirmation-email-custom": {
-      "post": {
+      "get": {
         "tags": [
           "Auth"
         ],
         "operationId": "Auth_ResendConfirmationEmailCustom",
-        "requestBody": {
-          "x-name": "dto",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ResendConfirmationEmailDto"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 1
-        },
         "responses": {
           "200": {
             "description": ""
@@ -616,18 +638,53 @@
         }
       }
     },
-    "/api/auth/2fa/enable-custom": {
+    "/api/auth/2fa/enable-2fa-first-step": {
       "post": {
         "tags": [
           "Auth"
         ],
         "operationId": "Auth_EnableTwoFactorAuthCustom",
         "requestBody": {
-          "x-name": "request",
+          "x-name": "command",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/Enable2faRequest"
+                "$ref": "#/components/schemas/EnableTwoFactorAuthCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Result"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/2fa/enable-confirm": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "Auth_CompleteTwoFactorAuthEnabling",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteTwoFactorAuthEnablingCommand"
               }
             }
           },
@@ -735,40 +792,71 @@
         ],
         "responses": {
           "200": {
+            "description": ""
+          },
+          "400": {
             "description": "",
             "content": {
-              "application/octet-stream": {
+              "application/json": {
                 "schema": {
-                  "type": "string",
-                  "format": "binary"
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
           }
         }
-      },
-      "post": {
+      }
+    },
+    "/mine": {
+      "get": {
         "tags": [
           "EstateProperties"
         ],
-        "operationId": "EstateProperties_CreateEstateProperty",
-        "requestBody": {
-          "x-name": "command",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateEstatePropertyCommand"
-              }
-            }
+        "operationId": "EstateProperties_GetUsersEstateProperties",
+        "parameters": [
+          {
+            "name": "UserId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
           },
-          "required": true,
-          "x-position": 1
-        },
+          {
+            "name": "PageNumber",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 2
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 3
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
           },
           "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
             "description": "",
             "content": {
               "application/json": {
@@ -872,6 +960,203 @@
             "x-position": 1
           }
         ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/properties/create": {
+      "post": {
+        "tags": [
+          "EstateProperties"
+        ],
+        "operationId": "EstateProperties_CreateEstateProperty",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "Id": {
+                    "type": "string",
+                    "format": "guid"
+                  },
+                  "StreetName": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "HouseNumber": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "Neighborhood": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "City": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "State": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "ZipCode": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "Country": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "Location": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "Location.Lat": {
+                    "type": "number",
+                    "format": "double"
+                  },
+                  "Location.Lng": {
+                    "type": "number",
+                    "format": "double"
+                  },
+                  "Title": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "Type": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "AreaValue": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "AreaUnit": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "Bedrooms": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "Bathrooms": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "HasGarage": {
+                    "type": "boolean"
+                  },
+                  "GarageSpaces": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "Visits": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "CreatedOnUtc": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "Documents": {
+                    "type": "array",
+                    "nullable": true,
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    }
+                  },
+                  "MainImageUrl": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "Images": {
+                    "type": "array",
+                    "nullable": true,
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    }
+                  },
+                  "OwnerId": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "Description": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "AvailableFrom": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "ArePetsAllowed": {
+                    "type": "boolean"
+                  },
+                  "Capacity": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "Currency": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "SalePrice": {
+                    "type": "number",
+                    "format": "decimal",
+                    "nullable": true
+                  },
+                  "RentPrice": {
+                    "type": "number",
+                    "format": "decimal",
+                    "nullable": true
+                  },
+                  "HasCommonExpenses": {
+                    "type": "boolean"
+                  },
+                  "CommonExpensesAmount": {
+                    "type": "number",
+                    "format": "decimal",
+                    "nullable": true
+                  },
+                  "IsElectricityIncluded": {
+                    "type": "boolean"
+                  },
+                  "IsWaterIncluded": {
+                    "type": "boolean"
+                  },
+                  "IsPriceVisible": {
+                    "type": "boolean"
+                  },
+                  "Status": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "IsActive": {
+                    "type": "boolean"
+                  },
+                  "IsPropertyVisible": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": ""
@@ -1108,7 +1393,7 @@
         }
       }
     },
-    "/api/profile": {
+    "/api/profile/me": {
       "get": {
         "tags": [
           "Profiles"
@@ -1118,9 +1403,10 @@
           "200": {
             "description": "",
             "content": {
-              "application/json": {
+              "application/octet-stream": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProfileDataDto"
+                  "type": "string",
+                  "format": "binary"
                 }
               }
             }
@@ -1133,11 +1419,11 @@
         ],
         "operationId": "Profiles_UpdateCurrentUserProfile",
         "requestBody": {
-          "x-name": "profileUpdateData",
+          "x-name": "updateUserProfileCommand",
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/UpdateProfileDto"
+                "$ref": "#/components/schemas/UpdateUserProfileCommand"
               }
             }
           },
@@ -1148,9 +1434,10 @@
           "200": {
             "description": "",
             "content": {
-              "application/json": {
+              "application/octet-stream": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProfileDataDto"
+                  "type": "string",
+                  "format": "binary"
                 }
               }
             }
@@ -1158,23 +1445,46 @@
         }
       }
     },
-    "/api/profile/change-password": {
+    "/api/profile/avatar": {
       "post": {
         "tags": [
           "Profiles"
         ],
-        "operationId": "Profiles_ChangeUserPassword",
+        "operationId": "Profiles_UploadProfilePicture",
         "requestBody": {
-          "x-name": "passwordData",
           "content": {
-            "application/json": {
+            "multipart/form-data": {
               "schema": {
-                "$ref": "#/components/schemas/ChangePasswordDto"
+                "properties": {
+                  "ContentType": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "ContentDisposition": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "Headers": {
+                    "type": "array",
+                    "nullable": true,
+                    "items": {}
+                  },
+                  "Length": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "Name": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "FileName": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                }
               }
             }
-          },
-          "required": true,
-          "x-position": 1
+          }
         },
         "responses": {
           "200": {
@@ -1443,6 +1753,142 @@
           }
         }
       }
+    },
+    "/api/user": {
+      "get": {
+        "tags": [
+          "User"
+        ],
+        "operationId": "User_GetUsers",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserAuthDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/user/{id}": {
+      "get": {
+        "tags": [
+          "User"
+        ],
+        "operationId": "User_GetUserById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserAuthDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/user/change-password": {
+      "post": {
+        "tags": [
+          "User"
+        ],
+        "operationId": "User_ChangeUserPassword",
+        "requestBody": {
+          "x-name": "passwordData",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordDto"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserAuthDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1672,31 +2118,7 @@
           }
         }
       },
-      "LoginResultDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "succeeded": {
-            "type": "boolean"
-          },
-          "requires2FA": {
-            "type": "boolean"
-          },
-          "user": {
-            "nullable": true,
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/UserDto"
-              }
-            ]
-          },
-          "errorMessage": {
-            "type": "string",
-            "nullable": true
-          }
-        }
-      },
-      "UserDto": {
+      "UserAuthDto": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -1726,6 +2148,57 @@
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "RegisterUserCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "registerUserDto": {
+            "$ref": "#/components/schemas/RegisterUserDto"
+          }
+        }
+      },
+      "RegisterUserDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "firstName": {
+            "type": "string"
+          },
+          "lastName": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        }
+      },
+      "LoginResultDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "succeeded": {
+            "type": "boolean"
+          },
+          "requires2FA": {
+            "type": "boolean"
+          },
+          "user": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/UserAuthDto"
+              }
+            ]
+          },
+          "errorMessage": {
+            "type": "string",
+            "nullable": true
           }
         }
       },
@@ -1795,24 +2268,12 @@
         "additionalProperties": false,
         "properties": {
           "userId": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           "token": {
-            "type": "string"
-          }
-        }
-      },
-      "ResendConfirmationEmailDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "email"
-        ],
-        "properties": {
-          "email": {
             "type": "string",
-            "format": "email",
-            "minLength": 1
+            "nullable": true
           }
         }
       },
@@ -1828,26 +2289,70 @@
           }
         }
       },
-      "Enable2faRequest": {
+      "EnableTwoFactorAuthCommand": {
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "code"
+          "password"
         ],
         "properties": {
-          "code": {
+          "userId": {
             "type": "string",
-            "maxLength": 7,
-            "minLength": 6
+            "nullable": true
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1
           }
         }
       },
-      "CreateEstatePropertyCommand": {
+      "CompleteTwoFactorAuthEnablingCommand": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "dto": {
+          "userId": {
+            "type": "string",
+            "nullable": true
+          },
+          "twoFactorCode": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "UpdateEstatePropertyCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "estateProperty": {
             "$ref": "#/components/schemas/CreateOrUpdateEstatePropertyDto"
+          },
+          "mainImage": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CreateOrUpdatePropertyImageDto"
+              }
+            ]
+          },
+          "propertyImages": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "$ref": "#/components/schemas/CreateOrUpdatePropertyImageDto"
+            }
+          },
+          "featuredValuesId": {
+            "type": "string",
+            "nullable": true
+          },
+          "featuredValues": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CreateOrUpdateEstatePropertyValuesDto"
+              }
+            ]
           }
         }
       },
@@ -1861,17 +2366,10 @@
           "state",
           "zipCode",
           "country",
-          "location",
           "title",
           "type",
           "hasGarage",
-          "garageSpaces",
-          "createdOnUtc",
-          "images",
-          "publicDeed",
-          "propertyPlans",
-          "taxReceipts",
-          "description"
+          "garageSpaces"
         ],
         "properties": {
           "id": {
@@ -1906,8 +2404,9 @@
             "type": "string",
             "minLength": 1
           },
-          "location": {
-            "$ref": "#/components/schemas/LocationDto"
+          "locationString": {
+            "type": "string",
+            "nullable": true
           },
           "title": {
             "type": "string",
@@ -1946,53 +2445,24 @@
           },
           "createdOnUtc": {
             "type": "string",
-            "format": "date-time",
-            "minLength": 1
+            "format": "date-time"
+          },
+          "documents": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "binary"
+            }
+          },
+          "mainImageUrl": {
+            "type": "string",
+            "nullable": true
           },
           "images": {
             "type": "array",
             "items": {
               "type": "string",
               "format": "binary"
-            }
-          },
-          "publicDeed": {
-            "type": "string",
-            "format": "binary",
-            "minLength": 1
-          },
-          "propertyPlans": {
-            "type": "string",
-            "format": "binary",
-            "minLength": 1
-          },
-          "taxReceipts": {
-            "type": "string",
-            "format": "binary",
-            "minLength": 1
-          },
-          "otherDocuments": {
-            "type": "array",
-            "nullable": true,
-            "items": {
-              "type": "string",
-              "format": "binary"
-            }
-          },
-          "mainImage": {
-            "type": "string",
-            "format": "binary",
-            "nullable": true
-          },
-          "mainImageUrl": {
-            "type": "string",
-            "nullable": true
-          },
-          "propertyImages": {
-            "type": "array",
-            "nullable": true,
-            "items": {
-              "$ref": "#/components/schemas/PropertyImageDto"
             }
           },
           "ownerId": {
@@ -2002,7 +2472,7 @@
           "description": {
             "type": "string",
             "maxLength": 1000,
-            "minLength": 1
+            "nullable": true
           },
           "availableFrom": {
             "type": "string",
@@ -2056,58 +2526,6 @@
           }
         }
       },
-      "LocationDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "lat": {
-            "type": "number",
-            "format": "double"
-          },
-          "lng": {
-            "type": "number",
-            "format": "double"
-          }
-        }
-      },
-      "PropertyImageDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string",
-            "nullable": true
-          },
-          "url": {
-            "type": "string"
-          },
-          "altText": {
-            "type": "string",
-            "nullable": true
-          },
-          "isMain": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "estatePropertyId": {
-            "type": "string",
-            "format": "guid"
-          },
-          "fileName": {
-            "type": "string"
-          },
-          "contentType": {
-            "type": "string"
-          },
-          "imageData": {
-            "type": "string",
-            "format": "byte"
-          },
-          "isPublic": {
-            "type": "boolean"
-          }
-        }
-      },
       "Currency": {
         "type": "integer",
         "description": "",
@@ -2143,41 +2561,6 @@
           3,
           4
         ]
-      },
-      "UpdateEstatePropertyCommand": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "estateProperty": {
-            "$ref": "#/components/schemas/CreateOrUpdateEstatePropertyDto"
-          },
-          "mainImage": {
-            "nullable": true,
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/CreateOrUpdatePropertyImageDto"
-              }
-            ]
-          },
-          "propertyImages": {
-            "type": "array",
-            "nullable": true,
-            "items": {
-              "$ref": "#/components/schemas/CreateOrUpdatePropertyImageDto"
-            }
-          },
-          "featuredDescriptionId": {
-            "type": "string",
-            "nullable": true
-          },
-          "estatePropertyDescriptions": {
-            "type": "array",
-            "nullable": true,
-            "items": {
-              "$ref": "#/components/schemas/CreateOrUpdateEstatePropertyDescriptionDto"
-            }
-          }
-        }
       },
       "CreateOrUpdatePropertyImageDto": {
         "type": "object",
@@ -2217,7 +2600,7 @@
           }
         }
       },
-      "CreateOrUpdateEstatePropertyDescriptionDto": {
+      "CreateOrUpdateEstatePropertyValuesDto": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
@@ -2225,7 +2608,7 @@
             "type": "string",
             "nullable": true
           },
-          "estatePropertyId": {
+          "description": {
             "type": "string",
             "nullable": true
           },
@@ -2234,12 +2617,17 @@
             "format": "date-time",
             "nullable": true
           },
-          "availableTo": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
+          "arePetsAllowed": {
+            "type": "boolean"
           },
-          "listedPrice": {
+          "capacity": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Currency"
+          },
+          "salePrice": {
             "type": "integer",
             "format": "int64"
           },
@@ -2247,12 +2635,34 @@
             "type": "integer",
             "format": "int64"
           },
-          "soldPrice": {
-            "type": "integer",
-            "format": "int64"
+          "hasCommonExpenses": {
+            "type": "boolean"
+          },
+          "commonExpensesAmount": {
+            "type": "number",
+            "format": "decimal"
+          },
+          "isElectricityIncluded": {
+            "type": "boolean"
+          },
+          "isWaterIncluded": {
+            "type": "boolean"
+          },
+          "isPriceVisible": {
+            "type": "boolean"
+          },
+          "propertyStatus": {
+            "$ref": "#/components/schemas/PropertyStatus"
           },
           "isActive": {
             "type": "boolean"
+          },
+          "isPropertyVisible": {
+            "type": "boolean"
+          },
+          "estatePropertyId": {
+            "type": "string",
+            "nullable": true
           }
         }
       },
@@ -2424,6 +2834,25 @@
           }
         }
       },
+      "UpdateUserProfileCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "guid",
+            "nullable": true
+          },
+          "updateProfileDto": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ProfileDataDto"
+              }
+            ]
+          }
+        }
+      },
       "ProfileDataDto": {
         "type": "object",
         "additionalProperties": false,
@@ -2492,58 +2921,6 @@
           "country": {
             "type": "string",
             "nullable": true
-          }
-        }
-      },
-      "UpdateProfileDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "firstName": {
-            "type": "string",
-            "nullable": true
-          },
-          "lastName": {
-            "type": "string",
-            "nullable": true
-          },
-          "email": {
-            "type": "string",
-            "nullable": true
-          },
-          "phone": {
-            "type": "string",
-            "nullable": true
-          },
-          "title": {
-            "type": "string",
-            "nullable": true
-          },
-          "address": {
-            "nullable": true,
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/AddressDto"
-              }
-            ]
-          }
-        }
-      },
-      "ChangePasswordDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "oldPassword",
-          "newPassword"
-        ],
-        "properties": {
-          "oldPassword": {
-            "type": "string",
-            "minLength": 1
-          },
-          "newPassword": {
-            "type": "string",
-            "minLength": 1
           }
         }
       },
@@ -2816,6 +3193,24 @@
           "color": {
             "type": "string",
             "nullable": true
+          }
+        }
+      },
+      "ChangePasswordDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "oldPassword",
+          "newPassword"
+        ],
+        "properties": {
+          "oldPassword": {
+            "type": "string",
+            "minLength": 1
+          },
+          "newPassword": {
+            "type": "string",
+            "minLength": 1
           }
         }
       }

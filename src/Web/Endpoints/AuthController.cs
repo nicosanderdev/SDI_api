@@ -9,6 +9,7 @@ using SDI_Api.Application.Auth.Queries;
 using SDI_Api.Application.Common.Interfaces;
 using SDI_Api.Application.Common.Models;
 using SDI_Api.Application.DTOs.Auth;
+using SDI_Api.Application.Users.Commands;
 using SDI_Api.Infrastructure.Identity;
 using SDI_Api.Web.DTOs;
 
@@ -32,7 +33,49 @@ public class AuthController : ControllerBase
         _sender = sender;
     }
     
-    [HttpPost("loginCustom")]
+    /// <summary>
+    /// Registers a new user, and returns authentication cookie 
+    /// </summary>
+    [AllowAnonymous]
+    [HttpPost("register")]
+    [ProducesResponseType(typeof(UserAuthDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<UserAuthDto>> RegisterUser([FromBody] RegisterUserCommand command)
+    {  
+        var newUser = await _sender.Send(command);
+        
+        var loginCommand = new LoginCommand
+        {
+            UsernameOrEmail = command.RegisterUserDto.Email,
+            Password = command.RegisterUserDto.Password,
+            TwoFactorCode = null,
+            RememberMe = false
+        };
+
+        var result = await _sender.Send(loginCommand);
+        if (result.Requires2FA)
+            return Ok(result);
+        
+        if (result.Succeeded == false)
+            throw new ApplicationException();
+        
+        var user = result.User!;
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, user.Id!),
+            new Claim(ClaimTypes.Name, user.UserName!),
+            new Claim(ClaimTypes.Email, user.Email!),
+        };
+        var roles = await _identityService.GetUserRolesAsync(user.Id!);
+        claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
+        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        var principal = new ClaimsPrincipal(identity);
+
+        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+        return Ok(result);
+    }
+    
+    [HttpPost("login-custom")]
     [ProducesResponseType(typeof(LoginResultDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(LoginResultDto), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Login(LoginCommand command)
@@ -40,18 +83,15 @@ public class AuthController : ControllerBase
         
         var result = await _sender.Send(command);
 
-        if (result.Requires2FA)
-        {
-            return Ok(result);
-        }
-        
         if (result.Succeeded == false)
         {
-            return Unauthorized(result);
+            if (result.Requires2FA)
+                return Ok(result);
+
+            throw new UnauthorizedAccessException(result.ErrorMessage ?? "Invalid login attempt.");
         }
         
         var user = result.User!;
-        
         var claims = new List<Claim>
         {
             new Claim(ClaimTypes.NameIdentifier, user.Id!),
@@ -69,12 +109,19 @@ public class AuthController : ControllerBase
         return Ok(result);
     }
     
-    [HttpPost("logout")]
+    [HttpPost("logout-custom")]
     [Authorize]
-    public async Task<IActionResult> Logout()
+    public async Task Logout()
     {
-        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-        return Ok(new { message = "Logged out successfully." });
+        if (User.Identity!.IsAuthenticated)
+        {
+            await _identityService.SignOutAsync();
+        }
+
+        foreach (var key in HttpContext.Request.Cookies.Keys)
+        {
+            HttpContext.Response.Cookies.Append(key, "", new CookieOptions() { Expires = DateTime.Now.AddDays(-1) });
+        }
     }
     
     [HttpGet("verify")]
@@ -87,9 +134,8 @@ public class AuthController : ControllerBase
         var userId = HttpContext.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)!.Value;
         var user = await _identityService.FindUserByIdAsync(userId.ToString());
         if (user == null)
-        {
-            return Unauthorized(new { message = "User not authenticated." });
-        }
+            throw new UnauthorizedAccessException();
+        
         var roles = await _identityService.GetUserRolesAsync(user.getId()!);
     
         return Ok(new UserAuthDto
@@ -119,9 +165,8 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> ResetPasswordCustom([FromBody] ResetPasswordCommand command)
     {
         var result = await _sender.Send(command);
-
         if (!result.Succeeded)
-            return BadRequest(result);
+            throw new ArgumentException(result.ToString());
 
         return Ok(new { message = "Your password has been reset successfully." });
     }
@@ -132,26 +177,30 @@ public class AuthController : ControllerBase
     [ProducesResponseType(typeof(Result), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ConfirmEmailCustom([FromBody] ConfirmEmailCommand command)
     {
+        var UserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(UserId))
+            throw new UnauthorizedAccessException("User ID is not provided in the request.");
+        command.UserId = UserId;
         var result = await _sender.Send(command);
-
         if (!result.Succeeded)
-        {
-            return BadRequest(result);
-        }
+            throw new ArgumentException(result.ToString());
 
         return Ok(new { message = "Your email has been confirmed successfully." });
     }
     
-    [HttpPost("resend-confirmation-email-custom")]
+    [HttpGet("resend-confirmation-email-custom")]
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> ResendConfirmationEmailCustom([FromBody] ResendConfirmationEmailDto dto)
+    public async Task<IActionResult> ResendConfirmationEmailCustom()
     {
-        var command = new ResendConfirmationEmailCommand(dto.Email);
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+            throw new UnauthorizedAccessException("User ID is not provided in the request.");
+        
+        var command = new ResendConfirmationEmailCommand();
+        command.UserId = userId;
         await _sender.Send(command);
-
-        // For security, always return the same message regardless of the outcome.
         return Ok(new { message = "If an account with this email exists and is unconfirmed, a new verification email has been sent." });
     }
 
@@ -164,9 +213,7 @@ public class AuthController : ControllerBase
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
         if (string.IsNullOrEmpty(userId))
-        {
-            return Unauthorized();
-        }
+            throw new UnauthorizedAccessException();
 
         var query = new GenerateTwoFactorKeyQuery(userId);
         var result = await _sender.Send(query);
@@ -174,21 +221,40 @@ public class AuthController : ControllerBase
         return Ok(result);
     }
 
-    [HttpPost("2fa/enable-custom")]
+    [HttpPost("2fa/enable-2fa-first-step")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(Result), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> EnableTwoFactorAuthCustom([FromBody] Enable2faRequest request)
+    public async Task<IActionResult> EnableTwoFactorAuthCustom([FromBody] EnableTwoFactorAuthCommand command)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userId))
-            return Unauthorized();
+            throw new UnauthorizedAccessException();
 
-        var command = new EnableTwoFactorAuthCommand(userId, request.Code);
+        command.UserId = userId;
         var result = await _sender.Send(command);
+        
         if (!result.Succeeded)
-            return BadRequest(result);
+            throw new ArgumentException(result.ToString());
 
         return Ok(new { message = "Two-factor authentication has been enabled successfully." });
+    }
+    
+    [HttpPost("2fa/enable-confirm")]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(Result), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CompleteTwoFactorAuthEnabling([FromBody] CompleteTwoFactorAuthEnablingCommand command)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
+            throw new UnauthorizedAccessException();
+
+        command.UserId = userId;
+        var result = await _sender.Send(command);
+        if (result == null)
+            throw new ArgumentException("Failed to complete two-factor authentication enabling.");
+        
+        return Ok(result);
     }
 }

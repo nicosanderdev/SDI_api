@@ -24,38 +24,25 @@ public class MessagesController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<PaginatedMessageResultDto>> GetMessages([FromQuery] GetMessagesQuery query)
     {
-        try
-        {
-            var result = await _sender.Send(query);
-            return Ok(result);
-        }
-        catch (UnauthorizedAccessException ex) { return Unauthorized(new { message = ex.Message });}
-        catch (Exception ex) { return BadRequest(new { message = "Error fetching messages.", error = ex.Message }); }
+        var result = await _sender.Send(query);
+        return Ok(result);
     }
     
     [HttpGet("{id}")]
     public async Task<ActionResult<MessageDetailDto>> GetMessageById(string id)
     {
-        if (!Guid.TryParse(id, out var guidId)) return BadRequest("Invalid message ID format.");
-        // try/catch for _sender.Send(new GetMessageByIdQuery(guidId));
-        // ...
-         return Ok(await _sender.Send(new GetMessageByIdQuery(guidId))); // Assuming GetMessageByIdQuery exists
+        if (!Guid.TryParse(id, out var guidId))
+            throw new ArgumentException("Invalid message ID format.");
+        
+        return Ok(await _sender.Send(new GetMessageByIdQuery(guidId))); // Assuming GetMessageByIdQuery exists
     }
     
     [HttpPost]
     public async Task<ActionResult<MessageDto>> SendMessage([FromBody] SendMessageDto messageData)
     {
-        try
-        {
-            var command = new SendMessageCommand() { MessageData = messageData };
-            var result = await _sender.Send(command);
-            // Return 201 Created with location header and the created message
-            return CreatedAtAction(nameof(GetMessageById), new { id = result.Id }, result);
-        }
-        catch (UnauthorizedAccessException ex) { return Unauthorized(new { message = ex.Message });}
-        catch (NotFoundException ex) { return NotFound(new { message = ex.Message }); }
-        catch (BadRequestException ex) { return BadRequest(new { message = ex.Message }); }
-        catch (Exception ex) { return BadRequest(new { message = "Error sending message.", error = ex.Message }); }
+        var command = new SendMessageCommand() { MessageData = messageData };
+        var result = await _sender.Send(command);
+        return CreatedAtAction(nameof(GetMessageById), new { id = result.Id }, result);
     }
 
     // --- Status Update Endpoints ---
@@ -63,7 +50,8 @@ public class MessagesController : ControllerBase
     public async Task<IActionResult> MarkMessageAsRead(string id)
     {
         if (!Guid.TryParse(id, out var guidId)) 
-            return BadRequest("Invalid message ID format.");
+            throw new ArgumentException("Invalid message ID format.");
+        
         await _sender.Send(new MarkMessageAsReadCommand(guidId));
         return NoContent();
     }
@@ -71,7 +59,9 @@ public class MessagesController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> DeleteMessage(string id)
     {
-        if (!Guid.TryParse(id, out var guidId)) return BadRequest("Invalid message ID format.");
+        if (!Guid.TryParse(id, out var guidId)) 
+            throw new ArgumentException("Invalid message ID format.");
+        
         await _sender.Send(new DeleteMessageCommand() { Id = guidId });
         return NoContent();
     }

@@ -17,11 +17,12 @@ public interface IIdentityService
     Task<bool> CheckPasswordAsync(IUser user, string password);
     Task<(Result Result, string UserId)> CreateUserAsync(string email, string password, string? firstName, string? lastName, CancellationToken cancellationToken); // Modified to include names for Member creation
     Task<Result> DeleteUserAsync(string userId);
+    Task SignOutAsync();
     
     // --- Email & Phone ---
     Task<Result> SetEmailAsync(string userId, string newEmail);
     Task<string> GenerateEmailConfirmationTokenAsync(IUser user);
-    Task<Result> ConfirmEmailAsync(string userId, string token);
+    Task<Result> ConfirmEmailAsync(string userId);
     Task<Result> SetPhoneNumberAsync(string userId, string? phoneNumber);
     
     // --- Password Management ---
@@ -38,8 +39,9 @@ public interface IIdentityService
     Task<bool> AuthorizeAsync(string userId, string policyName);
     
     // --- SignIn & Authentication ---
-    Task<SignInResult> TwoFactorAuthenticatorSignInAsync(string twoFactorCode, bool isPersistent, bool rememberClient);
+    Task<SignInResult> TwoFactorAuthenticatorSignInAsync(string userId, string twoFactorCode);
     Task<IUser?> GetTwoFactorAuthenticationUserAsync();
     Task<Result> EnableTwoFactorAuthenticationAsync(string userId);
+    // TODO: refactor to return string instead of tuple
     Task<(string sharedKey, string authenticatorUri)> GenerateTwoFactorAuthenticatorKeyAsync(IUser user);
 }

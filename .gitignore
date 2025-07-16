@@ -480,3 +480,7 @@ $RECYCLE.BIN/
 # Vim temporary swap files
 *.swp
 .azure
+/src/Web/wwwroot/avatars/
+/src/Web/wwwroot/properties/images/
+/src/Web/wwwroot/properties/documents/
+/src/Infrastructure/Migrations/

@@ -10,6 +10,7 @@ public class UserProfile : Profile
     {
         CreateMap<IUser, UserDto>()
             .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.getId()))
+            .ForMember(dest => dest.PhoneNumber, opt => opt.MapFrom(src => src.getPhoneNumber()))
             .ForMember(dest => dest.Password, opt => opt.Ignore());
         
         CreateMap<Member, UserDto>();

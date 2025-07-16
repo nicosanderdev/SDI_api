@@ -25,6 +25,7 @@ public class EstatePropertyValues : BaseAuditableEntity
     public bool IsPropertyVisible { get; set; }
     
     // Relationships
+    public bool IsFeatured { get; set; }
     public Guid EstatePropertyId { get; set; }
     public virtual EstateProperty EstateProperty { get; set; } = null!; 
 

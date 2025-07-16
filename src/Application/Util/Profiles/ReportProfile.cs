@@ -10,16 +10,17 @@ public class ReportProfile : Profile
     {
         // Mapping EstateProperty to PropertyDetailsForReportDto
         CreateMap<EstateProperty, PropertyDetailsForReportDto>()
-            .ForMember(dest => dest.Id, 
+            .ForMember(dest => dest.Id,
                 opt => opt.MapFrom(src => src.Id.ToString()))
-            .ForMember(dest => dest.Price, 
-                opt => opt.MapFrom(src => src.FeaturedValues!.SalePrice.ToString()))
+            .ForMember(dest => dest.Price,
+                opt => opt.MapFrom(src => src.EstatePropertyValues
+                    .FirstOrDefault(v => v.IsFeatured)!.SalePrice.ToString()))
             .ForMember(dest => dest.Status,
-                opt => opt.MapFrom(src => src.FeaturedValues!.Status.ToString()))
+                opt => opt.MapFrom(src => src.EstatePropertyValues
+                    .FirstOrDefault(v => v.IsFeatured)!.Status.ToString()))
             .ForMember(dest => dest.Address,
-                opt => opt.MapFrom(src => 
-                // Example of concatenating address parts, adjust as needed
-                string.Join(", ", new[] { src.StreetName + src.HouseNumber, src.City, src.State }.Where(s => !string.IsNullOrEmpty(s)))
-            ));
+                opt => opt.MapFrom(src =>
+                    string.Join(", ", new[] { src.StreetName + src.HouseNumber, src.City, src.State }
+                        .Where(s => !string.IsNullOrEmpty(s)))));
     }
 }

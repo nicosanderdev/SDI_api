@@ -13,6 +13,7 @@ public interface IApplicationDbContext
     DbSet<PropertyVisitLog> PropertyVisitLogs { get; }
     DbSet<PropertyMessageLog> PropertyMessageLogs { get; }
     DbSet<Member> Members { get; }
-    public DbSet<PropertyDocument> PropertyDocuments { get; }
+    DbSet<PropertyDocument> PropertyDocuments { get; }
+    DbSet<RecoveryCode> RecoveryCodes { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }

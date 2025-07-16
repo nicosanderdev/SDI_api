@@ -1,8 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace SDI_Api.Web.DTOs;
+namespace SDI_Api.Application.DTOs.Auth;
 
-public class Enable2faRequest
+public class Enable2FaRequest
 {
     [Required]
     [StringLength(7, MinimumLength = 6)]

@@ -1,6 +1,7 @@
 ﻿using SDI_Api.Application.Common.Interfaces;
+using SDI_Api.Application.DTOs.Users;
 
-namespace SDI_Api.Application.MemberProfile.Commands;
+namespace SDI_Api.Application.Users.Commands;
 
 public class ChangeUserPasswordCommand : IRequest<Unit>
 {

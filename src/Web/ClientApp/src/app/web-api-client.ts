@@ -603,15 +603,17 @@ export class Client implements IClient {
 }
 
 export interface IAuthClient {
+    auth_RegisterUser(command: RegisterUserCommand): Observable<UserAuthDto>;
     auth_Login(command: LoginCommand): Observable<LoginResultDto>;
-    auth_Logout(): Observable<FileResponse>;
-    auth_Verify(): Observable<UserDto>;
+    auth_Logout(): Observable<void>;
+    auth_Verify(): Observable<UserAuthDto>;
     auth_ForgotPasswordCustom(command: ForgotPasswordCommand): Observable<FileResponse>;
     auth_ResetPasswordCustom(command: ResetPasswordCommand): Observable<void>;
     auth_ConfirmEmailCustom(command: ConfirmEmailCommand): Observable<void>;
-    auth_ResendConfirmationEmailCustom(dto: ResendConfirmationEmailDto): Observable<void>;
+    auth_ResendConfirmationEmailCustom(): Observable<void>;
     auth_GenerateTwoFactorKeyCustom(): Observable<GenerateTwoFactorKeyResponse>;
-    auth_EnableTwoFactorAuthCustom(request: Enable2faRequest): Observable<void>;
+    auth_EnableTwoFactorAuthCustom(command: EnableTwoFactorAuthCommand): Observable<void>;
+    auth_CompleteTwoFactorAuthEnabling(command: CompleteTwoFactorAuthEnablingCommand): Observable<void>;
 }
 
 @Injectable({
@@ -627,8 +629,67 @@ export class AuthClient implements IAuthClient {
         this.baseUrl = baseUrl ?? "";
     }
 
+    auth_RegisterUser(command: RegisterUserCommand): Observable<UserAuthDto> {
+        let url_ = this.baseUrl + "/api/auth/register";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(command);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processAuth_RegisterUser(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processAuth_RegisterUser(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<UserAuthDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<UserAuthDto>;
+        }));
+    }
+
+    protected processAuth_RegisterUser(response: HttpResponseBase): Observable<UserAuthDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result200 = UserAuthDto.fromJS(resultData200);
+            return _observableOf(result200);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            let resultData400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result400 = ProblemDetails.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
     auth_Login(command: LoginCommand): Observable<LoginResultDto> {
-        let url_ = this.baseUrl + "/api/auth/loginCustom";
+        let url_ = this.baseUrl + "/api/auth/login-custom";
         url_ = url_.replace(/[?&]$/, "");
 
         const content_ = JSON.stringify(command);
@@ -686,15 +747,14 @@ export class AuthClient implements IAuthClient {
         return _observableOf(null as any);
     }
 
-    auth_Logout(): Observable<FileResponse> {
-        let url_ = this.baseUrl + "/api/auth/logout";
+    auth_Logout(): Observable<void> {
+        let url_ = this.baseUrl + "/api/auth/logout-custom";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ : any = {
             observe: "response",
             responseType: "blob",
             headers: new HttpHeaders({
-                "Accept": "application/octet-stream"
             })
         };
 
@@ -705,31 +765,24 @@ export class AuthClient implements IAuthClient {
                 try {
                     return this.processAuth_Logout(response_ as any);
                 } catch (e) {
-                    return _observableThrow(e) as any as Observable<FileResponse>;
+                    return _observableThrow(e) as any as Observable<void>;
                 }
             } else
-                return _observableThrow(response_) as any as Observable<FileResponse>;
+                return _observableThrow(response_) as any as Observable<void>;
         }));
     }
 
-    protected processAuth_Logout(response: HttpResponseBase): Observable<FileResponse> {
+    protected processAuth_Logout(response: HttpResponseBase): Observable<void> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
             (response as any).error instanceof Blob ? (response as any).error : undefined;
 
         let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
-        if (status === 200 || status === 206) {
-            const contentDisposition = response.headers ? response.headers.get("content-disposition") : undefined;
-            let fileNameMatch = contentDisposition ? /filename\*=(?:(\\?['"])(.*?)\1|(?:[^\s]+'.*?')?([^;\n]*))/g.exec(contentDisposition) : undefined;
-            let fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[3] || fileNameMatch[2] : undefined;
-            if (fileName) {
-                fileName = decodeURIComponent(fileName);
-            } else {
-                fileNameMatch = contentDisposition ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition) : undefined;
-                fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[1] : undefined;
-            }
-            return _observableOf({ fileName: fileName, data: responseBlob as any, status: status, headers: _headers });
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
@@ -738,7 +791,7 @@ export class AuthClient implements IAuthClient {
         return _observableOf(null as any);
     }
 
-    auth_Verify(): Observable<UserDto> {
+    auth_Verify(): Observable<UserAuthDto> {
         let url_ = this.baseUrl + "/api/auth/verify";
         url_ = url_.replace(/[?&]$/, "");
 
@@ -757,14 +810,14 @@ export class AuthClient implements IAuthClient {
                 try {
                     return this.processAuth_Verify(response_ as any);
                 } catch (e) {
-                    return _observableThrow(e) as any as Observable<UserDto>;
+                    return _observableThrow(e) as any as Observable<UserAuthDto>;
                 }
             } else
-                return _observableThrow(response_) as any as Observable<UserDto>;
+                return _observableThrow(response_) as any as Observable<UserAuthDto>;
         }));
     }
 
-    protected processAuth_Verify(response: HttpResponseBase): Observable<UserDto> {
+    protected processAuth_Verify(response: HttpResponseBase): Observable<UserAuthDto> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -775,7 +828,7 @@ export class AuthClient implements IAuthClient {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             let result200: any = null;
             let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = UserDto.fromJS(resultData200);
+            result200 = UserAuthDto.fromJS(resultData200);
             return _observableOf(result200);
             }));
         } else if (status === 401) {
@@ -959,22 +1012,18 @@ export class AuthClient implements IAuthClient {
         return _observableOf(null as any);
     }
 
-    auth_ResendConfirmationEmailCustom(dto: ResendConfirmationEmailDto): Observable<void> {
+    auth_ResendConfirmationEmailCustom(): Observable<void> {
         let url_ = this.baseUrl + "/api/auth/resend-confirmation-email-custom";
         url_ = url_.replace(/[?&]$/, "");
 
-        const content_ = JSON.stringify(dto);
-
         let options_ : any = {
-            body: content_,
             observe: "response",
             responseType: "blob",
             headers: new HttpHeaders({
-                "Content-Type": "application/json",
             })
         };
 
-        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
             return this.processAuth_ResendConfirmationEmailCustom(response_);
         })).pipe(_observableCatch((response_: any) => {
             if (response_ instanceof HttpResponseBase) {
@@ -1069,11 +1118,11 @@ export class AuthClient implements IAuthClient {
         return _observableOf(null as any);
     }
 
-    auth_EnableTwoFactorAuthCustom(request: Enable2faRequest): Observable<void> {
-        let url_ = this.baseUrl + "/api/auth/2fa/enable-custom";
+    auth_EnableTwoFactorAuthCustom(command: EnableTwoFactorAuthCommand): Observable<void> {
+        let url_ = this.baseUrl + "/api/auth/2fa/enable-2fa-first-step";
         url_ = url_.replace(/[?&]$/, "");
 
-        const content_ = JSON.stringify(request);
+        const content_ = JSON.stringify(command);
 
         let options_ : any = {
             body: content_,
@@ -1123,14 +1172,70 @@ export class AuthClient implements IAuthClient {
         }
         return _observableOf(null as any);
     }
+
+    auth_CompleteTwoFactorAuthEnabling(command: CompleteTwoFactorAuthEnablingCommand): Observable<void> {
+        let url_ = this.baseUrl + "/api/auth/2fa/enable-confirm";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(command);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processAuth_CompleteTwoFactorAuthEnabling(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processAuth_CompleteTwoFactorAuthEnabling(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processAuth_CompleteTwoFactorAuthEnabling(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            let resultData400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result400 = Result.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
 }
 
 export interface IEstatePropertiesClient {
-    estateProperties_GetEstateProperties(pageNumber: number | undefined, pageSize: number | undefined, filter_IsDeleted: boolean | null | undefined, filter_OwnerId: string | null | undefined, filter_CreatedAfter: Date | null | undefined, filter_CreatedBefore: Date | null | undefined, filter_Status: string | null | undefined, filter_SearchTerm: string | null | undefined): Observable<FileResponse>;
-    estateProperties_CreateEstateProperty(command: CreateEstatePropertyCommand): Observable<void>;
+    estateProperties_GetEstateProperties(pageNumber: number | undefined, pageSize: number | undefined, filter_IsDeleted: boolean | null | undefined, filter_OwnerId: string | null | undefined, filter_CreatedAfter: Date | null | undefined, filter_CreatedBefore: Date | null | undefined, filter_Status: string | null | undefined, filter_SearchTerm: string | null | undefined): Observable<void>;
+    estateProperties_GetUsersEstateProperties(userId: string | undefined, pageNumber: number | undefined, pageSize: number | undefined): Observable<void>;
     estateProperties_GetEstateProperty(id: string): Observable<FileResponse>;
     estateProperties_UpdateEstateProperty(id: string, command: UpdateEstatePropertyCommand): Observable<void>;
     estateProperties_DeleteEstateProperty(id: string): Observable<void>;
+    estateProperties_CreateEstateProperty(id: string | undefined, streetName: string | null | undefined, houseNumber: string | null | undefined, neighborhood: string | null | undefined, city: string | null | undefined, state: string | null | undefined, zipCode: string | null | undefined, country: string | null | undefined, location: string | null | undefined, location_Lat: number | undefined, location_Lng: number | undefined, title: string | null | undefined, type: string | null | undefined, areaValue: number | undefined, areaUnit: number | undefined, bedrooms: number | undefined, bathrooms: number | undefined, hasGarage: boolean | undefined, garageSpaces: number | undefined, visits: number | undefined, createdOnUtc: Date | undefined, documents: FileParameter[] | null | undefined, mainImageUrl: string | null | undefined, images: FileParameter[] | null | undefined, ownerId: string | null | undefined, description: string | null | undefined, availableFrom: Date | undefined, arePetsAllowed: boolean | undefined, capacity: number | undefined, currency: string | null | undefined, salePrice: number | null | undefined, rentPrice: number | null | undefined, hasCommonExpenses: boolean | undefined, commonExpensesAmount: number | null | undefined, isElectricityIncluded: boolean | undefined, isWaterIncluded: boolean | undefined, isPriceVisible: boolean | undefined, status: string | null | undefined, isActive: boolean | undefined, isPropertyVisible: boolean | undefined): Observable<void>;
 }
 
 @Injectable({
@@ -1146,7 +1251,7 @@ export class EstatePropertiesClient implements IEstatePropertiesClient {
         this.baseUrl = baseUrl ?? "";
     }
 
-    estateProperties_GetEstateProperties(pageNumber: number | undefined, pageSize: number | undefined, filter_IsDeleted: boolean | null | undefined, filter_OwnerId: string | null | undefined, filter_CreatedAfter: Date | null | undefined, filter_CreatedBefore: Date | null | undefined, filter_Status: string | null | undefined, filter_SearchTerm: string | null | undefined): Observable<FileResponse> {
+    estateProperties_GetEstateProperties(pageNumber: number | undefined, pageSize: number | undefined, filter_IsDeleted: boolean | null | undefined, filter_OwnerId: string | null | undefined, filter_CreatedAfter: Date | null | undefined, filter_CreatedBefore: Date | null | undefined, filter_Status: string | null | undefined, filter_SearchTerm: string | null | undefined): Observable<void> {
         let url_ = this.baseUrl + "/api/properties?";
         if (pageNumber === null)
             throw new Error("The parameter 'pageNumber' cannot be null.");
@@ -1174,7 +1279,6 @@ export class EstatePropertiesClient implements IEstatePropertiesClient {
             observe: "response",
             responseType: "blob",
             headers: new HttpHeaders({
-                "Accept": "application/octet-stream"
             })
         };
 
@@ -1185,61 +1289,6 @@ export class EstatePropertiesClient implements IEstatePropertiesClient {
                 try {
                     return this.processEstateProperties_GetEstateProperties(response_ as any);
                 } catch (e) {
-                    return _observableThrow(e) as any as Observable<FileResponse>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<FileResponse>;
-        }));
-    }
-
-    protected processEstateProperties_GetEstateProperties(response: HttpResponseBase): Observable<FileResponse> {
-        const status = response.status;
-        const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
-
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
-        if (status === 200 || status === 206) {
-            const contentDisposition = response.headers ? response.headers.get("content-disposition") : undefined;
-            let fileNameMatch = contentDisposition ? /filename\*=(?:(\\?['"])(.*?)\1|(?:[^\s]+'.*?')?([^;\n]*))/g.exec(contentDisposition) : undefined;
-            let fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[3] || fileNameMatch[2] : undefined;
-            if (fileName) {
-                fileName = decodeURIComponent(fileName);
-            } else {
-                fileNameMatch = contentDisposition ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition) : undefined;
-                fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[1] : undefined;
-            }
-            return _observableOf({ fileName: fileName, data: responseBlob as any, status: status, headers: _headers });
-        } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
-        }
-        return _observableOf(null as any);
-    }
-
-    estateProperties_CreateEstateProperty(command: CreateEstatePropertyCommand): Observable<void> {
-        let url_ = this.baseUrl + "/api/properties";
-        url_ = url_.replace(/[?&]$/, "");
-
-        const content_ = JSON.stringify(command);
-
-        let options_ : any = {
-            body: content_,
-            observe: "response",
-            responseType: "blob",
-            headers: new HttpHeaders({
-                "Content-Type": "application/json",
-            })
-        };
-
-        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processEstateProperties_CreateEstateProperty(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processEstateProperties_CreateEstateProperty(response_ as any);
-                } catch (e) {
                     return _observableThrow(e) as any as Observable<void>;
                 }
             } else
@@ -1247,7 +1296,7 @@ export class EstatePropertiesClient implements IEstatePropertiesClient {
         }));
     }
 
-    protected processEstateProperties_CreateEstateProperty(response: HttpResponseBase): Observable<void> {
+    protected processEstateProperties_GetEstateProperties(response: HttpResponseBase): Observable<void> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -1264,6 +1313,76 @@ export class EstatePropertiesClient implements IEstatePropertiesClient {
             let resultData400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
             result400 = ProblemDetails.fromJS(resultData400);
             return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    estateProperties_GetUsersEstateProperties(userId: string | undefined, pageNumber: number | undefined, pageSize: number | undefined): Observable<void> {
+        let url_ = this.baseUrl + "/mine?";
+        if (userId === null)
+            throw new Error("The parameter 'userId' cannot be null.");
+        else if (userId !== undefined)
+            url_ += "UserId=" + encodeURIComponent("" + userId) + "&";
+        if (pageNumber === null)
+            throw new Error("The parameter 'pageNumber' cannot be null.");
+        else if (pageNumber !== undefined)
+            url_ += "PageNumber=" + encodeURIComponent("" + pageNumber) + "&";
+        if (pageSize === null)
+            throw new Error("The parameter 'pageSize' cannot be null.");
+        else if (pageSize !== undefined)
+            url_ += "PageSize=" + encodeURIComponent("" + pageSize) + "&";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processEstateProperties_GetUsersEstateProperties(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processEstateProperties_GetUsersEstateProperties(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processEstateProperties_GetUsersEstateProperties(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            let resultData400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result400 = ProblemDetails.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            let resultData401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result401 = ProblemDetails.fromJS(resultData401);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result401);
             }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
@@ -1415,6 +1534,180 @@ export class EstatePropertiesClient implements IEstatePropertiesClient {
     }
 
     protected processEstateProperties_DeleteEstateProperty(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            let resultData400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result400 = ProblemDetails.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    estateProperties_CreateEstateProperty(id: string | undefined, streetName: string | null | undefined, houseNumber: string | null | undefined, neighborhood: string | null | undefined, city: string | null | undefined, state: string | null | undefined, zipCode: string | null | undefined, country: string | null | undefined, location: string | null | undefined, location_Lat: number | undefined, location_Lng: number | undefined, title: string | null | undefined, type: string | null | undefined, areaValue: number | undefined, areaUnit: number | undefined, bedrooms: number | undefined, bathrooms: number | undefined, hasGarage: boolean | undefined, garageSpaces: number | undefined, visits: number | undefined, createdOnUtc: Date | undefined, documents: FileParameter[] | null | undefined, mainImageUrl: string | null | undefined, images: FileParameter[] | null | undefined, ownerId: string | null | undefined, description: string | null | undefined, availableFrom: Date | undefined, arePetsAllowed: boolean | undefined, capacity: number | undefined, currency: string | null | undefined, salePrice: number | null | undefined, rentPrice: number | null | undefined, hasCommonExpenses: boolean | undefined, commonExpensesAmount: number | null | undefined, isElectricityIncluded: boolean | undefined, isWaterIncluded: boolean | undefined, isPriceVisible: boolean | undefined, status: string | null | undefined, isActive: boolean | undefined, isPropertyVisible: boolean | undefined): Observable<void> {
+        let url_ = this.baseUrl + "/api/properties/create";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = new FormData();
+        if (id === null || id === undefined)
+            throw new Error("The parameter 'id' cannot be null.");
+        else
+            content_.append("Id", id.toString());
+        if (streetName !== null && streetName !== undefined)
+            content_.append("StreetName", streetName.toString());
+        if (houseNumber !== null && houseNumber !== undefined)
+            content_.append("HouseNumber", houseNumber.toString());
+        if (neighborhood !== null && neighborhood !== undefined)
+            content_.append("Neighborhood", neighborhood.toString());
+        if (city !== null && city !== undefined)
+            content_.append("City", city.toString());
+        if (state !== null && state !== undefined)
+            content_.append("State", state.toString());
+        if (zipCode !== null && zipCode !== undefined)
+            content_.append("ZipCode", zipCode.toString());
+        if (country !== null && country !== undefined)
+            content_.append("Country", country.toString());
+        if (location !== null && location !== undefined)
+            content_.append("Location", location.toString());
+        if (location_Lat === null || location_Lat === undefined)
+            throw new Error("The parameter 'location_Lat' cannot be null.");
+        else
+            content_.append("Location.Lat", location_Lat.toString());
+        if (location_Lng === null || location_Lng === undefined)
+            throw new Error("The parameter 'location_Lng' cannot be null.");
+        else
+            content_.append("Location.Lng", location_Lng.toString());
+        if (title !== null && title !== undefined)
+            content_.append("Title", title.toString());
+        if (type !== null && type !== undefined)
+            content_.append("Type", type.toString());
+        if (areaValue === null || areaValue === undefined)
+            throw new Error("The parameter 'areaValue' cannot be null.");
+        else
+            content_.append("AreaValue", areaValue.toString());
+        if (areaUnit === null || areaUnit === undefined)
+            throw new Error("The parameter 'areaUnit' cannot be null.");
+        else
+            content_.append("AreaUnit", areaUnit.toString());
+        if (bedrooms === null || bedrooms === undefined)
+            throw new Error("The parameter 'bedrooms' cannot be null.");
+        else
+            content_.append("Bedrooms", bedrooms.toString());
+        if (bathrooms === null || bathrooms === undefined)
+            throw new Error("The parameter 'bathrooms' cannot be null.");
+        else
+            content_.append("Bathrooms", bathrooms.toString());
+        if (hasGarage === null || hasGarage === undefined)
+            throw new Error("The parameter 'hasGarage' cannot be null.");
+        else
+            content_.append("HasGarage", hasGarage.toString());
+        if (garageSpaces === null || garageSpaces === undefined)
+            throw new Error("The parameter 'garageSpaces' cannot be null.");
+        else
+            content_.append("GarageSpaces", garageSpaces.toString());
+        if (visits === null || visits === undefined)
+            throw new Error("The parameter 'visits' cannot be null.");
+        else
+            content_.append("Visits", visits.toString());
+        if (createdOnUtc === null || createdOnUtc === undefined)
+            throw new Error("The parameter 'createdOnUtc' cannot be null.");
+        else
+            content_.append("CreatedOnUtc", createdOnUtc.toJSON());
+        if (documents !== null && documents !== undefined)
+            documents.forEach(item_ => content_.append("Documents", item_.data, item_.fileName ? item_.fileName : "Documents") );
+        if (mainImageUrl !== null && mainImageUrl !== undefined)
+            content_.append("MainImageUrl", mainImageUrl.toString());
+        if (images !== null && images !== undefined)
+            images.forEach(item_ => content_.append("Images", item_.data, item_.fileName ? item_.fileName : "Images") );
+        if (ownerId !== null && ownerId !== undefined)
+            content_.append("OwnerId", ownerId.toString());
+        if (description !== null && description !== undefined)
+            content_.append("Description", description.toString());
+        if (availableFrom === null || availableFrom === undefined)
+            throw new Error("The parameter 'availableFrom' cannot be null.");
+        else
+            content_.append("AvailableFrom", availableFrom.toJSON());
+        if (arePetsAllowed === null || arePetsAllowed === undefined)
+            throw new Error("The parameter 'arePetsAllowed' cannot be null.");
+        else
+            content_.append("ArePetsAllowed", arePetsAllowed.toString());
+        if (capacity === null || capacity === undefined)
+            throw new Error("The parameter 'capacity' cannot be null.");
+        else
+            content_.append("Capacity", capacity.toString());
+        if (currency !== null && currency !== undefined)
+            content_.append("Currency", currency.toString());
+        if (salePrice !== null && salePrice !== undefined)
+            content_.append("SalePrice", salePrice.toString());
+        if (rentPrice !== null && rentPrice !== undefined)
+            content_.append("RentPrice", rentPrice.toString());
+        if (hasCommonExpenses === null || hasCommonExpenses === undefined)
+            throw new Error("The parameter 'hasCommonExpenses' cannot be null.");
+        else
+            content_.append("HasCommonExpenses", hasCommonExpenses.toString());
+        if (commonExpensesAmount !== null && commonExpensesAmount !== undefined)
+            content_.append("CommonExpensesAmount", commonExpensesAmount.toString());
+        if (isElectricityIncluded === null || isElectricityIncluded === undefined)
+            throw new Error("The parameter 'isElectricityIncluded' cannot be null.");
+        else
+            content_.append("IsElectricityIncluded", isElectricityIncluded.toString());
+        if (isWaterIncluded === null || isWaterIncluded === undefined)
+            throw new Error("The parameter 'isWaterIncluded' cannot be null.");
+        else
+            content_.append("IsWaterIncluded", isWaterIncluded.toString());
+        if (isPriceVisible === null || isPriceVisible === undefined)
+            throw new Error("The parameter 'isPriceVisible' cannot be null.");
+        else
+            content_.append("IsPriceVisible", isPriceVisible.toString());
+        if (status !== null && status !== undefined)
+            content_.append("Status", status.toString());
+        if (isActive === null || isActive === undefined)
+            throw new Error("The parameter 'isActive' cannot be null.");
+        else
+            content_.append("IsActive", isActive.toString());
+        if (isPropertyVisible === null || isPropertyVisible === undefined)
+            throw new Error("The parameter 'isPropertyVisible' cannot be null.");
+        else
+            content_.append("IsPropertyVisible", isPropertyVisible.toString());
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processEstateProperties_CreateEstateProperty(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processEstateProperties_CreateEstateProperty(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processEstateProperties_CreateEstateProperty(response: HttpResponseBase): Observable<void> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -1790,9 +2083,9 @@ export class MessagesClient implements IMessagesClient {
 }
 
 export interface IProfilesClient {
-    profiles_GetCurrentUserProfile(): Observable<ProfileDataDto>;
-    profiles_UpdateCurrentUserProfile(profileUpdateData: UpdateProfileDto): Observable<ProfileDataDto>;
-    profiles_ChangeUserPassword(passwordData: ChangePasswordDto): Observable<FileResponse>;
+    profiles_GetCurrentUserProfile(): Observable<FileResponse>;
+    profiles_UpdateCurrentUserProfile(updateUserProfileCommand: UpdateUserProfileCommand): Observable<FileResponse>;
+    profiles_UploadProfilePicture(contentType: string | null | undefined, contentDisposition: string | null | undefined, headers: any[] | null | undefined, length: number | undefined, name: string | null | undefined, fileName: string | null | undefined): Observable<FileResponse>;
 }
 
 @Injectable({
@@ -1808,15 +2101,15 @@ export class ProfilesClient implements IProfilesClient {
         this.baseUrl = baseUrl ?? "";
     }
 
-    profiles_GetCurrentUserProfile(): Observable<ProfileDataDto> {
-        let url_ = this.baseUrl + "/api/profile";
+    profiles_GetCurrentUserProfile(): Observable<FileResponse> {
+        let url_ = this.baseUrl + "/api/profile/me";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ : any = {
             observe: "response",
             responseType: "blob",
             headers: new HttpHeaders({
-                "Accept": "application/json"
+                "Accept": "application/octet-stream"
             })
         };
 
@@ -1827,27 +2120,31 @@ export class ProfilesClient implements IProfilesClient {
                 try {
                     return this.processProfiles_GetCurrentUserProfile(response_ as any);
                 } catch (e) {
-                    return _observableThrow(e) as any as Observable<ProfileDataDto>;
+                    return _observableThrow(e) as any as Observable<FileResponse>;
                 }
             } else
-                return _observableThrow(response_) as any as Observable<ProfileDataDto>;
+                return _observableThrow(response_) as any as Observable<FileResponse>;
         }));
     }
 
-    protected processProfiles_GetCurrentUserProfile(response: HttpResponseBase): Observable<ProfileDataDto> {
+    protected processProfiles_GetCurrentUserProfile(response: HttpResponseBase): Observable<FileResponse> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
             (response as any).error instanceof Blob ? (response as any).error : undefined;
 
         let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
-        if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = ProfileDataDto.fromJS(resultData200);
-            return _observableOf(result200);
-            }));
+        if (status === 200 || status === 206) {
+            const contentDisposition = response.headers ? response.headers.get("content-disposition") : undefined;
+            let fileNameMatch = contentDisposition ? /filename\*=(?:(\\?['"])(.*?)\1|(?:[^\s]+'.*?')?([^;\n]*))/g.exec(contentDisposition) : undefined;
+            let fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[3] || fileNameMatch[2] : undefined;
+            if (fileName) {
+                fileName = decodeURIComponent(fileName);
+            } else {
+                fileNameMatch = contentDisposition ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition) : undefined;
+                fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[1] : undefined;
+            }
+            return _observableOf({ fileName: fileName, data: responseBlob as any, status: status, headers: _headers });
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
@@ -1856,63 +2153,11 @@ export class ProfilesClient implements IProfilesClient {
         return _observableOf(null as any);
     }
 
-    profiles_UpdateCurrentUserProfile(profileUpdateData: UpdateProfileDto): Observable<ProfileDataDto> {
-        let url_ = this.baseUrl + "/api/profile";
+    profiles_UpdateCurrentUserProfile(updateUserProfileCommand: UpdateUserProfileCommand): Observable<FileResponse> {
+        let url_ = this.baseUrl + "/api/profile/me";
         url_ = url_.replace(/[?&]$/, "");
 
-        const content_ = JSON.stringify(profileUpdateData);
-
-        let options_ : any = {
-            body: content_,
-            observe: "response",
-            responseType: "blob",
-            headers: new HttpHeaders({
-                "Content-Type": "application/json",
-                "Accept": "application/json"
-            })
-        };
-
-        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processProfiles_UpdateCurrentUserProfile(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processProfiles_UpdateCurrentUserProfile(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<ProfileDataDto>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<ProfileDataDto>;
-        }));
-    }
-
-    protected processProfiles_UpdateCurrentUserProfile(response: HttpResponseBase): Observable<ProfileDataDto> {
-        const status = response.status;
-        const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
-
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
-        if (status === 200) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = ProfileDataDto.fromJS(resultData200);
-            return _observableOf(result200);
-            }));
-        } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
-        }
-        return _observableOf(null as any);
-    }
-
-    profiles_ChangeUserPassword(passwordData: ChangePasswordDto): Observable<FileResponse> {
-        let url_ = this.baseUrl + "/api/profile/change-password";
-        url_ = url_.replace(/[?&]$/, "");
-
-        const content_ = JSON.stringify(passwordData);
+        const content_ = JSON.stringify(updateUserProfileCommand);
 
         let options_ : any = {
             body: content_,
@@ -1924,12 +2169,12 @@ export class ProfilesClient implements IProfilesClient {
             })
         };
 
-        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processProfiles_ChangeUserPassword(response_);
+        return this.http.request("put", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processProfiles_UpdateCurrentUserProfile(response_);
         })).pipe(_observableCatch((response_: any) => {
             if (response_ instanceof HttpResponseBase) {
                 try {
-                    return this.processProfiles_ChangeUserPassword(response_ as any);
+                    return this.processProfiles_UpdateCurrentUserProfile(response_ as any);
                 } catch (e) {
                     return _observableThrow(e) as any as Observable<FileResponse>;
                 }
@@ -1938,7 +2183,76 @@ export class ProfilesClient implements IProfilesClient {
         }));
     }
 
-    protected processProfiles_ChangeUserPassword(response: HttpResponseBase): Observable<FileResponse> {
+    protected processProfiles_UpdateCurrentUserProfile(response: HttpResponseBase): Observable<FileResponse> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200 || status === 206) {
+            const contentDisposition = response.headers ? response.headers.get("content-disposition") : undefined;
+            let fileNameMatch = contentDisposition ? /filename\*=(?:(\\?['"])(.*?)\1|(?:[^\s]+'.*?')?([^;\n]*))/g.exec(contentDisposition) : undefined;
+            let fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[3] || fileNameMatch[2] : undefined;
+            if (fileName) {
+                fileName = decodeURIComponent(fileName);
+            } else {
+                fileNameMatch = contentDisposition ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition) : undefined;
+                fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[1] : undefined;
+            }
+            return _observableOf({ fileName: fileName, data: responseBlob as any, status: status, headers: _headers });
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    profiles_UploadProfilePicture(contentType: string | null | undefined, contentDisposition: string | null | undefined, headers: any[] | null | undefined, length: number | undefined, name: string | null | undefined, fileName: string | null | undefined): Observable<FileResponse> {
+        let url_ = this.baseUrl + "/api/profile/avatar";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = new FormData();
+        if (contentType !== null && contentType !== undefined)
+            content_.append("ContentType", contentType.toString());
+        if (contentDisposition !== null && contentDisposition !== undefined)
+            content_.append("ContentDisposition", contentDisposition.toString());
+        if (headers !== null && headers !== undefined)
+            headers.forEach(item_ => content_.append("Headers", item_.toString()));
+        if (length === null || length === undefined)
+            throw new Error("The parameter 'length' cannot be null.");
+        else
+            content_.append("Length", length.toString());
+        if (name !== null && name !== undefined)
+            content_.append("Name", name.toString());
+        if (fileName !== null && fileName !== undefined)
+            content_.append("FileName", fileName.toString());
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/octet-stream"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processProfiles_UploadProfilePicture(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processProfiles_UploadProfilePicture(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<FileResponse>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<FileResponse>;
+        }));
+    }
+
+    protected processProfiles_UploadProfilePicture(response: HttpResponseBase): Observable<FileResponse> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -2370,6 +2684,219 @@ export class ReportsClient implements IReportsClient {
                 result200 = <any>null;
             }
             return _observableOf(result200);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+}
+
+export interface IUserClient {
+    user_GetUsers(): Observable<UserAuthDto[]>;
+    user_GetUserById(id: string): Observable<UserAuthDto>;
+    user_ChangeUserPassword(passwordData: ChangePasswordDto): Observable<UserAuthDto>;
+}
+
+@Injectable({
+    providedIn: 'root'
+})
+export class UserClient implements IUserClient {
+    private http: HttpClient;
+    private baseUrl: string;
+    protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
+
+    constructor(@Inject(HttpClient) http: HttpClient, @Optional() @Inject(API_BASE_URL) baseUrl?: string) {
+        this.http = http;
+        this.baseUrl = baseUrl ?? "";
+    }
+
+    user_GetUsers(): Observable<UserAuthDto[]> {
+        let url_ = this.baseUrl + "/api/user";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUser_GetUsers(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUser_GetUsers(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<UserAuthDto[]>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<UserAuthDto[]>;
+        }));
+    }
+
+    protected processUser_GetUsers(response: HttpResponseBase): Observable<UserAuthDto[]> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            if (Array.isArray(resultData200)) {
+                result200 = [] as any;
+                for (let item of resultData200)
+                    result200!.push(UserAuthDto.fromJS(item));
+            }
+            else {
+                result200 = <any>null;
+            }
+            return _observableOf(result200);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            let resultData400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result400 = ProblemDetails.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    user_GetUserById(id: string): Observable<UserAuthDto> {
+        let url_ = this.baseUrl + "/api/user/{id}";
+        if (id === undefined || id === null)
+            throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUser_GetUserById(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUser_GetUserById(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<UserAuthDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<UserAuthDto>;
+        }));
+    }
+
+    protected processUser_GetUserById(response: HttpResponseBase): Observable<UserAuthDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result200 = UserAuthDto.fromJS(resultData200);
+            return _observableOf(result200);
+            }));
+        } else if (status === 404) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result404: any = null;
+            let resultData404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result404 = ProblemDetails.fromJS(resultData404);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result404);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            let resultData400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result400 = ProblemDetails.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    user_ChangeUserPassword(passwordData: ChangePasswordDto): Observable<UserAuthDto> {
+        let url_ = this.baseUrl + "/api/user/change-password";
+        url_ = url_.replace(/[?&]$/, "");
+
+        const content_ = JSON.stringify(passwordData);
+
+        let options_ : any = {
+            body: content_,
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            })
+        };
+
+        return this.http.request("post", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUser_ChangeUserPassword(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUser_ChangeUserPassword(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<UserAuthDto>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<UserAuthDto>;
+        }));
+    }
+
+    protected processUser_ChangeUserPassword(response: HttpResponseBase): Observable<UserAuthDto> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result200 = UserAuthDto.fromJS(resultData200);
+            return _observableOf(result200);
+            }));
+        } else if (status === 404) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result404: any = null;
+            let resultData404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result404 = ProblemDetails.fromJS(resultData404);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result404);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            let resultData400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result400 = ProblemDetails.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
             }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
@@ -2985,55 +3512,7 @@ export interface IInfoRequest {
     oldPassword?: string | undefined;
 }
 
-export class LoginResultDto implements ILoginResultDto {
-    succeeded?: boolean;
-    requires2FA?: boolean;
-    user?: UserDto | undefined;
-    errorMessage?: string | undefined;
-
-    constructor(data?: ILoginResultDto) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(_data?: any) {
-        if (_data) {
-            this.succeeded = _data["succeeded"];
-            this.requires2FA = _data["requires2FA"];
-            this.user = _data["user"] ? UserDto.fromJS(_data["user"]) : <any>undefined;
-            this.errorMessage = _data["errorMessage"];
-        }
-    }
-
-    static fromJS(data: any): LoginResultDto {
-        data = typeof data === 'object' ? data : {};
-        let result = new LoginResultDto();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["succeeded"] = this.succeeded;
-        data["requires2FA"] = this.requires2FA;
-        data["user"] = this.user ? this.user.toJSON() : <any>undefined;
-        data["errorMessage"] = this.errorMessage;
-        return data;
-    }
-}
-
-export interface ILoginResultDto {
-    succeeded?: boolean;
-    requires2FA?: boolean;
-    user?: UserDto | undefined;
-    errorMessage?: string | undefined;
-}
-
-export class UserDto implements IUserDto {
+export class UserAuthDto implements IUserAuthDto {
     id?: string | undefined;
     userName?: string | undefined;
     email?: string | undefined;
@@ -3042,7 +3521,7 @@ export class UserDto implements IUserDto {
     is2FAEnabled?: boolean;
     roles?: string[];
 
-    constructor(data?: IUserDto) {
+    constructor(data?: IUserAuthDto) {
         if (data) {
             for (var property in data) {
                 if (data.hasOwnProperty(property))
@@ -3067,9 +3546,9 @@ export class UserDto implements IUserDto {
         }
     }
 
-    static fromJS(data: any): UserDto {
+    static fromJS(data: any): UserAuthDto {
         data = typeof data === 'object' ? data : {};
-        let result = new UserDto();
+        let result = new UserAuthDto();
         result.init(data);
         return result;
     }
@@ -3091,7 +3570,7 @@ export class UserDto implements IUserDto {
     }
 }
 
-export interface IUserDto {
+export interface IUserAuthDto {
     id?: string | undefined;
     userName?: string | undefined;
     email?: string | undefined;
@@ -3099,6 +3578,138 @@ export interface IUserDto {
     isAuthenticated?: boolean;
     is2FAEnabled?: boolean;
     roles?: string[];
+}
+
+export class RegisterUserCommand implements IRegisterUserCommand {
+    registerUserDto?: RegisterUserDto;
+
+    constructor(data?: IRegisterUserCommand) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.registerUserDto = _data["registerUserDto"] ? RegisterUserDto.fromJS(_data["registerUserDto"]) : <any>undefined;
+        }
+    }
+
+    static fromJS(data: any): RegisterUserCommand {
+        data = typeof data === 'object' ? data : {};
+        let result = new RegisterUserCommand();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["registerUserDto"] = this.registerUserDto ? this.registerUserDto.toJSON() : <any>undefined;
+        return data;
+    }
+}
+
+export interface IRegisterUserCommand {
+    registerUserDto?: RegisterUserDto;
+}
+
+export class RegisterUserDto implements IRegisterUserDto {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    password?: string;
+
+    constructor(data?: IRegisterUserDto) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.firstName = _data["firstName"];
+            this.lastName = _data["lastName"];
+            this.email = _data["email"];
+            this.password = _data["password"];
+        }
+    }
+
+    static fromJS(data: any): RegisterUserDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new RegisterUserDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["firstName"] = this.firstName;
+        data["lastName"] = this.lastName;
+        data["email"] = this.email;
+        data["password"] = this.password;
+        return data;
+    }
+}
+
+export interface IRegisterUserDto {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    password?: string;
+}
+
+export class LoginResultDto implements ILoginResultDto {
+    succeeded?: boolean;
+    requires2FA?: boolean;
+    user?: UserAuthDto | undefined;
+    errorMessage?: string | undefined;
+
+    constructor(data?: ILoginResultDto) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.succeeded = _data["succeeded"];
+            this.requires2FA = _data["requires2FA"];
+            this.user = _data["user"] ? UserAuthDto.fromJS(_data["user"]) : <any>undefined;
+            this.errorMessage = _data["errorMessage"];
+        }
+    }
+
+    static fromJS(data: any): LoginResultDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new LoginResultDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["succeeded"] = this.succeeded;
+        data["requires2FA"] = this.requires2FA;
+        data["user"] = this.user ? this.user.toJSON() : <any>undefined;
+        data["errorMessage"] = this.errorMessage;
+        return data;
+    }
+}
+
+export interface ILoginResultDto {
+    succeeded?: boolean;
+    requires2FA?: boolean;
+    user?: UserAuthDto | undefined;
+    errorMessage?: string | undefined;
 }
 
 export class LoginCommand implements ILoginCommand {
@@ -3278,8 +3889,8 @@ export interface IResetPasswordCommand {
 }
 
 export class ConfirmEmailCommand implements IConfirmEmailCommand {
-    userId?: string;
-    token?: string;
+    userId?: string | undefined;
+    token?: string | undefined;
 
     constructor(data?: IConfirmEmailCommand) {
         if (data) {
@@ -3313,44 +3924,8 @@ export class ConfirmEmailCommand implements IConfirmEmailCommand {
 }
 
 export interface IConfirmEmailCommand {
-    userId?: string;
-    token?: string;
-}
-
-export class ResendConfirmationEmailDto implements IResendConfirmationEmailDto {
-    email!: string;
-
-    constructor(data?: IResendConfirmationEmailDto) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(_data?: any) {
-        if (_data) {
-            this.email = _data["email"];
-        }
-    }
-
-    static fromJS(data: any): ResendConfirmationEmailDto {
-        data = typeof data === 'object' ? data : {};
-        let result = new ResendConfirmationEmailDto();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["email"] = this.email;
-        return data;
-    }
-}
-
-export interface IResendConfirmationEmailDto {
-    email: string;
+    userId?: string | undefined;
+    token?: string | undefined;
 }
 
 export class GenerateTwoFactorKeyResponse implements IGenerateTwoFactorKeyResponse {
@@ -3393,10 +3968,11 @@ export interface IGenerateTwoFactorKeyResponse {
     authenticatorUri?: string;
 }
 
-export class Enable2faRequest implements IEnable2faRequest {
-    code!: string;
+export class EnableTwoFactorAuthCommand implements IEnableTwoFactorAuthCommand {
+    userId?: string | undefined;
+    password!: string;
 
-    constructor(data?: IEnable2faRequest) {
+    constructor(data?: IEnableTwoFactorAuthCommand) {
         if (data) {
             for (var property in data) {
                 if (data.hasOwnProperty(property))
@@ -3407,32 +3983,36 @@ export class Enable2faRequest implements IEnable2faRequest {
 
     init(_data?: any) {
         if (_data) {
-            this.code = _data["code"];
+            this.userId = _data["userId"];
+            this.password = _data["password"];
         }
     }
 
-    static fromJS(data: any): Enable2faRequest {
+    static fromJS(data: any): EnableTwoFactorAuthCommand {
         data = typeof data === 'object' ? data : {};
-        let result = new Enable2faRequest();
+        let result = new EnableTwoFactorAuthCommand();
         result.init(data);
         return result;
     }
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["code"] = this.code;
+        data["userId"] = this.userId;
+        data["password"] = this.password;
         return data;
     }
 }
 
-export interface IEnable2faRequest {
-    code: string;
+export interface IEnableTwoFactorAuthCommand {
+    userId?: string | undefined;
+    password: string;
 }
 
-export class CreateEstatePropertyCommand implements ICreateEstatePropertyCommand {
-    dto?: CreateOrUpdateEstatePropertyDto;
+export class CompleteTwoFactorAuthEnablingCommand implements ICompleteTwoFactorAuthEnablingCommand {
+    userId?: string | undefined;
+    twoFactorCode?: string | undefined;
 
-    constructor(data?: ICreateEstatePropertyCommand) {
+    constructor(data?: ICompleteTwoFactorAuthEnablingCommand) {
         if (data) {
             for (var property in data) {
                 if (data.hasOwnProperty(property))
@@ -3443,26 +4023,89 @@ export class CreateEstatePropertyCommand implements ICreateEstatePropertyCommand
 
     init(_data?: any) {
         if (_data) {
-            this.dto = _data["dto"] ? CreateOrUpdateEstatePropertyDto.fromJS(_data["dto"]) : <any>undefined;
+            this.userId = _data["userId"];
+            this.twoFactorCode = _data["twoFactorCode"];
         }
     }
 
-    static fromJS(data: any): CreateEstatePropertyCommand {
+    static fromJS(data: any): CompleteTwoFactorAuthEnablingCommand {
         data = typeof data === 'object' ? data : {};
-        let result = new CreateEstatePropertyCommand();
+        let result = new CompleteTwoFactorAuthEnablingCommand();
         result.init(data);
         return result;
     }
 
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
-        data["dto"] = this.dto ? this.dto.toJSON() : <any>undefined;
+        data["userId"] = this.userId;
+        data["twoFactorCode"] = this.twoFactorCode;
         return data;
     }
 }
 
-export interface ICreateEstatePropertyCommand {
-    dto?: CreateOrUpdateEstatePropertyDto;
+export interface ICompleteTwoFactorAuthEnablingCommand {
+    userId?: string | undefined;
+    twoFactorCode?: string | undefined;
+}
+
+export class UpdateEstatePropertyCommand implements IUpdateEstatePropertyCommand {
+    estateProperty?: CreateOrUpdateEstatePropertyDto;
+    mainImage?: CreateOrUpdatePropertyImageDto | undefined;
+    propertyImages?: CreateOrUpdatePropertyImageDto[] | undefined;
+    featuredValuesId?: string | undefined;
+    featuredValues?: CreateOrUpdateEstatePropertyValuesDto | undefined;
+
+    constructor(data?: IUpdateEstatePropertyCommand) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.estateProperty = _data["estateProperty"] ? CreateOrUpdateEstatePropertyDto.fromJS(_data["estateProperty"]) : <any>undefined;
+            this.mainImage = _data["mainImage"] ? CreateOrUpdatePropertyImageDto.fromJS(_data["mainImage"]) : <any>undefined;
+            if (Array.isArray(_data["propertyImages"])) {
+                this.propertyImages = [] as any;
+                for (let item of _data["propertyImages"])
+                    this.propertyImages!.push(CreateOrUpdatePropertyImageDto.fromJS(item));
+            }
+            this.featuredValuesId = _data["featuredValuesId"];
+            this.featuredValues = _data["featuredValues"] ? CreateOrUpdateEstatePropertyValuesDto.fromJS(_data["featuredValues"]) : <any>undefined;
+        }
+    }
+
+    static fromJS(data: any): UpdateEstatePropertyCommand {
+        data = typeof data === 'object' ? data : {};
+        let result = new UpdateEstatePropertyCommand();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["estateProperty"] = this.estateProperty ? this.estateProperty.toJSON() : <any>undefined;
+        data["mainImage"] = this.mainImage ? this.mainImage.toJSON() : <any>undefined;
+        if (Array.isArray(this.propertyImages)) {
+            data["propertyImages"] = [];
+            for (let item of this.propertyImages)
+                data["propertyImages"].push(item.toJSON());
+        }
+        data["featuredValuesId"] = this.featuredValuesId;
+        data["featuredValues"] = this.featuredValues ? this.featuredValues.toJSON() : <any>undefined;
+        return data;
+    }
+}
+
+export interface IUpdateEstatePropertyCommand {
+    estateProperty?: CreateOrUpdateEstatePropertyDto;
+    mainImage?: CreateOrUpdatePropertyImageDto | undefined;
+    propertyImages?: CreateOrUpdatePropertyImageDto[] | undefined;
+    featuredValuesId?: string | undefined;
+    featuredValues?: CreateOrUpdateEstatePropertyValuesDto | undefined;
 }
 
 export class CreateOrUpdateEstatePropertyDto implements ICreateOrUpdateEstatePropertyDto {
@@ -3474,7 +4117,7 @@ export class CreateOrUpdateEstatePropertyDto implements ICreateOrUpdateEstatePro
     state!: string;
     zipCode!: string;
     country!: string;
-    location!: LocationDto;
+    locationString?: string | undefined;
     title!: string;
     type!: string;
     areaValue?: number;
@@ -3484,17 +4127,12 @@ export class CreateOrUpdateEstatePropertyDto implements ICreateOrUpdateEstatePro
     hasGarage!: boolean;
     garageSpaces!: number;
     visits?: number;
-    createdOnUtc!: Date;
-    images!: string[];
-    publicDeed!: string;
-    propertyPlans!: string;
-    taxReceipts!: string;
-    otherDocuments?: string[] | undefined;
-    mainImage?: string | undefined;
+    createdOnUtc?: Date;
+    documents?: string[];
     mainImageUrl?: string | undefined;
-    propertyImages?: PropertyImageDto[] | undefined;
+    images?: string[];
     ownerId?: string | undefined;
-    description!: string;
+    description?: string | undefined;
     availableFrom?: Date;
     arePetsAllowed?: boolean;
     capacity?: number;
@@ -3517,10 +4155,6 @@ export class CreateOrUpdateEstatePropertyDto implements ICreateOrUpdateEstatePro
                     (<any>this)[property] = (<any>data)[property];
             }
         }
-        if (!data) {
-            this.location = new LocationDto();
-            this.images = [];
-        }
     }
 
     init(_data?: any) {
@@ -3533,7 +4167,7 @@ export class CreateOrUpdateEstatePropertyDto implements ICreateOrUpdateEstatePro
             this.state = _data["state"];
             this.zipCode = _data["zipCode"];
             this.country = _data["country"];
-            this.location = _data["location"] ? LocationDto.fromJS(_data["location"]) : new LocationDto();
+            this.locationString = _data["locationString"];
             this.title = _data["title"];
             this.type = _data["type"];
             this.areaValue = _data["areaValue"];
@@ -3544,25 +4178,16 @@ export class CreateOrUpdateEstatePropertyDto implements ICreateOrUpdateEstatePro
             this.garageSpaces = _data["garageSpaces"];
             this.visits = _data["visits"];
             this.createdOnUtc = _data["createdOnUtc"] ? new Date(_data["createdOnUtc"].toString()) : <any>undefined;
+            if (Array.isArray(_data["documents"])) {
+                this.documents = [] as any;
+                for (let item of _data["documents"])
+                    this.documents!.push(item);
+            }
+            this.mainImageUrl = _data["mainImageUrl"];
             if (Array.isArray(_data["images"])) {
                 this.images = [] as any;
                 for (let item of _data["images"])
                     this.images!.push(item);
-            }
-            this.publicDeed = _data["publicDeed"];
-            this.propertyPlans = _data["propertyPlans"];
-            this.taxReceipts = _data["taxReceipts"];
-            if (Array.isArray(_data["otherDocuments"])) {
-                this.otherDocuments = [] as any;
-                for (let item of _data["otherDocuments"])
-                    this.otherDocuments!.push(item);
-            }
-            this.mainImage = _data["mainImage"];
-            this.mainImageUrl = _data["mainImageUrl"];
-            if (Array.isArray(_data["propertyImages"])) {
-                this.propertyImages = [] as any;
-                for (let item of _data["propertyImages"])
-                    this.propertyImages!.push(PropertyImageDto.fromJS(item));
             }
             this.ownerId = _data["ownerId"];
             this.description = _data["description"];
@@ -3600,7 +4225,7 @@ export class CreateOrUpdateEstatePropertyDto implements ICreateOrUpdateEstatePro
         data["state"] = this.state;
         data["zipCode"] = this.zipCode;
         data["country"] = this.country;
-        data["location"] = this.location ? this.location.toJSON() : <any>undefined;
+        data["locationString"] = this.locationString;
         data["title"] = this.title;
         data["type"] = this.type;
         data["areaValue"] = this.areaValue;
@@ -3611,25 +4236,16 @@ export class CreateOrUpdateEstatePropertyDto implements ICreateOrUpdateEstatePro
         data["garageSpaces"] = this.garageSpaces;
         data["visits"] = this.visits;
         data["createdOnUtc"] = this.createdOnUtc ? this.createdOnUtc.toISOString() : <any>undefined;
+        if (Array.isArray(this.documents)) {
+            data["documents"] = [];
+            for (let item of this.documents)
+                data["documents"].push(item);
+        }
+        data["mainImageUrl"] = this.mainImageUrl;
         if (Array.isArray(this.images)) {
             data["images"] = [];
             for (let item of this.images)
                 data["images"].push(item);
-        }
-        data["publicDeed"] = this.publicDeed;
-        data["propertyPlans"] = this.propertyPlans;
-        data["taxReceipts"] = this.taxReceipts;
-        if (Array.isArray(this.otherDocuments)) {
-            data["otherDocuments"] = [];
-            for (let item of this.otherDocuments)
-                data["otherDocuments"].push(item);
-        }
-        data["mainImage"] = this.mainImage;
-        data["mainImageUrl"] = this.mainImageUrl;
-        if (Array.isArray(this.propertyImages)) {
-            data["propertyImages"] = [];
-            for (let item of this.propertyImages)
-                data["propertyImages"].push(item.toJSON());
         }
         data["ownerId"] = this.ownerId;
         data["description"] = this.description;
@@ -3660,7 +4276,7 @@ export interface ICreateOrUpdateEstatePropertyDto {
     state: string;
     zipCode: string;
     country: string;
-    location: LocationDto;
+    locationString?: string | undefined;
     title: string;
     type: string;
     areaValue?: number;
@@ -3670,17 +4286,12 @@ export interface ICreateOrUpdateEstatePropertyDto {
     hasGarage: boolean;
     garageSpaces: number;
     visits?: number;
-    createdOnUtc: Date;
-    images: string[];
-    publicDeed: string;
-    propertyPlans: string;
-    taxReceipts: string;
-    otherDocuments?: string[] | undefined;
-    mainImage?: string | undefined;
+    createdOnUtc?: Date;
+    documents?: string[];
     mainImageUrl?: string | undefined;
-    propertyImages?: PropertyImageDto[] | undefined;
+    images?: string[];
     ownerId?: string | undefined;
-    description: string;
+    description?: string | undefined;
     availableFrom?: Date;
     arePetsAllowed?: boolean;
     capacity?: number;
@@ -3697,114 +4308,6 @@ export interface ICreateOrUpdateEstatePropertyDto {
     isPropertyVisible?: boolean;
 }
 
-export class LocationDto implements ILocationDto {
-    lat?: number;
-    lng?: number;
-
-    constructor(data?: ILocationDto) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(_data?: any) {
-        if (_data) {
-            this.lat = _data["lat"];
-            this.lng = _data["lng"];
-        }
-    }
-
-    static fromJS(data: any): LocationDto {
-        data = typeof data === 'object' ? data : {};
-        let result = new LocationDto();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["lat"] = this.lat;
-        data["lng"] = this.lng;
-        return data;
-    }
-}
-
-export interface ILocationDto {
-    lat?: number;
-    lng?: number;
-}
-
-export class PropertyImageDto implements IPropertyImageDto {
-    id?: string | undefined;
-    url?: string;
-    altText?: string | undefined;
-    isMain?: boolean | undefined;
-    estatePropertyId?: string;
-    fileName?: string;
-    contentType?: string;
-    imageData?: string;
-    isPublic?: boolean;
-
-    constructor(data?: IPropertyImageDto) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(_data?: any) {
-        if (_data) {
-            this.id = _data["id"];
-            this.url = _data["url"];
-            this.altText = _data["altText"];
-            this.isMain = _data["isMain"];
-            this.estatePropertyId = _data["estatePropertyId"];
-            this.fileName = _data["fileName"];
-            this.contentType = _data["contentType"];
-            this.imageData = _data["imageData"];
-            this.isPublic = _data["isPublic"];
-        }
-    }
-
-    static fromJS(data: any): PropertyImageDto {
-        data = typeof data === 'object' ? data : {};
-        let result = new PropertyImageDto();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["id"] = this.id;
-        data["url"] = this.url;
-        data["altText"] = this.altText;
-        data["isMain"] = this.isMain;
-        data["estatePropertyId"] = this.estatePropertyId;
-        data["fileName"] = this.fileName;
-        data["contentType"] = this.contentType;
-        data["imageData"] = this.imageData;
-        data["isPublic"] = this.isPublic;
-        return data;
-    }
-}
-
-export interface IPropertyImageDto {
-    id?: string | undefined;
-    url?: string;
-    altText?: string | undefined;
-    isMain?: boolean | undefined;
-    estatePropertyId?: string;
-    fileName?: string;
-    contentType?: string;
-    imageData?: string;
-    isPublic?: boolean;
-}
-
 export enum Currency {
     USD = 0,
     UYU = 1,
@@ -3819,74 +4322,6 @@ export enum PropertyStatus {
     Reserved = 2,
     Sold = 3,
     Unavailable = 4,
-}
-
-export class UpdateEstatePropertyCommand implements IUpdateEstatePropertyCommand {
-    estateProperty?: CreateOrUpdateEstatePropertyDto;
-    mainImage?: CreateOrUpdatePropertyImageDto | undefined;
-    propertyImages?: CreateOrUpdatePropertyImageDto[] | undefined;
-    featuredDescriptionId?: string | undefined;
-    estatePropertyDescriptions?: CreateOrUpdateEstatePropertyDescriptionDto[] | undefined;
-
-    constructor(data?: IUpdateEstatePropertyCommand) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(_data?: any) {
-        if (_data) {
-            this.estateProperty = _data["estateProperty"] ? CreateOrUpdateEstatePropertyDto.fromJS(_data["estateProperty"]) : <any>undefined;
-            this.mainImage = _data["mainImage"] ? CreateOrUpdatePropertyImageDto.fromJS(_data["mainImage"]) : <any>undefined;
-            if (Array.isArray(_data["propertyImages"])) {
-                this.propertyImages = [] as any;
-                for (let item of _data["propertyImages"])
-                    this.propertyImages!.push(CreateOrUpdatePropertyImageDto.fromJS(item));
-            }
-            this.featuredDescriptionId = _data["featuredDescriptionId"];
-            if (Array.isArray(_data["estatePropertyDescriptions"])) {
-                this.estatePropertyDescriptions = [] as any;
-                for (let item of _data["estatePropertyDescriptions"])
-                    this.estatePropertyDescriptions!.push(CreateOrUpdateEstatePropertyDescriptionDto.fromJS(item));
-            }
-        }
-    }
-
-    static fromJS(data: any): UpdateEstatePropertyCommand {
-        data = typeof data === 'object' ? data : {};
-        let result = new UpdateEstatePropertyCommand();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["estateProperty"] = this.estateProperty ? this.estateProperty.toJSON() : <any>undefined;
-        data["mainImage"] = this.mainImage ? this.mainImage.toJSON() : <any>undefined;
-        if (Array.isArray(this.propertyImages)) {
-            data["propertyImages"] = [];
-            for (let item of this.propertyImages)
-                data["propertyImages"].push(item.toJSON());
-        }
-        data["featuredDescriptionId"] = this.featuredDescriptionId;
-        if (Array.isArray(this.estatePropertyDescriptions)) {
-            data["estatePropertyDescriptions"] = [];
-            for (let item of this.estatePropertyDescriptions)
-                data["estatePropertyDescriptions"].push(item.toJSON());
-        }
-        return data;
-    }
-}
-
-export interface IUpdateEstatePropertyCommand {
-    estateProperty?: CreateOrUpdateEstatePropertyDto;
-    mainImage?: CreateOrUpdatePropertyImageDto | undefined;
-    propertyImages?: CreateOrUpdatePropertyImageDto[] | undefined;
-    featuredDescriptionId?: string | undefined;
-    estatePropertyDescriptions?: CreateOrUpdateEstatePropertyDescriptionDto[] | undefined;
 }
 
 export class CreateOrUpdatePropertyImageDto implements ICreateOrUpdatePropertyImageDto {
@@ -3957,17 +4392,26 @@ export interface ICreateOrUpdatePropertyImageDto {
     isPublic?: boolean;
 }
 
-export class CreateOrUpdateEstatePropertyDescriptionDto implements ICreateOrUpdateEstatePropertyDescriptionDto {
+export class CreateOrUpdateEstatePropertyValuesDto implements ICreateOrUpdateEstatePropertyValuesDto {
     id?: string | undefined;
-    estatePropertyId?: string | undefined;
+    description?: string | undefined;
     availableFrom?: Date | undefined;
-    availableTo?: Date | undefined;
-    listedPrice?: number;
+    arePetsAllowed?: boolean;
+    capacity?: number;
+    currency?: Currency;
+    salePrice?: number;
     rentPrice?: number;
-    soldPrice?: number;
+    hasCommonExpenses?: boolean;
+    commonExpensesAmount?: number;
+    isElectricityIncluded?: boolean;
+    isWaterIncluded?: boolean;
+    isPriceVisible?: boolean;
+    propertyStatus?: PropertyStatus;
     isActive?: boolean;
+    isPropertyVisible?: boolean;
+    estatePropertyId?: string | undefined;
 
-    constructor(data?: ICreateOrUpdateEstatePropertyDescriptionDto) {
+    constructor(data?: ICreateOrUpdateEstatePropertyValuesDto) {
         if (data) {
             for (var property in data) {
                 if (data.hasOwnProperty(property))
@@ -3979,19 +4423,28 @@ export class CreateOrUpdateEstatePropertyDescriptionDto implements ICreateOrUpda
     init(_data?: any) {
         if (_data) {
             this.id = _data["id"];
-            this.estatePropertyId = _data["estatePropertyId"];
+            this.description = _data["description"];
             this.availableFrom = _data["availableFrom"] ? new Date(_data["availableFrom"].toString()) : <any>undefined;
-            this.availableTo = _data["availableTo"] ? new Date(_data["availableTo"].toString()) : <any>undefined;
-            this.listedPrice = _data["listedPrice"];
+            this.arePetsAllowed = _data["arePetsAllowed"];
+            this.capacity = _data["capacity"];
+            this.currency = _data["currency"];
+            this.salePrice = _data["salePrice"];
             this.rentPrice = _data["rentPrice"];
-            this.soldPrice = _data["soldPrice"];
+            this.hasCommonExpenses = _data["hasCommonExpenses"];
+            this.commonExpensesAmount = _data["commonExpensesAmount"];
+            this.isElectricityIncluded = _data["isElectricityIncluded"];
+            this.isWaterIncluded = _data["isWaterIncluded"];
+            this.isPriceVisible = _data["isPriceVisible"];
+            this.propertyStatus = _data["propertyStatus"];
             this.isActive = _data["isActive"];
+            this.isPropertyVisible = _data["isPropertyVisible"];
+            this.estatePropertyId = _data["estatePropertyId"];
         }
     }
 
-    static fromJS(data: any): CreateOrUpdateEstatePropertyDescriptionDto {
+    static fromJS(data: any): CreateOrUpdateEstatePropertyValuesDto {
         data = typeof data === 'object' ? data : {};
-        let result = new CreateOrUpdateEstatePropertyDescriptionDto();
+        let result = new CreateOrUpdateEstatePropertyValuesDto();
         result.init(data);
         return result;
     }
@@ -3999,26 +4452,44 @@ export class CreateOrUpdateEstatePropertyDescriptionDto implements ICreateOrUpda
     toJSON(data?: any) {
         data = typeof data === 'object' ? data : {};
         data["id"] = this.id;
-        data["estatePropertyId"] = this.estatePropertyId;
+        data["description"] = this.description;
         data["availableFrom"] = this.availableFrom ? this.availableFrom.toISOString() : <any>undefined;
-        data["availableTo"] = this.availableTo ? this.availableTo.toISOString() : <any>undefined;
-        data["listedPrice"] = this.listedPrice;
+        data["arePetsAllowed"] = this.arePetsAllowed;
+        data["capacity"] = this.capacity;
+        data["currency"] = this.currency;
+        data["salePrice"] = this.salePrice;
         data["rentPrice"] = this.rentPrice;
-        data["soldPrice"] = this.soldPrice;
+        data["hasCommonExpenses"] = this.hasCommonExpenses;
+        data["commonExpensesAmount"] = this.commonExpensesAmount;
+        data["isElectricityIncluded"] = this.isElectricityIncluded;
+        data["isWaterIncluded"] = this.isWaterIncluded;
+        data["isPriceVisible"] = this.isPriceVisible;
+        data["propertyStatus"] = this.propertyStatus;
         data["isActive"] = this.isActive;
+        data["isPropertyVisible"] = this.isPropertyVisible;
+        data["estatePropertyId"] = this.estatePropertyId;
         return data;
     }
 }
 
-export interface ICreateOrUpdateEstatePropertyDescriptionDto {
+export interface ICreateOrUpdateEstatePropertyValuesDto {
     id?: string | undefined;
-    estatePropertyId?: string | undefined;
+    description?: string | undefined;
     availableFrom?: Date | undefined;
-    availableTo?: Date | undefined;
-    listedPrice?: number;
+    arePetsAllowed?: boolean;
+    capacity?: number;
+    currency?: Currency;
+    salePrice?: number;
     rentPrice?: number;
-    soldPrice?: number;
+    hasCommonExpenses?: boolean;
+    commonExpensesAmount?: number;
+    isElectricityIncluded?: boolean;
+    isWaterIncluded?: boolean;
+    isPriceVisible?: boolean;
+    propertyStatus?: PropertyStatus;
     isActive?: boolean;
+    isPropertyVisible?: boolean;
+    estatePropertyId?: string | undefined;
 }
 
 export class PaginatedMessageResultDto implements IPaginatedMessageResultDto {
@@ -4326,6 +4797,46 @@ export interface ITabCountsDto {
     trash?: number;
 }
 
+export class UpdateUserProfileCommand implements IUpdateUserProfileCommand {
+    userId?: string | undefined;
+    updateProfileDto?: ProfileDataDto | undefined;
+
+    constructor(data?: IUpdateUserProfileCommand) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.userId = _data["userId"];
+            this.updateProfileDto = _data["updateProfileDto"] ? ProfileDataDto.fromJS(_data["updateProfileDto"]) : <any>undefined;
+        }
+    }
+
+    static fromJS(data: any): UpdateUserProfileCommand {
+        data = typeof data === 'object' ? data : {};
+        let result = new UpdateUserProfileCommand();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["userId"] = this.userId;
+        data["updateProfileDto"] = this.updateProfileDto ? this.updateProfileDto.toJSON() : <any>undefined;
+        return data;
+    }
+}
+
+export interface IUpdateUserProfileCommand {
+    userId?: string | undefined;
+    updateProfileDto?: ProfileDataDto | undefined;
+}
+
 export class ProfileDataDto implements IProfileDataDto {
     id?: string;
     firstName?: string | undefined;
@@ -4444,102 +4955,6 @@ export interface IAddressDto {
     state?: string | undefined;
     postalCode?: string | undefined;
     country?: string | undefined;
-}
-
-export class UpdateProfileDto implements IUpdateProfileDto {
-    firstName?: string | undefined;
-    lastName?: string | undefined;
-    email?: string | undefined;
-    phone?: string | undefined;
-    title?: string | undefined;
-    address?: AddressDto | undefined;
-
-    constructor(data?: IUpdateProfileDto) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(_data?: any) {
-        if (_data) {
-            this.firstName = _data["firstName"];
-            this.lastName = _data["lastName"];
-            this.email = _data["email"];
-            this.phone = _data["phone"];
-            this.title = _data["title"];
-            this.address = _data["address"] ? AddressDto.fromJS(_data["address"]) : <any>undefined;
-        }
-    }
-
-    static fromJS(data: any): UpdateProfileDto {
-        data = typeof data === 'object' ? data : {};
-        let result = new UpdateProfileDto();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["firstName"] = this.firstName;
-        data["lastName"] = this.lastName;
-        data["email"] = this.email;
-        data["phone"] = this.phone;
-        data["title"] = this.title;
-        data["address"] = this.address ? this.address.toJSON() : <any>undefined;
-        return data;
-    }
-}
-
-export interface IUpdateProfileDto {
-    firstName?: string | undefined;
-    lastName?: string | undefined;
-    email?: string | undefined;
-    phone?: string | undefined;
-    title?: string | undefined;
-    address?: AddressDto | undefined;
-}
-
-export class ChangePasswordDto implements IChangePasswordDto {
-    oldPassword!: string;
-    newPassword!: string;
-
-    constructor(data?: IChangePasswordDto) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(_data?: any) {
-        if (_data) {
-            this.oldPassword = _data["oldPassword"];
-            this.newPassword = _data["newPassword"];
-        }
-    }
-
-    static fromJS(data: any): ChangePasswordDto {
-        data = typeof data === 'object' ? data : {};
-        let result = new ChangePasswordDto();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["oldPassword"] = this.oldPassword;
-        data["newPassword"] = this.newPassword;
-        return data;
-    }
-}
-
-export interface IChangePasswordDto {
-    oldPassword: string;
-    newPassword: string;
 }
 
 export class MonthlySummaryDataDto implements IMonthlySummaryDataDto {
@@ -5124,6 +5539,51 @@ export interface IVisitSourceDto {
     source?: string;
     visits?: number;
     color?: string | undefined;
+}
+
+export class ChangePasswordDto implements IChangePasswordDto {
+    oldPassword!: string;
+    newPassword!: string;
+
+    constructor(data?: IChangePasswordDto) {
+        if (data) {
+            for (var property in data) {
+                if (data.hasOwnProperty(property))
+                    (<any>this)[property] = (<any>data)[property];
+            }
+        }
+    }
+
+    init(_data?: any) {
+        if (_data) {
+            this.oldPassword = _data["oldPassword"];
+            this.newPassword = _data["newPassword"];
+        }
+    }
+
+    static fromJS(data: any): ChangePasswordDto {
+        data = typeof data === 'object' ? data : {};
+        let result = new ChangePasswordDto();
+        result.init(data);
+        return result;
+    }
+
+    toJSON(data?: any) {
+        data = typeof data === 'object' ? data : {};
+        data["oldPassword"] = this.oldPassword;
+        data["newPassword"] = this.newPassword;
+        return data;
+    }
+}
+
+export interface IChangePasswordDto {
+    oldPassword: string;
+    newPassword: string;
+}
+
+export interface FileParameter {
+    data: any;
+    fileName: string;
 }
 
 export interface FileResponse {

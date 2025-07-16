@@ -3,18 +3,17 @@ using SDI_Api.Application.Common.Models;
 using SDI_Api.Application.DTOs.EstateProperties;
 using SDI_Api.Domain.Entities;
 using SDI_Api.Domain.Enums;
-using YourProject.Dto.Properties;
 
 namespace SDI_Api.Application.EstateProperties.Queries;
 
-public record GetEstatePropertiesQuery : IRequest<PaginatedResult<EstatePropertyDto>>
+public record GetEstatePropertiesQuery : IRequest<PaginatedResult<PublicEstatePropertyDto>>
 {
     public int PageNumber { get; set; } 
     public int PageSize { get; set; }
     public PropertyFilterDto Filter { get; set; } = new();
 }
 
-public class GetEstatePropertiesQueryHandler : IRequestHandler<GetEstatePropertiesQuery, PaginatedResult<EstatePropertyDto>>
+public class GetEstatePropertiesQueryHandler : IRequestHandler<GetEstatePropertiesQuery, PaginatedResult<PublicEstatePropertyDto>>
 {
     private readonly IApplicationDbContext _context;
     private readonly IMapper _mapper;
@@ -25,11 +24,11 @@ public class GetEstatePropertiesQueryHandler : IRequestHandler<GetEstateProperti
         _mapper = mapper;
     }
     
-    public async Task<PaginatedResult<EstatePropertyDto>> Handle(GetEstatePropertiesQuery request, CancellationToken cancellationToken)
+    public async Task<PaginatedResult<PublicEstatePropertyDto>> Handle(GetEstatePropertiesQuery request, CancellationToken cancellationToken)
     {
         IQueryable<EstateProperty> query = _context.EstateProperties
             .Include(p => p.MainImage)
-            .Include(p => p.FeaturedValues)
+            .Where(p => p.EstatePropertyValues.FirstOrDefault(epv => epv.IsFeatured)!.IsPropertyVisible)
             .AsNoTracking();
 
         var filter = request.Filter;
@@ -41,7 +40,7 @@ public class GetEstatePropertiesQueryHandler : IRequestHandler<GetEstateProperti
             query = query.Where(p => p.OwnerId.ToString() == filter.OwnerId);
         
         if (!string.IsNullOrEmpty(filter.Status) && Enum.TryParse<PropertyStatus>(filter.Status, true, out var statusEnum))
-            query = query.Where(p => p.FeaturedValues!.Status == statusEnum);
+            query = query.Where(p => p.EstatePropertyValues.FirstOrDefault(epv => epv.IsFeatured)!.Status == statusEnum);
 
         if (filter.CreatedAfter.HasValue)
             query = query.Where(p => p.CreatedOnUtc >= filter.CreatedAfter.Value);
@@ -61,7 +60,7 @@ public class GetEstatePropertiesQueryHandler : IRequestHandler<GetEstateProperti
         
         query = query.OrderByDescending(p => p.CreatedOnUtc);
         var result = await PaginatedResult<EstateProperty>.CreateAsync(query, request.PageNumber, request.PageSize);
-        var estatePropertyDtos = _mapper.Map<List<EstatePropertyDto>>(result.Items);
-        return new PaginatedResult<EstatePropertyDto>(estatePropertyDtos, result.TotalCount, result.PageNumber, result.TotalPages);
+        var estatePropertyDtos = _mapper.Map<List<PublicEstatePropertyDto>>(result.Items);
+        return new PaginatedResult<PublicEstatePropertyDto>(estatePropertyDtos, result.TotalCount, result.PageNumber, result.TotalPages);
     }
 }

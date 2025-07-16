@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using SDI_Api.Application.Common.Interfaces;
+using SDI_Api.Application.Common.Models;
 using SDI_Api.Application.DTOs.Auth;
 
 namespace SDI_Api.Application.Auth.Commands;
@@ -31,56 +32,46 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResultDto>
     {
         var user = await _identityService.FindUserByEmailAsync(request.UsernameOrEmail!);
         if (user == null && request.UsernameOrEmail!.Contains("@"))
-        {
             user = await _identityService.FindUserByUsernameAsync(request.UsernameOrEmail);
-        }
 
         if (user == null)
-        {
-            return new LoginResultDto
-            {
-                Succeeded = false, 
-                ErrorMessage = "Invalid credentials."
-            };
-        }
+            return new LoginResultDto { Succeeded = false, ErrorMessage = "Invalid credentials." };
         
         // --- 2FA Flow ---
         // If a 2FA code is provided, attempt 2FA sign-in directly.
-        if (!string.IsNullOrWhiteSpace(request.TwoFactorCode))
+        if (user.isTwoFactorEnabled())
         {
-            var twoFactorResult = await _identityService.TwoFactorAuthenticatorSignInAsync(request.TwoFactorCode, request.RememberMe, rememberClient: false);
-            var user2FA = await _identityService.GetTwoFactorAuthenticationUserAsync();
-            if (user2FA == null)
+            if (!string.IsNullOrWhiteSpace(request.TwoFactorCode))
             {
-                return new LoginResultDto
-                {
-                    Succeeded = false, 
-                    ErrorMessage = "Invalid 2FA code."
-                };
+                var twoFactorResult = await _identityService.TwoFactorAuthenticatorSignInAsync(user.getId()!, request.TwoFactorCode);
+                if (!twoFactorResult.Succeeded)
+                    return await CreateLoginResultDto(SignInResult.Failed, user);
+                
+                return await CreateLoginResultDto(SignInResult.Success, user);
             }
-            return await CreateLoginResultDto(twoFactorResult, user2FA);
+            
+            var result2fa = await _identityService.CheckPasswordSignInAsync(user, request.Password!, lockoutOnFailure: true);
+            if (result2fa.Succeeded || result2fa.RequiresTwoFactor)
+            {
+                var verificationCode = await _identityService.GenerateTwoFactorAuthenticatorKeyAsync(user);
+                var emailBody = _emailTemplateProvider.GetTwoFactorCodeBody(verificationCode.sharedKey);
+                await _emailService.SendEmailAsync(user.getUserEmail()!, "Two-Factor Authentication Code", emailBody);
+                return await CreateLoginResultDto(SignInResult.TwoFactorRequired, null);
+            }
         }
-
-        //TODO : Review mapping and initialization of properties
-        var userAuth = _mapper.Map<IUser>(user);
+        var checkPasswordResult = await _identityService.CheckPasswordSignInAsync(user, request.Password!, lockoutOnFailure: true);
+        return await CreateLoginResultDto(checkPasswordResult, user);
         
-        var checkPasswordResult = await _identityService.CheckPasswordSignInAsync(userAuth, request.Password!, lockoutOnFailure: true);
-        return await CreateLoginResultDto(checkPasswordResult, userAuth);
     }
     
-    private async Task<LoginResultDto> CreateLoginResultDto(SignInResult result, IUser user)
+    private async Task<LoginResultDto> CreateLoginResultDto(SignInResult result, IUser? user)
     {
         if (result.RequiresTwoFactor)
-        {
-            return new LoginResultDto
-            {
-                Succeeded = false, 
-                Requires2FA = true
-            };
-        }
+            return new LoginResultDto() { Succeeded = false, Requires2FA = true };
+        
         if (result.Succeeded)
         {
-            var roles = await _identityService.GetUserRolesAsync(user.getId()!);
+            var roles = await _identityService.GetUserRolesAsync(user!.getId()!);
             return new LoginResultDto
             {
                 Succeeded = true,
@@ -98,26 +89,11 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResultDto>
         }
 
         if (result.IsLockedOut)
-        {
-            return new LoginResultDto
-            {
-                Succeeded = false,
-                ErrorMessage = "This account has been locked out due to too many failed login attempts."
-            };
-        }
+            return new LoginResultDto { Succeeded = false, ErrorMessage = "This account has been locked out due to too many failed login attempts." };
+        
         if (result.IsNotAllowed)
-        {
-             return new LoginResultDto
-             {
-                 Succeeded = false, 
-                 ErrorMessage = "Login is not allowed. Please confirm your email address."
-             };
-        }
-        // Generic failure for incorrect password or other issues.
-        return new LoginResultDto
-        {
-            Succeeded = false, 
-            ErrorMessage = "Invalid credentials."
-        };
+             return new LoginResultDto { Succeeded = false, ErrorMessage = "Login is not allowed. Please confirm your email address." };
+        
+        return new LoginResultDto { Succeeded = false, ErrorMessage = "Invalid credentials." };
     }
 }

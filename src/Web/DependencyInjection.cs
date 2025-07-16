@@ -4,6 +4,7 @@ using SDI_Api.Application.Common.Interfaces;
 using SDI_Api.Infrastructure.Data;
 using Sdi_Api.Infrastructure.Email;
 using SDI_Api.Infrastructure.Email;
+using SDI_Api.Web.Services;
 
 namespace SDI_Api.Web;
 
@@ -25,6 +26,17 @@ public static class DependencyInjection
 
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddHttpContextAccessor();
+
+        builder.Services.AddTransient<IFormFile>(sp =>
+        {
+            var httpContextAccessor = sp.GetRequiredService<IHttpContextAccessor>();
+            var httpContext = httpContextAccessor.HttpContext;
+            
+            if (httpContext?.Request.Form.Files.Any() ?? false)
+                return httpContext.Request.Form.Files[0];
+            
+            return null!;
+        });
         
         builder.Services.AddOpenApiDocument((configure, sp) =>
         {

@@ -11,4 +11,5 @@ public interface IUser
     string? getPhoneNumber();
     
     bool isEmailConfirmed();
+    bool isTwoFactorEnabled();
 }

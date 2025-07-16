@@ -1,5 +1,4 @@
-﻿using MediatR;
-using SDI_Api.Application.Common.Exceptions;
+﻿using FluentValidation.Results;
 using SDI_Api.Application.Common.Interfaces;
 using SDI_Api.Application.Common.Models;
 using NotFoundException = Ardalis.GuardClauses.NotFoundException;
@@ -12,8 +11,8 @@ namespace SDI_Api.Application.Auth.Commands;
 /// </summary>
 public record ConfirmEmailCommand : IRequest<Result>
 {
-    public string UserId { get; init; } = string.Empty;
-    public string Token { get; init; } = string.Empty;
+    public string? UserId { get; set; }
+    public string? Token { get; set; }
 }
 
 /// <summary>
@@ -22,19 +21,25 @@ public record ConfirmEmailCommand : IRequest<Result>
 public class ConfirmEmailCommandHandler : IRequestHandler<ConfirmEmailCommand, Result>
 {
     private readonly IIdentityService _identityService;
+    private readonly IEmailConfirmationTokenService _tokenService;
 
-    public ConfirmEmailCommandHandler(IIdentityService identityService)
+    public ConfirmEmailCommandHandler(IIdentityService identityService, IEmailConfirmationTokenService tokenService)
     {
         _identityService = identityService;
+        _tokenService = tokenService;
     }
 
     public async Task<Result> Handle(ConfirmEmailCommand request, CancellationToken cancellationToken)
     {
-        var user = await _identityService.FindUserByIdAsync(request.UserId);
+        var user = await _identityService.FindUserByIdAsync(request.UserId!);
         if (user == null)
-            throw new NotFoundException("User", request.UserId);
-
-        var result = await _identityService.ConfirmEmailAsync(user.getId()!, request.Token);
+            throw new NotFoundException("User", request.UserId!);
+        
+        var tokenValidationResult = _tokenService.ValidateToken(request.Token!);
+        if (!tokenValidationResult.IsValid)
+            throw new ArgumentException("Token is not valid");
+        
+        var result = await _identityService.ConfirmEmailAsync(user.getId()!);
         return result;
     }
 }

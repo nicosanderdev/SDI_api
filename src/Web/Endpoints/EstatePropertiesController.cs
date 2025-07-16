@@ -1,7 +1,11 @@
-﻿using AutoMapper;
+﻿using System.Security.Claims;
+using System.Text.Json;
+using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SDI_Api.Application.Common.Interfaces;
+using SDI_Api.Application.DTOs.EstateProperties;
+using SDI_Api.Application.EstateProperties.Commands;
 using SDI_Api.Application.EstateProperties.Commands.Create;
 using SDI_Api.Application.EstateProperties.Commands.Delete;
 using SDI_Api.Application.EstateProperties.Commands.Edit;
@@ -10,7 +14,8 @@ using SDI_Api.Application.EstateProperties.Queries;
 namespace SDI_Api.Web.Endpoints;
 
 [ApiController]
-[Route("api/properties")]
+// [Authorize]
+[Route("api/properties/")]
 public class EstatePropertiesController : ControllerBase
 {
     private readonly ISender _sender;
@@ -30,15 +35,28 @@ public class EstatePropertiesController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> GetEstateProperties([FromQuery] GetEstatePropertiesQuery query)
     {
-        try
-        {
-            var response = await _sender.Send(query);
-            return Ok(response); 
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = "Error fetching properties.", error = ex.Message });
-        }
+        var response = await _sender.Send(query);
+        return Ok(response);
+
+    }
+
+    [HttpGet("/mine")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetUsersEstateProperties([FromQuery] GetUsersEstatePropertiesQuery query)
+    {
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userIdValue))
+            throw new UnauthorizedAccessException("User identifier not found.");
+
+        if (!Guid.TryParse(userIdValue, out var userGuid))
+            throw new ArgumentException("Invalid user identifier format.");
+
+        query.UserId = userGuid;
+
+        var response = await _sender.Send(query);
+        return Ok(response);
     }
 
     [AllowAnonymous]
@@ -46,42 +64,27 @@ public class EstatePropertiesController : ControllerBase
     public async Task<IActionResult> GetEstateProperty([FromRoute] string id)
     {
         if (!Guid.TryParse(id, out var guidId))
-            return BadRequest("Invalid ID format.");
+            throw new ArgumentException("Invalid ID format.");
 
-        try
-        {
-            var response = await _sender.Send(new GetEstatePropertyByIdQuery(guidId));
-            return Ok(response);
-        }
-        catch (Application.Common.Exceptions.NotFoundException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = $"Error fetching property {id}.", error = ex.Message });
-        }
+        var response = await _sender.Send(new GetEstatePropertyByIdQuery(guidId));
+        return Ok(response);
     }
 
-    [HttpPost]
+    [HttpPost("create")]
+    [Consumes("multipart/form-data")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> CreateEstateProperty([FromBody] CreateEstatePropertyCommand command)
+    public async Task<IActionResult> CreateEstateProperty([FromForm] CreateOrUpdateEstatePropertyDto request)
     {
-        try
-        {
-            var propertyId = await _sender.Send(command);
-            var createdPropertyDto = await _sender.Send(new GetEstatePropertyByIdQuery(propertyId));
-            return CreatedAtAction(nameof(GetEstateProperty), new { id = propertyId.ToString() }, createdPropertyDto);
-        }
-        catch (FluentValidation.ValidationException ex)
-        {
-            return BadRequest(new { message = "Validation failed.", errors = ex.Errors.Select(e => new {e.PropertyName, e.ErrorMessage}) });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = "Error creating property.", error = ex.Message });
-        }
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userIdValue == null)
+            throw new UnauthorizedAccessException("User identifier not found.");
+        if (!string.IsNullOrEmpty(request.LocationString)) 
+            request.Location = JsonSerializer.Deserialize<LocationDto>(request.LocationString);
+        var command = new CreateEstatePropertyCommand { CreateOrUpdateEstatePropertyDto = request };
+        command.CreateOrUpdateEstatePropertyDto!.OwnerId = userIdValue;
+        var createdPropertyDto = await _sender.Send(command);
+        return Created(nameof(CreateOrUpdateEstatePropertyDto), createdPropertyDto);
     }
 
     [HttpPut("{id}")]
@@ -90,31 +93,16 @@ public class EstatePropertiesController : ControllerBase
     public async Task<IActionResult> UpdateEstateProperty([FromRoute] string id, [FromBody] UpdateEstatePropertyCommand command)
     {
         if (!Guid.TryParse(id, out var guidId))
-            return BadRequest("Invalid ID format.");
+            throw new ArgumentException("Invalid ID format.");
         
         if (command.EstateProperty.Id == Guid.Empty)
             command.EstateProperty.Id = guidId;
         else if (command.EstateProperty.Id != guidId) 
-            return BadRequest("Mismatched ID in route and body.");
+            throw new ArgumentException("Mismatched ID in route and body.");
         
-        try
-        {
-            await _sender.Send(command);
-            var updatedPropertyDto = await _sender.Send(new GetEstatePropertyByIdQuery(guidId));
-            return Ok(updatedPropertyDto);
-        }
-        catch (Application.Common.Exceptions.NotFoundException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
-        catch (FluentValidation.ValidationException ex)
-        {
-            return BadRequest(new { message = "Validation failed.", errors = ex.Errors.Select(e => new {e.PropertyName, e.ErrorMessage}) });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = $"Error updating property {id}.", error = ex.Message });
-        }
+        await _sender.Send(command);
+        var updatedPropertyDto = await _sender.Send(new GetEstatePropertyByIdQuery(guidId));
+        return Ok(updatedPropertyDto);
     }
 
     [HttpDelete("{id}")]
@@ -123,21 +111,9 @@ public class EstatePropertiesController : ControllerBase
     public async Task<IActionResult> DeleteEstateProperty([FromRoute] string id)
     {
         if (!Guid.TryParse(id, out var guidId))
-        {
-            return BadRequest("Invalid ID format.");
-        }
-        try
-        {
-            await _sender.Send(new DeleteEstatePropertyCommand(guidId));
-            return NoContent();
-        }
-        catch (Application.Common.Exceptions.NotFoundException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = $"Error deleting property {id}.", error = ex.Message });
-        }
+            throw new ArgumentException("Invalid ID format.");
+        
+        await _sender.Send(new DeleteEstatePropertyCommand(guidId));
+        return NoContent();
     }
 }

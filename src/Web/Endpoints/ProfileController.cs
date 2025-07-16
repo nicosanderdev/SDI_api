@@ -1,14 +1,11 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
-using Sdi_Api.Application.DTOs.Profile;
-using Sdi_Api.Application.MemberProfile;
-using SDI_Api.Application.MemberProfile;
 using SDI_Api.Application.MemberProfile.Commands;
 using SDI_Api.Application.MemberProfile.Query;
 
 namespace SDI_Api.Web.Endpoints;
 
-[Authorize]
+// [Authorize]
 [Route("api/profile/")]
 [ApiController]
 public class ProfilesController : ControllerBase
@@ -20,112 +17,46 @@ public class ProfilesController : ControllerBase
         _sender = sender;
     }
     
-    [HttpGet]
-    public async Task<ActionResult<ProfileDataDto>> GetCurrentUserProfile()
+    [HttpGet("me")]
+    public async Task<IActionResult> GetCurrentUserProfile()
     {
-        try
-        {
-            var profile = await _sender.Send(new GetCurrentUserProfileQuery());
-            return Ok(profile);
-        }
-        catch (NotFoundException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Unauthorized(new { message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = "Error fetching profile.", error = ex.Message });
-        }
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userIdValue))
+            throw new UnauthorizedAccessException("User identifier not found.");
+        
+        var profile = await _sender.Send(new GetCurrentUserProfileQuery() { UserId = userIdValue, });
+        return Ok(profile);
     }
     
-    [HttpPut]
-    public async Task<ActionResult<ProfileDataDto>> UpdateCurrentUserProfile([FromBody] UpdateProfileDto profileUpdateData)
+    [HttpPut("me")]
+    public async Task<IActionResult> UpdateCurrentUserProfile([FromBody] UpdateUserProfileCommand updateUserProfileCommand)
     {
-        try
-        {
-            var command = new UpdateUserProfileCommand() { ProfileUpdateData = profileUpdateData };
-            var updatedProfile = await _sender.Send(command);
-            return Ok(updatedProfile);
-        }
-        catch (NotFoundException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Unauthorized(new { message = ex.Message });
-        }
-        catch (FluentValidation.ValidationException ex)
-        {
-             return BadRequest(new { message = "Validation failed.", errors = ex.Errors.Select(e => new {e.PropertyName, e.ErrorMessage}) });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = "Error updating profile.", error = ex.Message });
-        }
-    }
-    
-    // TODO - move to auth controller
-    [HttpPost("change-password")]
-    public async Task<IActionResult> ChangeUserPassword([FromBody] ChangePasswordDto passwordData)
-    {
-        try
-        {
-            var command = new ChangeUserPasswordCommand { PasswordData = passwordData };
-            await _sender.Send(command);
-            return NoContent();
-        }
-        catch (NotFoundException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Unauthorized(new { message = ex.Message });
-        }
-        catch (FluentValidation.ValidationException ex)
-        {
-            return BadRequest(new { message = "Password change failed.", error = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = "Error changing password.", error = ex.Message });
-        }
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userIdValue))
+            throw new UnauthorizedAccessException("User identifier not found.");
+        
+        Guid.TryParse(userIdValue, out var userId);
+        updateUserProfileCommand.UserId = userId;
+        
+        var updatedProfile = await _sender.Send(updateUserProfileCommand);
+        return Ok(updatedProfile);
     }
     
     [HttpPost("avatar")]
     [Consumes("multipart/form-data")]
-    public async Task<ActionResult<UploadAvatarResponseDto>> UploadProfilePicture([FromForm] IFormFile avatarFile)
+    public async Task<IActionResult> UploadProfilePicture([FromForm] IFormFile avatar)
     {
-        if (avatarFile.Length == 0)
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier); 
+        Guid.TryParse(userIdValue, out var userId);
+        if (avatar.Length == 0)
+            throw new ArgumentException("No avatar file provided.");
+
+        var command = new UploadProfilePictureCommand
         {
-            return BadRequest(new { message = "No avatar file provided." });
-        }
-        try
-        {
-            var command = new UploadProfilePictureCommand { AvatarFile = avatarFile };
-            var result = await _sender.Send(command);
-            return Ok(result);
-        }
-        catch (NotFoundException ex)
-        {
-            return NotFound(new { message = ex.Message });
-        }
-        catch (UnauthorizedAccessException ex)
-        {
-            return Unauthorized(new { message = ex.Message });
-        }
-        catch (ArgumentException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            return BadRequest(new { message = "Error uploading avatar.", error = ex.Message });
-        }
+            UserId = userId,
+            AvatarFile = avatar
+        };
+        var result = await _sender.Send(command);
+        return Ok(result);
     }
 }

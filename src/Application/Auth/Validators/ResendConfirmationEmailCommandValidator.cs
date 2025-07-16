@@ -7,8 +7,7 @@ public class ResendConfirmationEmailCommandValidator : AbstractValidator<ResendC
 {
     public ResendConfirmationEmailCommandValidator()
     {
-        RuleFor(x => x.Email)
-            .NotEmpty().WithMessage("Email is required.")
-            .EmailAddress().WithMessage("A valid email address must be provided.");
+        RuleFor(x => x.UserId)
+            .NotEmpty().WithMessage("Email is required.");
     }
 }

@@ -34,7 +34,7 @@ public class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboardSumma
             // For properties, "period" might mean properties created in period, or just total active.
             // This example assumes total active properties, not tied to period.
             // If it should be period-dependent (e.g. new listings), adjust this.
-            return await properties.LongCountAsync(p => p.FeaturedValues!.IsPropertyVisible, cancellationToken);
+            return await properties.LongCountAsync(p => p.EstatePropertyValues.FirstOrDefault(epv => epv.IsFeatured)!.IsPropertyVisible, cancellationToken);
         }
         return 0;
     }
@@ -93,7 +93,7 @@ public class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboardSumma
 
         // For TotalProperties, "period" might mean new properties in period, or just total active.
         // This example assumes total active properties, not comparing periods.
-        long totalActiveProps = await _context.EstateProperties.LongCountAsync(p => p.FeaturedValues!.IsPropertyVisible, cancellationToken);
+        long totalActiveProps = await _context.EstateProperties.LongCountAsync(p => p.EstatePropertyValues.FirstOrDefault(epv => epv.IsFeatured)!.IsPropertyVisible, cancellationToken);
         // If TotalProperties should also have a trend, you'd need to count active properties at the end of the *previous* period.
         // This is more complex as it requires a snapshot or creation date filtering.
         // For simplicity, TotalProperties stat here won't have PercentageChange.

@@ -19,6 +19,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<PropertyVisitLog> PropertyVisitLogs => Set<PropertyVisitLog>();
     public DbSet<PropertyMessageLog> PropertyMessageLogs => Set<PropertyMessageLog>();
     public DbSet<Member> Members => Set<Member>();
+    public DbSet<RecoveryCode> RecoveryCodes => Set<RecoveryCode>();
     public DbSet<PropertyDocument> PropertyDocuments => Set<PropertyDocument>();
 
     protected override void OnModelCreating(ModelBuilder builder)
@@ -43,12 +44,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
                 .WithMany() // A PropertyImage isn't exclusively a MainImage for multiple properties
                 .HasForeignKey(e => e.MainImageId)
                 .OnDelete(DeleteBehavior.SetNull) // If main image deleted, set FK to null
-                .IsRequired(false);
-
-            entity.HasOne(e => e.FeaturedValues)
-                .WithMany()
-                .HasForeignKey(e => e.FeaturedDescriptionId)
-                .OnDelete(DeleteBehavior.SetNull)
                 .IsRequired(false);
         });
 
@@ -118,7 +113,13 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
         
         builder.Entity<Member>(entity =>
         {
-            entity.HasIndex(m => m.UserId).IsUnique(); // UserId should be unique in Members table
+            entity.HasIndex(m => m.UserId).IsUnique();
+        });
+        
+        builder.Entity<RecoveryCode>(entity =>
+        {
+            entity.HasIndex(rc => rc.Code).IsUnique();
+            entity.HasIndex(rc => rc.UserId);
         });
     }
 }

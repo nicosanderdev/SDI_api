@@ -2,6 +2,7 @@ using SDI_Api.Application;
 using SDI_Api.Infrastructure;
 using SDI_Api.Infrastructure.Identity;
 using SDI_Api.Web;
+using SDI_Api.Web.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,6 +30,7 @@ else
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
 }
 
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseHealthChecks("/health");
 app.UseHttpsRedirection();

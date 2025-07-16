@@ -36,8 +36,5 @@ public class CreateOrUpdateEstatePropertyDtoValidator : AbstractValidator<Create
 
         RuleFor(x => x.Country)
             .MaximumLength(100).WithMessage("Country must be 100 characters or less.");
-
-        RuleForEach(x => x.PropertyImages)
-            .SetValidator(new CreateOrUpdatePropertyImageDtoValidator() as IValidator<PropertyImageDto>);
     }
 }

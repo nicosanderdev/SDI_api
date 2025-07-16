@@ -34,6 +34,7 @@
     <PackageVersion Include="Swashbuckle.AspNetCore.Swagger" Version="8.1.1" />
     <PackageVersion Include="Swashbuckle.AspNetCore.SwaggerGen" Version="8.1.1" />
     <PackageVersion Include="Swashbuckle.AspNetCore.SwaggerUI" Version="8.1.1" />
+    <PackageVersion Include="System.IdentityModel.Tokens.Jwt" Version="8.12.1" />
     <PackageVersion Include="Testcontainers.MsSql" Version="4.0.0" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="$(EfcoreVersion)" />
     <PackageVersion Include="Microsoft.Extensions.Configuration.Json" Version="$(MicrosoftExtensionsVersion)" />
