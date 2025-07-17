@@ -59,8 +59,17 @@ public class CreateEstatePropertyCommandHandler : IRequestHandler<CreateEstatePr
                 propertyFolderId // Group files by property
             );
 
-            var propertyImageToAdd = new PropertyImage { AltText = fileResult.FileName, Url = fileResult.RelativePath };
-            propertyImageToAdd.IsMain = imgFile.Name == request.MainImageUrl;
+            var propertyImageToAdd = new PropertyImage
+            {
+                AltText = fileResult.FileName, 
+                Url = fileResult.RelativePath
+            };
+            
+            if (fileResult.FileName == request.MainImageUrl)
+            {
+                propertyImageToAdd.IsMain = true;
+                estateProperty.MainImageId = propertyImageToAdd.Id;
+            }
             estateProperty.PropertyImages.Add(propertyImageToAdd);
         }
         
@@ -72,6 +81,9 @@ public class CreateEstatePropertyCommandHandler : IRequestHandler<CreateEstatePr
         estateProperty.Owner = member;
 
         var featuredValues = _mapper.Map<EstatePropertyValues>(request);
+        featuredValues.IsFeatured = true;
+        featuredValues.AvailableFrom = DateTime.SpecifyKind(featuredValues.AvailableFrom, DateTimeKind.Utc);
+        
         estateProperty.EstatePropertyValues.Add(featuredValues);
         _context.EstateProperties.Add(estateProperty);
         await _context.SaveChangesAsync(cancellationToken);

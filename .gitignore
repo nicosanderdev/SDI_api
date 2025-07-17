@@ -484,3 +484,10 @@ $RECYCLE.BIN/
 /src/Web/wwwroot/properties/images/
 /src/Web/wwwroot/properties/documents/
 /src/Infrastructure/Migrations/
+
+src/Web/appsettings.json
+
+src/Web/appsettings.Development.json
+
+
+*.yml

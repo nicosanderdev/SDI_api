@@ -1,4 +1,6 @@
-﻿namespace SDI_Api.Application.DTOs.EstateProperties;
+﻿using System.Text.Json.Serialization;
+
+namespace SDI_Api.Application.DTOs.EstateProperties;
 
 
 /// <summary>
@@ -6,6 +8,8 @@
 /// </summary>
 public class LocationDto
 {
-    public double Lat { get; set; }
-    public double Lng { get; set; }
+    [JsonPropertyName("lat")]
+    public double Latitude { get; set; }
+    [JsonPropertyName("lng")]
+    public double Longitude { get; set; }
 }

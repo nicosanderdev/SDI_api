@@ -18,7 +18,7 @@ public class GetEstatePropertyQueryHandler : IRequestHandler<GetEstatePropertyQu
     {
         return await _context.EstateProperties.Where(ep =>
                 !ep.IsDeleted && ep.Id == request.estatePropertyId)
-            .Include(ep => ep.MainImage)
+            .Include(p => p.PropertyImages.Where(pi => pi.IsMain))
             .Include(ep => ep.PropertyImages)
             .FirstAsync(cancellationToken);
     }

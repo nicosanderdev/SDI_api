@@ -11,7 +11,6 @@ using SDI_Api.Application.Common.Models;
 using SDI_Api.Application.DTOs.Auth;
 using SDI_Api.Application.Users.Commands;
 using SDI_Api.Infrastructure.Identity;
-using SDI_Api.Web.DTOs;
 
 namespace SDI_Api.Web.Endpoints;
 
@@ -114,9 +113,7 @@ public class AuthController : ControllerBase
     public async Task Logout()
     {
         if (User.Identity!.IsAuthenticated)
-        {
             await _identityService.SignOutAsync();
-        }
 
         foreach (var key in HttpContext.Request.Cookies.Keys)
         {
@@ -181,11 +178,8 @@ public class AuthController : ControllerBase
         if (string.IsNullOrEmpty(UserId))
             throw new UnauthorizedAccessException("User ID is not provided in the request.");
         command.UserId = UserId;
-        var result = await _sender.Send(command);
-        if (!result.Succeeded)
-            throw new ArgumentException(result.ToString());
-
-        return Ok(new { message = "Your email has been confirmed successfully." });
+        await _sender.Send(command);
+        return Ok();
     }
     
     [HttpGet("resend-confirmation-email-custom")]

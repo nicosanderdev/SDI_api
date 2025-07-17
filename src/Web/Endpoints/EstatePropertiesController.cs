@@ -15,7 +15,7 @@ namespace SDI_Api.Web.Endpoints;
 
 [ApiController]
 // [Authorize]
-[Route("api/properties/")]
+[Route("api/properties")]
 public class EstatePropertiesController : ControllerBase
 {
     private readonly ISender _sender;
@@ -40,7 +40,7 @@ public class EstatePropertiesController : ControllerBase
 
     }
 
-    [HttpGet("/mine")]
+    [HttpGet("mine")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -54,7 +54,6 @@ public class EstatePropertiesController : ControllerBase
             throw new ArgumentException("Invalid user identifier format.");
 
         query.UserId = userGuid;
-
         var response = await _sender.Send(query);
         return Ok(response);
     }
@@ -79,8 +78,10 @@ public class EstatePropertiesController : ControllerBase
         var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (userIdValue == null)
             throw new UnauthorizedAccessException("User identifier not found.");
+        
         if (!string.IsNullOrEmpty(request.LocationString)) 
             request.Location = JsonSerializer.Deserialize<LocationDto>(request.LocationString);
+        
         var command = new CreateEstatePropertyCommand { CreateOrUpdateEstatePropertyDto = request };
         command.CreateOrUpdateEstatePropertyDto!.OwnerId = userIdValue;
         var createdPropertyDto = await _sender.Send(command);

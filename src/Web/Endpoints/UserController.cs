@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SDI_Api.Application.DTOs.Auth;
 using SDI_Api.Application.DTOs.Users;
@@ -57,5 +58,21 @@ public class UserController : ControllerBase
         var command = new ChangeUserPasswordCommand { PasswordData = passwordData };
         await _sender.Send(command);
         return NoContent();
+    }
+    
+    /// <summary>
+    /// Retrieves users settings values.
+    /// </summary>
+    [HttpGet("settings")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetUsersSettings()
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null)
+            return Unauthorized("User is not authenticated.");
+        
+        var settings = await _sender.Send(new GetUserSettingsQuery(userId));
+        return Ok(settings);
     }
 }

@@ -39,12 +39,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
                 .WithOne(pd => pd.EstateProperty)
                 .HasForeignKey(pd => pd.EstatePropertyId)
                 .OnDelete(DeleteBehavior.Cascade);
-
-            entity.HasOne(e => e.MainImage)
-                .WithMany() // A PropertyImage isn't exclusively a MainImage for multiple properties
-                .HasForeignKey(e => e.MainImageId)
-                .OnDelete(DeleteBehavior.SetNull) // If main image deleted, set FK to null
-                .IsRequired(false);
         });
 
         builder.Entity<PropertyImage>(entity =>

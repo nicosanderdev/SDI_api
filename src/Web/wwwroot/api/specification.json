@@ -807,7 +807,7 @@
         }
       }
     },
-    "/mine": {
+    "/api/properties/mine": {
       "get": {
         "tags": [
           "EstateProperties"
@@ -819,7 +819,8 @@
             "in": "query",
             "schema": {
               "type": "string",
-              "format": "guid"
+              "format": "guid",
+              "nullable": true
             },
             "x-position": 1
           },
@@ -1025,11 +1026,11 @@
                     "type": "string",
                     "nullable": true
                   },
-                  "Location.Lat": {
+                  "Location.Latitude": {
                     "type": "number",
                     "format": "double"
                   },
-                  "Location.Lng": {
+                  "Location.Longitude": {
                     "type": "number",
                     "format": "double"
                   },
@@ -1876,6 +1877,29 @@
                 }
               }
             }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/user/settings": {
+      "get": {
+        "tags": [
+          "User"
+        ],
+        "operationId": "User_GetUsersSettings",
+        "responses": {
+          "200": {
+            "description": ""
           },
           "400": {
             "description": "",

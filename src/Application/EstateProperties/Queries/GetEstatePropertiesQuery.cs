@@ -27,7 +27,7 @@ public class GetEstatePropertiesQueryHandler : IRequestHandler<GetEstateProperti
     public async Task<PaginatedResult<PublicEstatePropertyDto>> Handle(GetEstatePropertiesQuery request, CancellationToken cancellationToken)
     {
         IQueryable<EstateProperty> query = _context.EstateProperties
-            .Include(p => p.MainImage)
+            .Include(p => p.PropertyImages.Where(pi => pi.IsMain))
             .Where(p => p.EstatePropertyValues.FirstOrDefault(epv => epv.IsFeatured)!.IsPropertyVisible)
             .AsNoTracking();
 
@@ -43,10 +43,10 @@ public class GetEstatePropertiesQueryHandler : IRequestHandler<GetEstateProperti
             query = query.Where(p => p.EstatePropertyValues.FirstOrDefault(epv => epv.IsFeatured)!.Status == statusEnum);
 
         if (filter.CreatedAfter.HasValue)
-            query = query.Where(p => p.CreatedOnUtc >= filter.CreatedAfter.Value);
+            query = query.Where(p => p.Created >= filter.CreatedAfter.Value);
 
         if (filter.CreatedBefore.HasValue)
-            query = query.Where(p => p.CreatedOnUtc <= filter.CreatedBefore.Value);
+            query = query.Where(p => p.Created <= filter.CreatedBefore.Value);
         
         if (!string.IsNullOrWhiteSpace(filter.SearchTerm))
         {
@@ -58,7 +58,7 @@ public class GetEstatePropertiesQueryHandler : IRequestHandler<GetEstateProperti
             );
         }
         
-        query = query.OrderByDescending(p => p.CreatedOnUtc);
+        query = query.OrderByDescending(p => p.Created);
         var result = await PaginatedResult<EstateProperty>.CreateAsync(query, request.PageNumber, request.PageSize);
         var estatePropertyDtos = _mapper.Map<List<PublicEstatePropertyDto>>(result.Items);
         return new PaginatedResult<PublicEstatePropertyDto>(estatePropertyDtos, result.TotalCount, result.PageNumber, result.TotalPages);

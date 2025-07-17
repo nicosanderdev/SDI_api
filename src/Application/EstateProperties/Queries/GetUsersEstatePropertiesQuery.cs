@@ -7,9 +7,9 @@ namespace SDI_Api.Application.EstateProperties.Queries;
 
 public class GetUsersEstatePropertiesQuery : IRequest<PaginatedResult<UsersEstatePropertyDto>>
 {
-    public Guid UserId { get; set; }
-    public int PageNumber { get; set; }
-    public int PageSize { get; set; }
+    public Guid? UserId { get; set; }
+    public int PageNumber { get; set; } = 1;
+    public int PageSize { get; set; } = 10;
 }
 
 public class GetUsersEstatePropertiesQueryHandler : IRequestHandler<GetUsersEstatePropertiesQuery, PaginatedResult<UsersEstatePropertyDto>>
@@ -33,9 +33,16 @@ public class GetUsersEstatePropertiesQueryHandler : IRequestHandler<GetUsersEsta
             .AsNoTracking();
 
         // MapperProfile filters EstatePropertyValues and PropertyImages
-        query = query.OrderByDescending(p => p.CreatedOnUtc);
+        query = query.OrderByDescending(p => p.Created);
         var result = await PaginatedResult<EstateProperty>.CreateAsync(query, request.PageNumber, request.PageSize);
-        var estatePropertyDtos = _mapper.Map<List<UsersEstatePropertyDto>>(result.Items);
+        List<UsersEstatePropertyDto> estatePropertyDtos = new List<UsersEstatePropertyDto>();
+        foreach (var estateProperty in result.Items)
+        {
+            var dto = _mapper.Map<UsersEstatePropertyDto>(estateProperty);
+            _mapper.Map(estateProperty.EstatePropertyValues.FirstOrDefault(ep => ep.IsFeatured)!, dto);
+            _mapper.Map(estateProperty.PropertyImages.Where(pi => !pi.IsDeleted), dto.PropertyImages);
+            estatePropertyDtos.Add(dto);
+        }
         return new PaginatedResult<UsersEstatePropertyDto>(estatePropertyDtos, result.TotalCount, result.PageNumber, result.TotalPages);
     }
 }

@@ -36,15 +36,11 @@ public class EstateProperty : BaseAuditableEntity
     public int Bathrooms { get; set; }
     public bool HasGarage { get; set; }
     public int GarageSpaces { get; set; } = 0;
-    
     // Other info
     public int? Visits { get; set; }
-    public DateTime CreatedOnUtc { get; set; } = DateTime.UtcNow;
-
     // Relationships
     public List<PropertyDocument> Documents { get; set; } = new List<PropertyDocument>();
     public Guid? MainImageId { get; set; }
-    public virtual PropertyImage? MainImage { get; set; }
     public virtual ICollection<PropertyImage> PropertyImages { get; set; } = new List<PropertyImage>();
     public virtual ICollection<EstatePropertyValues> EstatePropertyValues { get; set; } = new List<EstatePropertyValues>();
     public Guid? OwnerId { get; set; }

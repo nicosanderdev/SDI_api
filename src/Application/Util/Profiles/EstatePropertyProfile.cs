@@ -1,4 +1,5 @@
-﻿using SDI_Api.Application.Dtos;
+﻿using System.Globalization;
+using SDI_Api.Application.Dtos;
 using SDI_Api.Application.DTOs.EstateProperties;
 using SDI_Api.Application.EstateProperties.Commands;
 using SDI_Api.Domain.Entities;
@@ -17,8 +18,6 @@ public class EstatePropertyProfile : Profile
             .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.ToString()));
         
         CreateMap<EstateProperty, PublicEstatePropertyDto>()
-            .ForMember(dest => dest.MainImage, opt => 
-                opt.MapFrom(src => src.MainImage))
             .ForMember(dest => dest.Images, opt => 
                 opt.MapFrom(src => src.PropertyImages));
 
@@ -32,31 +31,42 @@ public class EstatePropertyProfile : Profile
         CreateMap<PublicEstatePropertyDto, EstatePropertyValues>()
             .ForMember(dest => dest.Description, opt => 
                 opt.MapFrom(src => src.Description));
-            
-        CreateMap<EstateProperty, UsersEstatePropertyDto>()
-            .ForMember(dest => dest.PropertyImages,
-                opt => opt.MapFrom(src => src.PropertyImages
-                    .Where(pi => !pi.IsDeleted)))
-            .ForMember(dest => dest.MainImageUrl,
-                opt => opt.MapFrom(src => src.PropertyImages
-                    .Where(pi => !pi.IsDeleted && pi.IsMain)
-                    .Select(pi => pi.Url)
-                    .FirstOrDefault()))
-            // map other members if needed
-            .ReverseMap();
 
         CreateMap<CreateOrUpdateEstatePropertyDto, EstateProperty>()
             .ForMember(dest => dest.PropertyImages, opt =>
                 opt.Ignore())
-            .ForMember(dest => dest.Documents, opt => 
+            .ForMember(dest => dest.Documents, opt =>
                 opt.Ignore())
-            .ForMember(dest => dest.Title, opt => 
-                opt.MapFrom(src => src.Title));
+            .ForMember(dest => dest.Title, opt =>
+                opt.MapFrom(src => src.Title))
+            .ForMember(dest => dest.LocationLatitude, opt =>
+                opt.MapFrom(src => src.Location!.Latitude))
+            .ForMember(dest => dest.LocationLongitude, opt =>
+                opt.MapFrom(src => src.Location!.Longitude));
         
         CreateMap<CreateOrUpdateEstatePropertyDto, EstatePropertyValues>()
             .ForMember(dest => dest.Description, opt => 
                 opt.MapFrom(src => src.Description));
 
+
+        CreateMap<EstateProperty, UsersEstatePropertyDto>()
+            .ForMember(dest => dest.PropertyImages,
+                opt => opt.MapFrom(src => src.PropertyImages
+                    .Where(pi => !pi.IsDeleted)))
+            .ForMember(dest => dest.MainImageId,
+                opt =>
+                    opt.MapFrom(src => src.MainImageId));
+
+        CreateMap<EstatePropertyValues, UsersEstatePropertyDto>()
+            .ForMember(dest => dest.SalePrice, opt =>
+                opt.MapFrom(src => src.SalePrice))
+            .ForMember(dest => dest.RentPrice, opt =>
+                opt.MapFrom(src => src.RentPrice))
+            .ForMember(dest => dest.Status, opt =>
+                opt.MapFrom(src => src.Status.ToString()))
+            .ForMember(dest => dest.Description, opt =>
+                opt.MapFrom(src => src.Description));
+        
         /* CreateMap<CreateOrUpdatePropertyImageDto, PropertyImage>()
             .ForMember(dest => dest.Id, opt => {
                 opt.PreCondition(src => !string.IsNullOrEmpty(src.Id) && Guid.TryParse(src.Id, out _));

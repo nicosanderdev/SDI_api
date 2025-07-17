@@ -107,8 +107,7 @@ public class UsersEstatePropertyDto
     /// <summary>
     /// Maps to 'createdOnUtc'.
     /// </summary>
-    [Required]
-    public DateTime CreatedOnUtc { get; set; } = DateTime.UtcNow;
+    public DateTimeOffset Created { get; set; } = DateTimeOffset.UtcNow;
     
     // Relationships
     
@@ -140,12 +139,7 @@ public class UsersEstatePropertyDto
     /// <summary>
     /// Maps to optional 'mainImage'. This is the primary image file to be uploaded.
     /// </summary>
-    public IFormFile? MainImage { get; set; }
-    /// <summary>
-    /// The URL of the main image after it has been uploaded and processed.
-    /// This is for reading data, not for uploading.
-    /// </summary>
-    public string? MainImageUrl { get; set; }
+    public string? MainImageId { get; set; }
     /// <summary>
     /// A list of DTOs representing the processed images, including their URLs.
     /// This is for reading data, not for uploading.
@@ -183,13 +177,13 @@ public class UsersEstatePropertyDto
     /// </summary>
     public Currency Currency { get; set; }
     /// <summary>
-    /// Maps to optional 'salePrice'. Using decimal for financial values.
+    /// Maps to optional 'salePrice'.
     /// </summary>
-    public decimal? SalePrice { get; set; }
+    public double? SalePrice { get; set; }
     /// <summary>
-    /// Maps to optional 'rentPrice'. Using decimal for financial values.
+    /// Maps to optional 'rentPrice'.
     /// </summary>
-    public decimal? RentPrice { get; set; }
+    public double? RentPrice { get; set; }
     /// <summary>
     /// Maps to 'hasCommonExpenses'.
     /// </summary>
@@ -213,7 +207,7 @@ public class UsersEstatePropertyDto
     /// <summary>
     /// Maps to 'status'.
     /// </summary>
-    public PropertyStatus Status { get; set; }
+    public string? Status { get; set; }
     /// <summary>
     /// Maps to 'isActive'.
     /// </summary>

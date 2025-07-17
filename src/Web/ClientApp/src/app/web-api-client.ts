@@ -1231,11 +1231,11 @@ export class AuthClient implements IAuthClient {
 
 export interface IEstatePropertiesClient {
     estateProperties_GetEstateProperties(pageNumber: number | undefined, pageSize: number | undefined, filter_IsDeleted: boolean | null | undefined, filter_OwnerId: string | null | undefined, filter_CreatedAfter: Date | null | undefined, filter_CreatedBefore: Date | null | undefined, filter_Status: string | null | undefined, filter_SearchTerm: string | null | undefined): Observable<void>;
-    estateProperties_GetUsersEstateProperties(userId: string | undefined, pageNumber: number | undefined, pageSize: number | undefined): Observable<void>;
+    estateProperties_GetUsersEstateProperties(userId: string | null | undefined, pageNumber: number | undefined, pageSize: number | undefined): Observable<void>;
     estateProperties_GetEstateProperty(id: string): Observable<FileResponse>;
     estateProperties_UpdateEstateProperty(id: string, command: UpdateEstatePropertyCommand): Observable<void>;
     estateProperties_DeleteEstateProperty(id: string): Observable<void>;
-    estateProperties_CreateEstateProperty(id: string | undefined, streetName: string | null | undefined, houseNumber: string | null | undefined, neighborhood: string | null | undefined, city: string | null | undefined, state: string | null | undefined, zipCode: string | null | undefined, country: string | null | undefined, location: string | null | undefined, location_Lat: number | undefined, location_Lng: number | undefined, title: string | null | undefined, type: string | null | undefined, areaValue: number | undefined, areaUnit: number | undefined, bedrooms: number | undefined, bathrooms: number | undefined, hasGarage: boolean | undefined, garageSpaces: number | undefined, visits: number | undefined, createdOnUtc: Date | undefined, documents: FileParameter[] | null | undefined, mainImageUrl: string | null | undefined, images: FileParameter[] | null | undefined, ownerId: string | null | undefined, description: string | null | undefined, availableFrom: Date | undefined, arePetsAllowed: boolean | undefined, capacity: number | undefined, currency: string | null | undefined, salePrice: number | null | undefined, rentPrice: number | null | undefined, hasCommonExpenses: boolean | undefined, commonExpensesAmount: number | null | undefined, isElectricityIncluded: boolean | undefined, isWaterIncluded: boolean | undefined, isPriceVisible: boolean | undefined, status: string | null | undefined, isActive: boolean | undefined, isPropertyVisible: boolean | undefined): Observable<void>;
+    estateProperties_CreateEstateProperty(id: string | undefined, streetName: string | null | undefined, houseNumber: string | null | undefined, neighborhood: string | null | undefined, city: string | null | undefined, state: string | null | undefined, zipCode: string | null | undefined, country: string | null | undefined, location: string | null | undefined, location_Latitude: number | undefined, location_Longitude: number | undefined, title: string | null | undefined, type: string | null | undefined, areaValue: number | undefined, areaUnit: number | undefined, bedrooms: number | undefined, bathrooms: number | undefined, hasGarage: boolean | undefined, garageSpaces: number | undefined, visits: number | undefined, createdOnUtc: Date | undefined, documents: FileParameter[] | null | undefined, mainImageUrl: string | null | undefined, images: FileParameter[] | null | undefined, ownerId: string | null | undefined, description: string | null | undefined, availableFrom: Date | undefined, arePetsAllowed: boolean | undefined, capacity: number | undefined, currency: string | null | undefined, salePrice: number | null | undefined, rentPrice: number | null | undefined, hasCommonExpenses: boolean | undefined, commonExpensesAmount: number | null | undefined, isElectricityIncluded: boolean | undefined, isWaterIncluded: boolean | undefined, isPriceVisible: boolean | undefined, status: string | null | undefined, isActive: boolean | undefined, isPropertyVisible: boolean | undefined): Observable<void>;
 }
 
 @Injectable({
@@ -1322,11 +1322,9 @@ export class EstatePropertiesClient implements IEstatePropertiesClient {
         return _observableOf(null as any);
     }
 
-    estateProperties_GetUsersEstateProperties(userId: string | undefined, pageNumber: number | undefined, pageSize: number | undefined): Observable<void> {
-        let url_ = this.baseUrl + "/mine?";
-        if (userId === null)
-            throw new Error("The parameter 'userId' cannot be null.");
-        else if (userId !== undefined)
+    estateProperties_GetUsersEstateProperties(userId: string | null | undefined, pageNumber: number | undefined, pageSize: number | undefined): Observable<void> {
+        let url_ = this.baseUrl + "/api/properties/mine?";
+        if (userId !== undefined && userId !== null)
             url_ += "UserId=" + encodeURIComponent("" + userId) + "&";
         if (pageNumber === null)
             throw new Error("The parameter 'pageNumber' cannot be null.");
@@ -1559,7 +1557,7 @@ export class EstatePropertiesClient implements IEstatePropertiesClient {
         return _observableOf(null as any);
     }
 
-    estateProperties_CreateEstateProperty(id: string | undefined, streetName: string | null | undefined, houseNumber: string | null | undefined, neighborhood: string | null | undefined, city: string | null | undefined, state: string | null | undefined, zipCode: string | null | undefined, country: string | null | undefined, location: string | null | undefined, location_Lat: number | undefined, location_Lng: number | undefined, title: string | null | undefined, type: string | null | undefined, areaValue: number | undefined, areaUnit: number | undefined, bedrooms: number | undefined, bathrooms: number | undefined, hasGarage: boolean | undefined, garageSpaces: number | undefined, visits: number | undefined, createdOnUtc: Date | undefined, documents: FileParameter[] | null | undefined, mainImageUrl: string | null | undefined, images: FileParameter[] | null | undefined, ownerId: string | null | undefined, description: string | null | undefined, availableFrom: Date | undefined, arePetsAllowed: boolean | undefined, capacity: number | undefined, currency: string | null | undefined, salePrice: number | null | undefined, rentPrice: number | null | undefined, hasCommonExpenses: boolean | undefined, commonExpensesAmount: number | null | undefined, isElectricityIncluded: boolean | undefined, isWaterIncluded: boolean | undefined, isPriceVisible: boolean | undefined, status: string | null | undefined, isActive: boolean | undefined, isPropertyVisible: boolean | undefined): Observable<void> {
+    estateProperties_CreateEstateProperty(id: string | undefined, streetName: string | null | undefined, houseNumber: string | null | undefined, neighborhood: string | null | undefined, city: string | null | undefined, state: string | null | undefined, zipCode: string | null | undefined, country: string | null | undefined, location: string | null | undefined, location_Latitude: number | undefined, location_Longitude: number | undefined, title: string | null | undefined, type: string | null | undefined, areaValue: number | undefined, areaUnit: number | undefined, bedrooms: number | undefined, bathrooms: number | undefined, hasGarage: boolean | undefined, garageSpaces: number | undefined, visits: number | undefined, createdOnUtc: Date | undefined, documents: FileParameter[] | null | undefined, mainImageUrl: string | null | undefined, images: FileParameter[] | null | undefined, ownerId: string | null | undefined, description: string | null | undefined, availableFrom: Date | undefined, arePetsAllowed: boolean | undefined, capacity: number | undefined, currency: string | null | undefined, salePrice: number | null | undefined, rentPrice: number | null | undefined, hasCommonExpenses: boolean | undefined, commonExpensesAmount: number | null | undefined, isElectricityIncluded: boolean | undefined, isWaterIncluded: boolean | undefined, isPriceVisible: boolean | undefined, status: string | null | undefined, isActive: boolean | undefined, isPropertyVisible: boolean | undefined): Observable<void> {
         let url_ = this.baseUrl + "/api/properties/create";
         url_ = url_.replace(/[?&]$/, "");
 
@@ -1584,14 +1582,14 @@ export class EstatePropertiesClient implements IEstatePropertiesClient {
             content_.append("Country", country.toString());
         if (location !== null && location !== undefined)
             content_.append("Location", location.toString());
-        if (location_Lat === null || location_Lat === undefined)
-            throw new Error("The parameter 'location_Lat' cannot be null.");
+        if (location_Latitude === null || location_Latitude === undefined)
+            throw new Error("The parameter 'location_Latitude' cannot be null.");
         else
-            content_.append("Location.Lat", location_Lat.toString());
-        if (location_Lng === null || location_Lng === undefined)
-            throw new Error("The parameter 'location_Lng' cannot be null.");
+            content_.append("Location.Latitude", location_Latitude.toString());
+        if (location_Longitude === null || location_Longitude === undefined)
+            throw new Error("The parameter 'location_Longitude' cannot be null.");
         else
-            content_.append("Location.Lng", location_Lng.toString());
+            content_.append("Location.Longitude", location_Longitude.toString());
         if (title !== null && title !== undefined)
             content_.append("Title", title.toString());
         if (type !== null && type !== undefined)
@@ -2698,6 +2696,7 @@ export interface IUserClient {
     user_GetUsers(): Observable<UserAuthDto[]>;
     user_GetUserById(id: string): Observable<UserAuthDto>;
     user_ChangeUserPassword(passwordData: ChangePasswordDto): Observable<UserAuthDto>;
+    user_GetUsersSettings(): Observable<void>;
 }
 
 @Injectable({
@@ -2890,6 +2889,57 @@ export class UserClient implements IUserClient {
             let resultData404 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
             result404 = ProblemDetails.fromJS(resultData404);
             return throwException("A server side error occurred.", status, _responseText, _headers, result404);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            let resultData400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result400 = ProblemDetails.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    user_GetUsersSettings(): Observable<void> {
+        let url_ = this.baseUrl + "/api/user/settings";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processUser_GetUsersSettings(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processUser_GetUsersSettings(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processUser_GetUsersSettings(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
             }));
         } else if (status === 400) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {

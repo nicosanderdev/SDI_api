@@ -20,7 +20,7 @@ public class GetEstatePropertyByIdQueryHandler : IRequestHandler<GetEstateProper
     public async Task<PublicEstatePropertyDto> Handle(GetEstatePropertyByIdQuery request, CancellationToken cancellationToken)
     {
         var entity = await _context.EstateProperties
-            .Include(p => p.MainImage)
+            .Include(p => p.PropertyImages.Where(pi => pi.IsMain))
             .Include(p => p.PropertyImages)
             .Include(p => p.EstatePropertyValues)
             .AsNoTracking()

@@ -141,12 +141,7 @@ public class PublicEstatePropertyDto
     /// <summary>
     /// Maps to optional 'mainImage'. This is the primary image file to be uploaded.
     /// </summary>
-    public IFormFile? MainImage { get; set; }
-    /// <summary>
-    /// The URL of the main image after it has been uploaded and processed.
-    /// This is for reading data, not for uploading.
-    /// </summary>
-    public string? MainImageUrl { get; set; }
+    public string? MainImageId { get; set; }
     /// <summary>
     /// A list of DTOs representing the processed images, including their URLs.
     /// This is for reading data, not for uploading.

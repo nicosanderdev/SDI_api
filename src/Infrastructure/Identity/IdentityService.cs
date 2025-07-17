@@ -121,7 +121,7 @@ public class IdentityService : IIdentityService
         var identityResult = await _userManager.CreateAsync(user, password);
         if (identityResult.Succeeded)
         {
-            var identityRoleResult = await _userManager.AddToRoleAsync(user, "USER");
+            var identityRoleResult = await _userManager.AddToRoleAsync(user, "User");
             return (Result.Success(), user.getId()!);
         }
         return (identityResult.ToApplicationResult(), string.Empty);
