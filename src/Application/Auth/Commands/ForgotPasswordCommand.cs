@@ -1,16 +1,16 @@
 ﻿using System.Text.Encodings.Web;
 using Microsoft.Extensions.Configuration;
 using SDI_Api.Application.Common.Interfaces;
-using SDI_Api.Application.Common.Models;
+using SDI_Api.Application.DTOs.Auth;
 
 namespace SDI_Api.Application.Auth.Commands;
 
-public class ForgotPasswordCommand : IRequest<Result>
+public record ForgotPasswordCommand : IRequest<ForgotPasswordResponseDto>
 {
-    public string? Email { get; }
+    public string? Email { get; set;  }
 }
 
-public class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswordCommand, Result>
+public class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswordCommand, ForgotPasswordResponseDto>
 {
     private readonly IIdentityService _identityService;
     private readonly IEmailService _emailService;
@@ -29,15 +29,15 @@ public class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswordComman
         _emailTemplateProvider = emailTemplateProvider;
     }
 
-    public async Task<Result> Handle(ForgotPasswordCommand request, CancellationToken cancellationToken)
+    public async Task<ForgotPasswordResponseDto> Handle(ForgotPasswordCommand request, CancellationToken cancellationToken)
     {
         var user = await _identityService.FindUserByEmailAsync(request.Email!);
         if (user == null)
-            throw new Exception("User was not found");
+            throw new UnauthorizedAccessException("User not found.");
         
         var token = await _identityService.GeneratePasswordResetTokenAsync(user);
         
-        var reactAppResetUrl = _configuration["AppUrls:ReactAppResetPasswordUrl"];
+        var reactAppResetUrl = _configuration["AppUrls:ReactAppForgotPasswordUrl"];
         if (string.IsNullOrEmpty(reactAppResetUrl))
             throw new InvalidOperationException("App Reset Password URL is not configured in appsettings.json.");
         
@@ -46,8 +46,11 @@ public class ForgotPasswordCommandHandler : IRequestHandler<ForgotPasswordComman
         
         var emailSubject = "Reset Your Password";
         var emailBody = _emailTemplateProvider.GetPasswordResetBody(callbackUrl);
-
         await _emailService.SendEmailAsync(user.getUserEmail()!, emailSubject, emailBody);
-        return Result.Success();
+        
+        return new ForgotPasswordResponseDto()
+        {
+            TwoFactorEnabled = user.isTwoFactorEnabled()
+        };
     }
 }

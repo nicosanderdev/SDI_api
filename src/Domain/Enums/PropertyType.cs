@@ -6,7 +6,10 @@
 public enum PropertyType
 {
     Apartment,
-    House
+    House,
+    Commercial,
+    Land,
+    Other
 }
 
 /// <summary>
@@ -26,6 +29,9 @@ public static class PropertyTypeExtensions
         {
             PropertyType.Apartment => "Apartment",
             PropertyType.House => "House",
+            PropertyType.Commercial => "Commercial",
+            PropertyType.Land => "Land",
+            PropertyType.Other => "Other",
             _ => throw new ArgumentOutOfRangeException(nameof(propertyType), propertyType, "Unsupported property type.")
         };
     }
@@ -43,6 +49,9 @@ public static class PropertyTypeExtensions
         {
             "Apartment" => PropertyType.Apartment,
             "House" => PropertyType.House,
+            "Commercial" => PropertyType.Commercial,
+            "Land" => PropertyType.Land,
+            "Other" => PropertyType.Other,
             _ => throw new ArgumentOutOfRangeException(nameof(displayString), displayString, "Invalid property type string.")
         };
     }

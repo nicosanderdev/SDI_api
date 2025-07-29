@@ -71,7 +71,7 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, U
         
         // Send email for confirmation
         var confirmationLink = _configuration["AppUrls:ReactAppConfirmationUrl"];
-        var token = _tokenService.GenerateToken(userId);
+        var token = _tokenService.GenerateToken(userId, user.getUserEmail()!);
         if (string.IsNullOrEmpty(confirmationLink))
             throw new InvalidOperationException("Confirmation Link is not configured in appsettings.json.");
             

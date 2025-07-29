@@ -11,6 +11,7 @@ using SDI_Api.Application.Common.Models;
 using SDI_Api.Application.DTOs.Auth;
 using SDI_Api.Application.Users.Commands;
 using SDI_Api.Infrastructure.Identity;
+using SendGrid.Helpers.Errors.Model;
 
 namespace SDI_Api.Web.Endpoints;
 
@@ -90,24 +91,10 @@ public class AuthController : ControllerBase
             throw new UnauthorizedAccessException(result.ErrorMessage ?? "Invalid login attempt.");
         }
         
-        var user = result.User!;
-        var claims = new List<Claim>
-        {
-            new Claim(ClaimTypes.NameIdentifier, user.Id!),
-            new Claim(ClaimTypes.Name, user.UserName!),
-            new Claim(ClaimTypes.Email, user.Email!),
-        };
-
-        var roles = await _identityService.GetUserRolesAsync(user.Id!);
-        claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
-
-        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-        var principal = new ClaimsPrincipal(identity);
-
-        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+        await LoginUserInfo(result);
         return Ok(result);
     }
-    
+
     [HttpPost("logout-custom")]
     [Authorize]
     public async Task Logout()
@@ -151,21 +138,69 @@ public class AuthController : ControllerBase
     [AllowAnonymous]
     public async Task<IActionResult> ForgotPasswordCustom([FromBody] ForgotPasswordCommand command)
     {
-        await _sender.Send(command);
-        return Ok(new { message = "If an account with this email exists, a password reset link has been sent." });
+        var result = await _sender.Send(command);
+        return Ok(result);
+    }
+    
+    [HttpPost("forgot-password-confirm-email")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ForgotPasswordConfirmEmail([FromBody] ForgotPasswordConfirmEmailCommand command)
+    {
+        var result = await _sender.Send(command);
+        if (result.LoginResultDto != null && result.LoginResultDto.Succeeded)
+        {
+            var login = await LoginUserInfo(result.LoginResultDto);
+            return Ok(result.ResetToken);
+        }
+        return BadRequest(result.LoginResultDto!.ErrorMessage ?? "Failed to confirm email for password reset.");
+    }
+    
+    [HttpPost("reset-password-init")]
+    public async Task<IActionResult> ResetPasswordInit([FromBody] ResetPasswordInitCommand command)
+    {
+        var userEmail = User.FindFirstValue(ClaimTypes.Email);
+        if (userEmail == null)
+            throw new UnauthorizedException("User email not found in claims.");
+        command.Email = userEmail;
+        var result = await _sender.Send(command);
+        return Ok(result);
+    }
+    
+    [HttpPost("reset-password-2fa-validate")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ResetPassword2FaValidate([FromBody] ResetPassword2FaValidateCommand command)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId == null)
+            throw new UnauthorizedException("User id not found in claims.");
+        command.UserId = userId;
+        var result = await _sender.Send(command);
+        return Ok(result);
+    }
+    
+    [HttpPost("validate-recovery-code")]
+    [AllowAnonymous]
+    public async Task<IActionResult> ValidateRecoveryCode([FromBody] ValidateRecoveryCodeCommand command)
+    {
+        // TODO : try catch?
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (userId != null)
+            command.UserId = userId;
+        
+        var result = await _sender.Send(command);
+        return Ok(result);
     }
     
     [HttpPost("reset-password-custom")]
-    [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(Result), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ResetPasswordCustom([FromBody] ResetPasswordCommand command)
     {
+        if (string.IsNullOrEmpty(command!.Email))
+            command.Email = User.FindFirstValue(ClaimTypes.Email)!;
+        
         var result = await _sender.Send(command);
-        if (!result.Succeeded)
-            throw new ArgumentException(result.ToString());
-
-        return Ok(new { message = "Your password has been reset successfully." });
+        return Ok(result);
     }
 
     [HttpPost("confirm-email-custom")]
@@ -174,10 +209,10 @@ public class AuthController : ControllerBase
     [ProducesResponseType(typeof(Result), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ConfirmEmailCustom([FromBody] ConfirmEmailCommand command)
     {
-        var UserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrEmpty(UserId))
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userId))
             throw new UnauthorizedAccessException("User ID is not provided in the request.");
-        command.UserId = UserId;
+        command.UserId = userId;
         await _sender.Send(command);
         return Ok();
     }
@@ -250,5 +285,26 @@ public class AuthController : ControllerBase
             throw new ArgumentException("Failed to complete two-factor authentication enabling.");
         
         return Ok(result);
+    }
+    
+    // Private methods //
+    private async Task<IActionResult> LoginUserInfo(LoginResultDto result)
+    {
+        var user = result.User!;
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, user.Id!),
+            new Claim(ClaimTypes.Name, user.UserName!),
+            new Claim(ClaimTypes.Email, user.Email!),
+        };
+
+        var roles = await _identityService.GetUserRolesAsync(user.Id!);
+        claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
+
+        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        var principal = new ClaimsPrincipal(identity);
+
+        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+        return Ok();
     }
 }

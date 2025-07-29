@@ -42,29 +42,17 @@ public class IdentityService : IIdentityService
 
     public async Task<IUser?> FindUserByIdAsync(string userId)
     {
-        var user = await _userManager.Users.Where(u => u.Id == userId).FirstOrDefaultAsync();
-        if (user == null)
-            return null;
-
-        return user;
+        return await _userManager.Users.FirstOrDefaultAsync(u => u.Id == userId);
     }
 
     public async Task<IUser?> FindUserByEmailAsync(string email)
     {
-        var user = await _userManager.Users.Where(u => u.Email == email).FirstOrDefaultAsync();
-        if (user == null)
-            return null;
-
-        return user;
+        return await _userManager.Users.FirstOrDefaultAsync(u => u.Email == email);
     }
     
     public async Task<IUser?> FindUserByUsernameAsync(string username)
     {
-        var user = await _userManager.Users.Where(u => u.UserName == username).FirstOrDefaultAsync();
-        if (user == null)
-            return null;
-
-        return user;
+        return await _userManager.Users.FirstOrDefaultAsync(u => u.UserName == username);
     }
 
     public async Task<bool> GetTwoFactorEnabledAsync(IUser user)

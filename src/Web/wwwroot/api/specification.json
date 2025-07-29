@@ -515,6 +515,138 @@
         }
       }
     },
+    "/api/auth/forgot-password-confirm-email": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "Auth_ForgotPasswordConfirmEmail",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotPasswordConfirmEmailCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/reset-password-init": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "Auth_ResetPasswordInit",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordInitCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/reset-password-2fa-validate": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "Auth_ResetPassword2FaValidate",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPassword2FaValidateCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/validate-recovery-code": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "Auth_ValidateRecoveryCode",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidateRecoveryCodeCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/auth/reset-password-custom": {
       "post": {
         "tags": [
@@ -807,6 +939,276 @@
         }
       }
     },
+    "/api/properties/{id}": {
+      "get": {
+        "tags": [
+          "EstateProperties"
+        ],
+        "operationId": "EstateProperties_GetEstateProperty",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/octet-stream": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "EstateProperties"
+        ],
+        "operationId": "EstateProperties_UpdateEstateProperty",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "Id": {
+                    "type": "string",
+                    "format": "guid"
+                  },
+                  "StreetName": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "HouseNumber": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "Neighborhood": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "City": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "State": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "ZipCode": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "Country": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "Location": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "Location.Latitude": {
+                    "type": "number",
+                    "format": "double"
+                  },
+                  "Location.Longitude": {
+                    "type": "number",
+                    "format": "double"
+                  },
+                  "Title": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "Type": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "AreaValue": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "AreaUnit": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "Bedrooms": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "Bathrooms": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "HasGarage": {
+                    "type": "boolean"
+                  },
+                  "GarageSpaces": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "Visits": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "CreatedOnUtc": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "Documents": {
+                    "type": "array",
+                    "nullable": true,
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    }
+                  },
+                  "MainImageUrl": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "Images": {
+                    "type": "array",
+                    "nullable": true,
+                    "items": {
+                      "type": "string",
+                      "format": "binary"
+                    }
+                  },
+                  "OwnerId": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "Description": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "AvailableFrom": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "ArePetsAllowed": {
+                    "type": "boolean"
+                  },
+                  "Capacity": {
+                    "type": "integer",
+                    "format": "int32"
+                  },
+                  "Currency": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "SalePrice": {
+                    "type": "number",
+                    "format": "decimal",
+                    "nullable": true
+                  },
+                  "RentPrice": {
+                    "type": "number",
+                    "format": "decimal",
+                    "nullable": true
+                  },
+                  "HasCommonExpenses": {
+                    "type": "boolean"
+                  },
+                  "CommonExpensesAmount": {
+                    "type": "number",
+                    "format": "decimal",
+                    "nullable": true
+                  },
+                  "IsElectricityIncluded": {
+                    "type": "boolean"
+                  },
+                  "IsWaterIncluded": {
+                    "type": "boolean"
+                  },
+                  "IsPriceVisible": {
+                    "type": "boolean"
+                  },
+                  "Status": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "IsActive": {
+                    "type": "boolean"
+                  },
+                  "IsPropertyVisible": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "EstateProperties"
+        ],
+        "operationId": "EstateProperties_DeleteEstateProperty",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/properties/mine": {
       "get": {
         "tags": [
@@ -870,12 +1272,12 @@
         }
       }
     },
-    "/api/properties/{id}": {
+    "/api/properties/mine/{id}": {
       "get": {
         "tags": [
           "EstateProperties"
         ],
-        "operationId": "EstateProperties_GetEstateProperty",
+        "operationId": "EstateProperties_GetUsersEstateProperty",
         "parameters": [
           {
             "name": "id",
@@ -887,48 +1289,6 @@
             "x-position": 1
           }
         ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/octet-stream": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
-              }
-            }
-          }
-        }
-      },
-      "put": {
-        "tags": [
-          "EstateProperties"
-        ],
-        "operationId": "EstateProperties_UpdateEstateProperty",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "x-position": 1
-          }
-        ],
-        "requestBody": {
-          "x-name": "command",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/UpdateEstatePropertyCommand"
-              }
-            }
-          },
-          "required": true,
-          "x-position": 2
-        },
         "responses": {
           "200": {
             "description": ""
@@ -942,30 +1302,8 @@
                 }
               }
             }
-          }
-        }
-      },
-      "delete": {
-        "tags": [
-          "EstateProperties"
-        ],
-        "operationId": "EstateProperties_DeleteEstateProperty",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
           },
-          "400": {
+          "401": {
             "description": "",
             "content": {
               "application/json": {
@@ -2257,6 +2595,58 @@
           }
         }
       },
+      "ForgotPasswordConfirmEmailCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "userEmail": {
+            "type": "string",
+            "nullable": true
+          },
+          "emailToken": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "ResetPasswordInitCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "ResetPassword2FaValidateCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "userId": {
+            "type": "string",
+            "nullable": true
+          },
+          "twoFactorCode": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "ValidateRecoveryCodeCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "userId": {
+            "type": "string",
+            "nullable": true
+          },
+          "recoveryCode": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
       "Result": {
         "type": "object",
         "additionalProperties": false,
@@ -2277,13 +2667,19 @@
         "additionalProperties": false,
         "properties": {
           "email": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           "token": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           "newPassword": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
+          },
+          "resetEmail": {
+            "type": "boolean"
           }
         }
       },
@@ -2296,6 +2692,10 @@
             "nullable": true
           },
           "token": {
+            "type": "string",
+            "nullable": true
+          },
+          "email": {
             "type": "string",
             "nullable": true
           }
@@ -2339,352 +2739,6 @@
             "nullable": true
           },
           "twoFactorCode": {
-            "type": "string",
-            "nullable": true
-          }
-        }
-      },
-      "UpdateEstatePropertyCommand": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "estateProperty": {
-            "$ref": "#/components/schemas/CreateOrUpdateEstatePropertyDto"
-          },
-          "mainImage": {
-            "nullable": true,
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/CreateOrUpdatePropertyImageDto"
-              }
-            ]
-          },
-          "propertyImages": {
-            "type": "array",
-            "nullable": true,
-            "items": {
-              "$ref": "#/components/schemas/CreateOrUpdatePropertyImageDto"
-            }
-          },
-          "featuredValuesId": {
-            "type": "string",
-            "nullable": true
-          },
-          "featuredValues": {
-            "nullable": true,
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/CreateOrUpdateEstatePropertyValuesDto"
-              }
-            ]
-          }
-        }
-      },
-      "CreateOrUpdateEstatePropertyDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "required": [
-          "streetName",
-          "houseNumber",
-          "city",
-          "state",
-          "zipCode",
-          "country",
-          "title",
-          "type",
-          "hasGarage",
-          "garageSpaces"
-        ],
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "guid"
-          },
-          "streetName": {
-            "type": "string",
-            "minLength": 5
-          },
-          "houseNumber": {
-            "type": "string",
-            "minLength": 1
-          },
-          "neighborhood": {
-            "type": "string",
-            "nullable": true
-          },
-          "city": {
-            "type": "string",
-            "minLength": 1
-          },
-          "state": {
-            "type": "string",
-            "minLength": 1
-          },
-          "zipCode": {
-            "type": "string",
-            "minLength": 1
-          },
-          "country": {
-            "type": "string",
-            "minLength": 1
-          },
-          "locationString": {
-            "type": "string",
-            "nullable": true
-          },
-          "title": {
-            "type": "string",
-            "minLength": 1
-          },
-          "type": {
-            "type": "string",
-            "minLength": 1
-          },
-          "areaValue": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "areaUnit": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "bedrooms": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "bathrooms": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "hasGarage": {
-            "type": "boolean"
-          },
-          "garageSpaces": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "visits": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "createdOnUtc": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "documents": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "format": "binary"
-            }
-          },
-          "mainImageUrl": {
-            "type": "string",
-            "nullable": true
-          },
-          "images": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "format": "binary"
-            }
-          },
-          "ownerId": {
-            "type": "string",
-            "nullable": true
-          },
-          "description": {
-            "type": "string",
-            "maxLength": 1000,
-            "nullable": true
-          },
-          "availableFrom": {
-            "type": "string",
-            "format": "date-time"
-          },
-          "arePetsAllowed": {
-            "type": "boolean"
-          },
-          "capacity": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "currency": {
-            "$ref": "#/components/schemas/Currency"
-          },
-          "salePrice": {
-            "type": "number",
-            "format": "decimal",
-            "nullable": true
-          },
-          "rentPrice": {
-            "type": "number",
-            "format": "decimal",
-            "nullable": true
-          },
-          "hasCommonExpenses": {
-            "type": "boolean"
-          },
-          "commonExpensesAmount": {
-            "type": "number",
-            "format": "decimal",
-            "nullable": true
-          },
-          "isElectricityIncluded": {
-            "type": "boolean"
-          },
-          "isWaterIncluded": {
-            "type": "boolean"
-          },
-          "isPriceVisible": {
-            "type": "boolean"
-          },
-          "status": {
-            "$ref": "#/components/schemas/PropertyStatus"
-          },
-          "isActive": {
-            "type": "boolean"
-          },
-          "isPropertyVisible": {
-            "type": "boolean"
-          }
-        }
-      },
-      "Currency": {
-        "type": "integer",
-        "description": "",
-        "x-enumNames": [
-          "USD",
-          "UYU",
-          "BRL",
-          "EUR",
-          "GBP"
-        ],
-        "enum": [
-          0,
-          1,
-          2,
-          3,
-          4
-        ]
-      },
-      "PropertyStatus": {
-        "type": "integer",
-        "description": "",
-        "x-enumNames": [
-          "Sale",
-          "Rent",
-          "Reserved",
-          "Sold",
-          "Unavailable"
-        ],
-        "enum": [
-          0,
-          1,
-          2,
-          3,
-          4
-        ]
-      },
-      "CreateOrUpdatePropertyImageDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string",
-            "nullable": true
-          },
-          "url": {
-            "type": "string"
-          },
-          "altText": {
-            "type": "string",
-            "nullable": true
-          },
-          "isMain": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "estatePropertyId": {
-            "type": "string",
-            "format": "guid"
-          },
-          "fileName": {
-            "type": "string"
-          },
-          "contentType": {
-            "type": "string"
-          },
-          "imageData": {
-            "type": "string",
-            "format": "byte"
-          },
-          "isPublic": {
-            "type": "boolean"
-          }
-        }
-      },
-      "CreateOrUpdateEstatePropertyValuesDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string",
-            "nullable": true
-          },
-          "description": {
-            "type": "string",
-            "nullable": true
-          },
-          "availableFrom": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "arePetsAllowed": {
-            "type": "boolean"
-          },
-          "capacity": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "currency": {
-            "$ref": "#/components/schemas/Currency"
-          },
-          "salePrice": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "rentPrice": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "hasCommonExpenses": {
-            "type": "boolean"
-          },
-          "commonExpensesAmount": {
-            "type": "number",
-            "format": "decimal"
-          },
-          "isElectricityIncluded": {
-            "type": "boolean"
-          },
-          "isWaterIncluded": {
-            "type": "boolean"
-          },
-          "isPriceVisible": {
-            "type": "boolean"
-          },
-          "propertyStatus": {
-            "$ref": "#/components/schemas/PropertyStatus"
-          },
-          "isActive": {
-            "type": "boolean"
-          },
-          "isPropertyVisible": {
-            "type": "boolean"
-          },
-          "estatePropertyId": {
             "type": "string",
             "nullable": true
           }

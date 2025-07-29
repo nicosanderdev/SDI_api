@@ -28,11 +28,12 @@ public class EmailConfirmationTokenService : IEmailConfirmationTokenService
         _key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
     }
 
-    public string GenerateToken(string userId)
+    public string GenerateToken(string userId, string userEmail)
     {
         var claims = new List<Claim>
         {
             new Claim(JwtRegisteredClaimNames.Sub, userId),
+            new Claim(ClaimTypes.Email, userEmail),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new Claim(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
             new Claim("purpose", TokenPurpose)
@@ -49,7 +50,7 @@ public class EmailConfirmationTokenService : IEmailConfirmationTokenService
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    public TokenValidationResult ValidateToken(string token)
+    public TokenValidationResult ValidateToken(string userEmail, string token)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
         var validationParameters = new TokenValidationParameters
@@ -77,6 +78,8 @@ public class EmailConfirmationTokenService : IEmailConfirmationTokenService
                 return new TokenValidationResult { IsValid = false, ErrorMessage = "Invalid token purpose." };
 
             var userId = principal.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            
+            var isUserEmailCorrect = principal.FindFirst(ClaimTypes.Email)?.Value == userEmail;
 
             if (string.IsNullOrEmpty(userId))
                 return new TokenValidationResult { IsValid = false, ErrorMessage = "User ID not found in token." };

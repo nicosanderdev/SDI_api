@@ -4,6 +4,6 @@ namespace SDI_Api.Application.Common.Interfaces;
 
 public interface IEmailConfirmationTokenService
 {
-    string GenerateToken(string userId);
-    TokenValidationResult ValidateToken(string token);
+    string GenerateToken(string userId, string userEmail);
+    TokenValidationResult ValidateToken(string userEmail, string token);
 }

@@ -39,7 +39,7 @@ public class ResendConfirmationEmailCommandHandler : IRequestHandler<ResendConfi
         {
             // Send email for confirmation
             var confirmationLink = _configuration["AppUrls:ReactAppConfirmationUrl"];
-            var token = _tokenService.GenerateToken(user.getId()!);
+            var token = _tokenService.GenerateToken(user.getId()!, user.getUserEmail()!);
             if (string.IsNullOrEmpty(confirmationLink))
                 throw new InvalidOperationException("Confirmation Link is not configured in appsettings.json.");
             

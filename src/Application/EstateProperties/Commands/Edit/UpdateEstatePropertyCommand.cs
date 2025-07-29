@@ -1,219 +1,162 @@
 ﻿using SDI_Api.Application.Common.Interfaces;
 using SDI_Api.Domain.Entities;
+using Ardalis.GuardClauses;
+using Microsoft.AspNetCore.Http; // Or your preferred exception library
 
 namespace SDI_Api.Application.EstateProperties.Commands.Edit;
 
-public class UpdateEstatePropertyCommand : IRequest<Unit>
+public record UpdateEstatePropertyCommand : IRequest<Unit>
 {
-    public CreateOrUpdateEstatePropertyDto EstateProperty { get; set; } = default!;
-    public CreateOrUpdatePropertyImageDto? MainImage { get; set; }
-    public List<CreateOrUpdatePropertyImageDto>? PropertyImages { get; set; }
-    public string? FeaturedValuesId { get; set; }
-    public CreateOrUpdateEstatePropertyValuesDto? FeaturedValues { get; set; }
+    public CreateOrUpdateEstatePropertyDto? EstatePropertyDto { get; set; }
 }
 
 public class UpdateEstatePropertyCommandHandler : IRequestHandler<UpdateEstatePropertyCommand, Unit>
 {
     private readonly IApplicationDbContext _context;
     private readonly IMapper _mapper;
-
-    public UpdateEstatePropertyCommandHandler(IApplicationDbContext context, IMapper mapper)
+    private readonly IFileStorageService _fileStorageService;
+    
+    public UpdateEstatePropertyCommandHandler(IApplicationDbContext context, IMapper mapper, IFileStorageService fileStorageService)
     {
         _context = context;
         _mapper = mapper;
+        _fileStorageService = fileStorageService;
     }
 
     public async Task<Unit> Handle(UpdateEstatePropertyCommand command, CancellationToken cancellationToken)
     {
+        if (command.EstatePropertyDto == null)
+            throw new ArgumentNullException(nameof(command.EstatePropertyDto));
+
+        var request = command.EstatePropertyDto;
+
         var entity = await _context.EstateProperties
             .Include(p => p.PropertyImages)
+            .Include(p => p.Documents)
             .Include(p => p.EstatePropertyValues)
-            .FirstOrDefaultAsync(p => p.Id == command.EstateProperty.Id, cancellationToken);
+            .FirstOrDefaultAsync(p => p.Id == request.Id, cancellationToken);
 
         if (entity == null)
-        {
-            throw new NotFoundException(nameof(EstateProperty), command.EstateProperty.Id.ToString());
-        }
+            throw new NotFoundException(nameof(EstateProperty), request.Id.ToString());
         
-        _mapper.Map(command.EstateProperty, entity);
+        _mapper.Map(request, entity);
         
-        if (command.FeaturedValues != null)
-        {
-            UpdatePropertyValues(command, entity);
-        }
-        
-        if (command.PropertyImages != null)
-        {
-            UpdatePropertyImages(entity, command.PropertyImages, command.MainImage);
-        }
-        else if (command.MainImage != null)
-        {
-            UpdatePropertyImages(entity,
-                entity.PropertyImages.Select(pi => _mapper.Map<CreateOrUpdatePropertyImageDto>(pi)).ToList(),
-                command.MainImage);
-        }
+        var propertyFolderId = GetOrGeneratePropertyFolderId(entity);
+        await UpdateDocumentsAsync(entity, request.Documents, propertyFolderId);
+        await UpdateImagesAsync(entity, request.Images, request.MainImageUrl, propertyFolderId);
+        UpdatePropertyValue(entity, request);
         
         await _context.SaveChangesAsync(cancellationToken);
         return Unit.Value;
     }
 
-    private void UpdatePropertyValues(UpdateEstatePropertyCommand command, EstateProperty entity)
+    private string GetOrGeneratePropertyFolderId(EstateProperty entity)
     {
-        Guid valueId = Guid.Empty;
-        // Check if the provided featured value has an ID
-        bool hasId = !string.IsNullOrEmpty(command.FeaturedValues!.Id) && 
-                     Guid.TryParse(command.FeaturedValues.Id, out valueId);
+        // Try to extract folder ID from an existing file URL
+        var anyFileUrl = entity.PropertyImages.FirstOrDefault()?.Url ?? entity.Documents.FirstOrDefault()?.Url;
 
-        if (hasId)
+        if (!string.IsNullOrEmpty(anyFileUrl))
         {
-            var existingValues = entity.EstatePropertyValues.FirstOrDefault(v => v.Id == valueId);
-
-            if (existingValues != null)
-            {
-                existingValues = _mapper.Map<EstatePropertyValues>(command.FeaturedValues);
-                entity.Id = existingValues.Id;
-            }
-            else
-            {
-                throw new NotFoundException(nameof(EstatePropertyValues), valueId.ToString());
-            }
+            var pathSegments = anyFileUrl.Split(new[] { '/', '\\' });
+            if (pathSegments.Length >= 2)
+                return pathSegments[pathSegments.Length - 2];
         }
-        else
+        return Guid.NewGuid().ToString();
+    }
+
+    private async Task UpdateDocumentsAsync(EstateProperty entity, List<IFormFile> newDocuments, string propertyFolderId)
+    {
+        foreach (var oldDoc in entity.Documents)
+            await _fileStorageService.DeleteFileAsync(oldDoc.Url);
+        _context.PropertyDocuments.RemoveRange(entity.Documents);
+        entity.Documents.Clear();
+
+        // 2. Add new documents, same as in Create
+        var docExtensions = new[] { ".pdf", ".doc", ".docx" };
+        foreach (var docFile in newDocuments)
         {
-            var newValues = _mapper.Map<EstatePropertyValues>(command.FeaturedValues);
-            newValues.EstatePropertyId = entity.Id;
-            entity.EstatePropertyValues.Add(newValues);
-            entity.Id = newValues.Id;
+            var fileResult = await _fileStorageService.SaveFileAsync(
+                docFile, 
+                "StoragePaths:PropertyDocuments",
+                docExtensions, 
+                propertyFolderId
+            );
+            
+            entity.Documents.Add(new PropertyDocument {
+                Name = fileResult.FileName,
+                FileType = fileResult.ContentType,
+                Url = fileResult.RelativePath
+            });
+        }
+    }
+
+    private async Task UpdateImagesAsync(EstateProperty entity, List<IFormFile> newImages, string? mainImageUrl, string propertyFolderId)
+    {
+        foreach (var oldImage in entity.PropertyImages)
+            await _fileStorageService.DeleteFileAsync(oldImage.Url);
+        
+        _context.PropertyImages.RemoveRange(entity.PropertyImages);
+        entity.PropertyImages.Clear();
+        entity.MainImageId = null;
+        
+        var imgExtensions = new[] { ".jpg", ".jpeg", ".png" };
+        foreach (var imgFile in newImages)
+        {
+            var fileResult = await _fileStorageService.SaveFileAsync(
+                imgFile, 
+                "StoragePaths:PropertyImages",
+                imgExtensions, 
+                propertyFolderId
+            );
+
+            var propertyImageToAdd = new PropertyImage
+            {
+                AltText = fileResult.FileName, 
+                Url = fileResult.RelativePath
+            };
+            
+            if (fileResult.FileName == mainImageUrl)
+            {
+                propertyImageToAdd.IsMain = true;
+                entity.MainImageId = propertyImageToAdd.Id;
+            }
+            entity.PropertyImages.Add(propertyImageToAdd);
+        }
+
+        // Ensure one image is marked as main
+        if (!entity.PropertyImages.Any(i => i.IsMain) && entity.PropertyImages.Any())
+        {
+            var firstImage = entity.PropertyImages.First();
+            firstImage.IsMain = true;
+            entity.MainImageId = firstImage.Id;
         }
     }
     
-    private void UpdatePropertyImages(EstateProperty entity, List<CreateOrUpdatePropertyImageDto> imageDtos, CreateOrUpdatePropertyImageDto? mainImageDto)
+    /// <summary>
+    /// Manages the single EstatePropertyValue associated with an EstateProperty.
+    /// It creates, updates, or deletes the value object based on the provided DTO.
+    /// </summary>
+    private void UpdatePropertyValue(EstateProperty entity, CreateOrUpdateEstatePropertyDto? valueDto)
     {
-        var existingImages = entity.PropertyImages.ToList();
-        var imagesToRemove = new List<PropertyImage>();
-        Guid? newMainImageId = entity.MainImageId;
-        
-        if (mainImageDto != null)
-        {
-            if (!string.IsNullOrEmpty(mainImageDto.Id) && Guid.TryParse(mainImageDto.Id, out Guid mainImgGuid))
-            {
-                var existingMain = existingImages.FirstOrDefault(i => i.Id == mainImgGuid);
-                if (existingMain != null)
-                {
-                    _mapper.Map(mainImageDto, existingMain);
-                    existingMain.IsMain = true;
-                    newMainImageId = existingMain.Id;
-                }
-                else // ID provided but not found, treat as new (or error)
-                {
-                    var newImg = _mapper.Map<PropertyImage>(mainImageDto);
-                    newImg.EstatePropertyId = entity.Id;
-                    newImg.IsMain = true;
-                    entity.PropertyImages.Add(newImg);
-                    newMainImageId = newImg.Id;
-                }
-            }
-            else // New main image (no ID or invalid ID)
-            {
-                var newImg = _mapper.Map<PropertyImage>(mainImageDto);
-                newImg.EstatePropertyId = entity.Id;
-                newImg.IsMain = true;
-                entity.PropertyImages.Add(newImg);
-                newMainImageId = newImg.Id;
-            }
-        }
-        
-        // Set all current images to IsMain = false, new main image will override
-        foreach (var img in entity.PropertyImages)
-        {
-            if(newMainImageId.HasValue && img.Id != newMainImageId)
-                img.IsMain = false;
-            else if (!newMainImageId.HasValue) // no main image specified yet
-                img.IsMain = false;
-        }
-        if(newMainImageId.HasValue)
-        {
-             var mainImgToSet = entity.PropertyImages.FirstOrDefault(i => i.Id == newMainImageId);
-             if(mainImgToSet != null) mainImgToSet.IsMain = true;
-        }
+        var existingValue = entity.EstatePropertyValues.FirstOrDefault();
 
-
-        // Synchronize the rest of the images
-        foreach (var imgEntity in existingImages)
+        if (valueDto != null)
         {
-            // If the main image DTO was processed and it matches this entity, skip (already handled)
-            if (mainImageDto != null && !string.IsNullOrEmpty(mainImageDto.Id) && Guid.TryParse(mainImageDto.Id, out Guid mainDtoId) && mainDtoId == imgEntity.Id)
-                continue;
-
-            var dto = imageDtos.FirstOrDefault(d => d.Id != null && Guid.TryParse(d.Id, out Guid dtoId) && dtoId == imgEntity.Id);
-            if (dto == null) // Not in DTO list, mark for removal
+            if (existingValue != null)
             {
-                imagesToRemove.Add(imgEntity);
+                valueDto.Id = existingValue.Id;
+                _mapper.Map(valueDto, existingValue);
+                existingValue.AvailableFrom = DateTime.SpecifyKind(existingValue.AvailableFrom, DateTimeKind.Utc);
             }
-            else // Exists in DTO, update it
+            else
             {
-                _mapper.Map(dto, imgEntity);
-                if (newMainImageId.HasValue && imgEntity.Id == newMainImageId) imgEntity.IsMain = true; // Ensure main flag
-                else if (dto.IsMain != null && dto.IsMain.Value && !newMainImageId.HasValue) // If this DTO claims to be main and no explicit main yet
-                {
-                     newMainImageId = imgEntity.Id;
-                     imgEntity.IsMain = true;
-                }
+                var newValue = _mapper.Map<EstatePropertyValues>(valueDto);
+                newValue.IsFeatured = true;
+                newValue.AvailableFrom = DateTime.SpecifyKind(newValue.AvailableFrom, DateTimeKind.Utc);
+                entity.EstatePropertyValues.Add(newValue);
             }
         }
-
-        foreach (var imgToRemove in imagesToRemove)
-        {
-            _context.PropertyImages.Remove(imgToRemove);
-            entity.PropertyImages.Remove(imgToRemove);
-            if (entity.MainImageId == imgToRemove.Id) entity.MainImageId = null; // Clear main image if it was deleted
-        }
-
-        // Add new images (those in DTO with no ID or ID not in existing)
-        foreach (var imgDto in imageDtos)
-        {
-             // If the main image DTO was processed and it matches this DTO's content (e.g. URL), skip
-            if (mainImageDto != null && mainImageDto.Url == imgDto.Url && string.IsNullOrEmpty(imgDto.Id))
-            {
-                var alreadyAddedMain = entity.PropertyImages.FirstOrDefault(pi => pi.Url == mainImageDto.Url && pi.Id == newMainImageId);
-                if(alreadyAddedMain != null) continue;
-            }
-
-            bool isExisting = false;
-            if (!string.IsNullOrEmpty(imgDto.Id) && Guid.TryParse(imgDto.Id, out Guid dtoId))
-            {
-                isExisting = existingImages.Any(ei => ei.Id == dtoId);
-            }
-
-            if (!isExisting && (string.IsNullOrEmpty(imgDto.Id) || !entity.PropertyImages.Any(pi => pi.Id.ToString() == imgDto.Id)))
-            {
-                var newImg = _mapper.Map<PropertyImage>(imgDto);
-                newImg.EstatePropertyId = entity.Id;
-                if (newMainImageId.HasValue && newImg.Id == newMainImageId) newImg.IsMain = true;
-                else if (imgDto.IsMain != null && imgDto.IsMain.Value && !newMainImageId.HasValue) {
-                    newImg.IsMain = true;
-                    newMainImageId = newImg.Id;
-                }
-                entity.PropertyImages.Add(newImg);
-            }
-        }
-        entity.MainImageId = newMainImageId;
-         // Final pass to ensure only one main image
-        bool mainFound = false;
-        foreach(var img in entity.PropertyImages.OrderByDescending(i => i.Id == newMainImageId)) // Prioritize the designated one
-        {
-            if(img.IsMain)
-            {
-                if(mainFound) img.IsMain = false; // unset others
-                mainFound = true;
-            }
-        }
-        if(!mainFound && entity.PropertyImages.Any()) // if no main, set first one
-        {
-            entity.PropertyImages.First().IsMain = true;
-            entity.MainImageId = entity.PropertyImages.First().Id;
-        } else if (!entity.PropertyImages.Any()) {
-            entity.MainImageId = null;
-        }
+        else if (existingValue != null)
+            _context.EstatePropertyValues.Remove(existingValue);
     }
 }

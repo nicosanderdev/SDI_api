@@ -84,7 +84,7 @@ public class CreateOrUpdateEstatePropertyDto
     /// <summary>
     /// Maps to 'areaUnit'.
     /// </summary>
-    public int AreaUnit { get; set; }
+    public int AreaUnit { get; set; }   
     /// <summary>
     /// Maps to 'bedrooms'.
     /// </summary>

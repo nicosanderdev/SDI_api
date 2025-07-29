@@ -13,6 +13,7 @@ public record ConfirmEmailCommand : IRequest<Result>
 {
     public string? UserId { get; set; }
     public string? Token { get; set; }
+    public string? Email { get; set; }
 }
 
 /// <summary>
@@ -35,7 +36,7 @@ public class ConfirmEmailCommandHandler : IRequestHandler<ConfirmEmailCommand, R
         if (user == null)
             throw new NotFoundException("User", request.UserId!);
         
-        var tokenValidationResult = _tokenService.ValidateToken(request.Token!);
+        var tokenValidationResult = _tokenService.ValidateToken(request.Email!, request.Token!);
         if (!tokenValidationResult.IsValid)
             throw new ArgumentException("Token is not valid");
         

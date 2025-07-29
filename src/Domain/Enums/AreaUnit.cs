@@ -7,6 +7,6 @@ public enum AreaUnit
     SquareYards,   // yd²
     Acres,         // acres
     Hectares,      // hectares
-    SquareKilometers, // sq_km
-    SquareMiles    // sq_mi
+    SquareKilometers, // km²
+    SquareMiles    // mi²
 }

@@ -1,7 +1,5 @@
 ﻿using Microsoft.AspNetCore.Identity;
 using SDI_Api.Application.Common.Models;
-using SDI_Api.Domain.Entities;
-using SDI_Api.Web.DTOs;
 
 namespace SDI_Api.Application.Common.Interfaces;
 
