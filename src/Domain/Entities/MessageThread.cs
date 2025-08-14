@@ -13,9 +13,7 @@ public class MessageThread : BaseAuditableEntity
 
     public DateTime CreatedAtUtc { get; set; }
     public DateTime LastMessageAtUtc { get; set; }
-
-    // Participants: Could be implicitly defined by messages or explicitly tracked
-    // For simplicity, we'll infer participants from Messages
+    
     public virtual ICollection<Message> Messages { get; set; } = new List<Message>();
 
     public MessageThread()

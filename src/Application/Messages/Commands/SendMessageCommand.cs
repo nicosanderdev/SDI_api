@@ -1,11 +1,13 @@
 ﻿using SDI_Api.Application.Common.Interfaces;
 using Sdi_Api.Application.DTOs.Messages;
+using SDI_Api.Application.DTOs.Messages;
 using SDI_Api.Domain.Entities;
 
 namespace SDI_Api.Application.Messages.Commands;
 
 public class SendMessageCommand : IRequest<MessageDto>
 {
+    public Guid? UserId { get; set; }
     public SendMessageDto MessageData { get; init; } = null!;
 }
 
@@ -26,29 +28,23 @@ public class SendMessageCommandHandler : IRequestHandler<SendMessageCommand, Mes
 
     public async Task<MessageDto> Handle(SendMessageCommand request, CancellationToken cancellationToken)
     {
-        var senderUserIdString = _currentUserService.GetUserId().ToString();
-        if (string.IsNullOrEmpty(senderUserIdString))
-        {
-            throw new UnauthorizedAccessException("User is not authenticated.");
-        }
-
-        var sender = await _identityService.FindUserByIdAsync(senderUserIdString); // Fetches ApplicationUser
+        var senderUserIdString = request.UserId.ToString()!;
+        var sender = await _context.Members.FirstAsync(m => m.UserId == request.UserId, cancellationToken);
         if (sender == null) throw new NotFoundException(nameof(IUser), senderUserIdString);
+        var senderIdString = sender.Id.ToString();
         // Ensure sender.Member is loaded if needed for mapping, though FindUserByIdAsync in IIdentityService can include it.
         // For the sender info in the DTO, we'll rely on mapping from `sender` object later.
+
+        Guid.TryParse(request.MessageData.RecipientId, out var recipientId);
+        var recipient = await _context.Members.FirstAsync(m => m.Id == recipientId);
+        if (recipient == null) throw new NotFoundException(nameof(IUser), recipientId.ToString());
         
-        var recipient = await _identityService.FindUserByIdAsync(request.MessageData.RecipientId);
-        if (recipient == null) throw new NotFoundException(nameof(IUser), request.MessageData.RecipientId);
-
-
         MessageThread thread;
         Message? repliedToMessage = null;
 
         if (!string.IsNullOrEmpty(request.MessageData.ThreadId) && Guid.TryParse(request.MessageData.ThreadId, out var existingThreadGuid))
-        {
-            thread = await _context.MessageThreads.FindAsync([existingThreadGuid.ToString()], cancellationToken)
+            thread = await _context.MessageThreads.FindAsync(existingThreadGuid, cancellationToken)
                 ?? throw new NotFoundException(nameof(MessageThread), existingThreadGuid.ToString());
-        }
         else if (!string.IsNullOrEmpty(request.MessageData.InReplyToMessageId) && Guid.TryParse(request.MessageData.InReplyToMessageId, out var inReplyToMsgGuid))
         {
             repliedToMessage = await _context.Messages
@@ -58,11 +54,9 @@ public class SendMessageCommandHandler : IRequestHandler<SendMessageCommand, Mes
             thread = repliedToMessage.Thread;
 
             MessageRecipient? repliedToMessageRecipientStatus = await _context.MessageRecipients
-                .FirstOrDefaultAsync(mr => mr.MessageId == inReplyToMsgGuid && mr.RecipientId.ToString() == senderUserIdString, cancellationToken);
+                .FirstOrDefaultAsync(mr => mr.MessageId == inReplyToMsgGuid && mr.RecipientId.ToString() == senderIdString, cancellationToken);
             if (repliedToMessageRecipientStatus != null)
-            {
                 repliedToMessageRecipientStatus.HasBeenRepliedToByRecipient = true;
-            }
         }
         else
         {
@@ -73,16 +67,16 @@ public class SendMessageCommandHandler : IRequestHandler<SendMessageCommand, Mes
                     throw new NotFoundException(nameof(EstateProperty), pGuid.ToString());
                 propertyGuid = pGuid;
             }
-            thread = new MessageThread { Subject = request.MessageData.Subject, PropertyId = propertyGuid, CreatedAtUtc = DateTime.UtcNow, LastMessageAtUtc = DateTime.UtcNow };
+            thread = new MessageThread { Subject = request.MessageData.Subject!, PropertyId = propertyGuid, CreatedAtUtc = DateTime.UtcNow, LastMessageAtUtc = DateTime.UtcNow };
             _context.MessageThreads.Add(thread);
         }
 
         var message = new Message
         {
             ThreadId = thread.Id,
-            SenderId = Guid.Parse(senderUserIdString),
-            Body = request.MessageData.Body,
-            Snippet = GenerateSnippet(request.MessageData.Body, 150),
+            SenderId = Guid.Parse(senderIdString),
+            Body = request.MessageData.Body!,
+            Snippet = GenerateSnippet(request.MessageData.Body!, 150),
             CreatedAtUtc = DateTime.UtcNow,
             InReplyToMessageId = repliedToMessage?.Id
         };
@@ -92,7 +86,7 @@ public class SendMessageCommandHandler : IRequestHandler<SendMessageCommand, Mes
         var messageRecipientEntry = new MessageRecipient()
         {
             MessageId = message.Id,
-            RecipientId = Guid.Parse(request.MessageData.RecipientId),
+            RecipientId = Guid.Parse(request.MessageData.RecipientId!),
             ReceivedAtUtc = DateTime.UtcNow,
         };
         _context.MessageRecipients.Add(messageRecipientEntry);
@@ -119,7 +113,8 @@ public class SendMessageCommandHandler : IRequestHandler<SendMessageCommand, Mes
 
     private string GenerateSnippet(string text, int maxLength)
     {
-        if (string.IsNullOrEmpty(text)) return string.Empty;
+        if (string.IsNullOrEmpty(text)) 
+            return string.Empty;
         return text.Length <= maxLength ? text : text.Substring(0, maxLength) + "...";
     }
 }

@@ -1,72 +1,91 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Mvc;
+using SDI_Api.Application.Common.Exceptions;
 using SDI_Api.Application.Common.Security;
 using Sdi_Api.Application.DTOs.Messages;
+using SDI_Api.Application.DTOs.Messages;
 using SDI_Api.Application.Messages;
 using SDI_Api.Application.Messages.Commands;
 using SDI_Api.Application.Messages.Queries;
 using SDI_Api.Domain.Exceptions;
-using SendMessageDto = SDI_Api.Application.Messages.SendMessageDto;
 
 namespace SDI_Api.Web.Endpoints;
 
-[Authorize]
+// [Authorize]
 [Route("api/messages")]
 [ApiController]
-public class MessagesController : ControllerBase
+public class MessagesController(ISender sender) : ControllerBase
 {
-    private readonly ISender _sender;
-
-    public MessagesController(ISender sender)
-    {
-        _sender = sender;
-    }
-    
     [HttpGet]
-    public async Task<ActionResult<PaginatedMessageResultDto>> GetMessages([FromQuery] GetMessagesQuery query)
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetMessages([FromQuery] GetMessagesQuery query)
     {
-        var result = await _sender.Send(query);
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        Guid.TryParse(userIdValue, out Guid userId);
+        query.UserId = userId;
+        var result = await sender.Send(query);
         return Ok(result);
     }
     
-    [HttpGet("{id}")]
-    public async Task<ActionResult<MessageDetailDto>> GetMessageById(string id)
+    [HttpGet("{messageId}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetMessageById([FromRoute] string messageId)
+    {
+        Guid.TryParse(messageId, out var messageGuidId);
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        Guid.TryParse(userIdValue, out Guid userId);
+        return Ok(await sender.Send(new GetMessageByIdQuery(messageGuidId, userId)));
+    }
+    
+    [HttpPost]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> SendMessage([FromBody] SendMessageDto messageData)
+    {   
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        Guid.TryParse(userIdValue, out Guid userId);
+        var command = new SendMessageCommand() { MessageData = messageData };
+        command.UserId = userId;
+        var result = await sender.Send(command);
+        return Created("api/messages", result);
+    }
+    
+    [HttpGet("{id}/read")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> MarkMessageAsRead([FromRoute] string id)
     {
         if (!Guid.TryParse(id, out var guidId))
             throw new ArgumentException("Invalid message ID format.");
         
-        return Ok(await _sender.Send(new GetMessageByIdQuery(guidId))); // Assuming GetMessageByIdQuery exists
-    }
-    
-    [HttpPost]
-    public async Task<ActionResult<MessageDto>> SendMessage([FromBody] SendMessageDto messageData)
-    {
-        var command = new SendMessageCommand() { MessageData = messageData };
-        var result = await _sender.Send(command);
-        return CreatedAtAction(nameof(GetMessageById), new { id = result.Id }, result);
-    }
-
-    // --- Status Update Endpoints ---
-    [HttpPatch("{id}/read")]
-    public async Task<IActionResult> MarkMessageAsRead(string id)
-    {
-        if (!Guid.TryParse(id, out var guidId)) 
-            throw new ArgumentException("Invalid message ID format.");
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userIdValue, out var userId))
+            throw new ForbiddenAccessException();
         
-        await _sender.Send(new MarkMessageAsReadCommand(guidId));
-        return NoContent();
+        await sender.Send(new MarkMessageAsReadCommand(guidId, userId));
+        return Ok();
     }
     
     [HttpDelete("{id}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> DeleteMessage(string id)
     {
-        if (!Guid.TryParse(id, out var guidId)) 
+        if (!Guid.TryParse(id, out var guidId))
             throw new ArgumentException("Invalid message ID format.");
         
-        await _sender.Send(new DeleteMessageCommand() { Id = guidId });
-        return NoContent();
+        await sender.Send(new DeleteMessageCommand(guidId));
+        return Ok();
     }
     
     [HttpGet("counts")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<TabCountsDto>> GetMessageCounts()
     {
          // return Ok(await _sender.Send(new GetMessageCountsQuery())); // Assuming GetMessageCountsQuery exists

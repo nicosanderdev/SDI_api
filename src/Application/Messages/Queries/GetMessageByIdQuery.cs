@@ -10,10 +10,12 @@ namespace SDI_Api.Application.Messages.Queries;
 public class GetMessageByIdQuery : IRequest<MessageDetailDto>
 {
     public Guid MessageId { get; }
+    public Guid UserId { get; set; }
 
-    public GetMessageByIdQuery(Guid messageId)
+    public GetMessageByIdQuery(Guid messageId, Guid userId)
     {
         MessageId = messageId;
+        UserId = userId;
     }
 }
 
@@ -21,43 +23,36 @@ public class GetMessageByIdQueryHandler : IRequestHandler<GetMessageByIdQuery, M
 {
     private readonly IApplicationDbContext _context;
     private readonly IMapper _mapper;
-    private readonly ICurrentUserService _currentUserService;
 
-    public GetMessageByIdQueryHandler(IApplicationDbContext context, IMapper mapper, ICurrentUserService currentUserService)
+    public GetMessageByIdQueryHandler(IApplicationDbContext context, IMapper mapper)
     {
         _context = context;
         _mapper = mapper;
-        _currentUserService = currentUserService;
     }
 
     public async Task<MessageDetailDto> Handle(GetMessageByIdQuery request, CancellationToken cancellationToken)
     {
-        var currentUserIdString = _currentUserService.GetUserId();
-         if (currentUserIdString == Guid.Empty)
-        {
+        if (request.UserId == Guid.Empty)
             throw new UnauthorizedAccessException("User is not authenticated.");
-        }
+        var memberId = _context.Members.Where(m => m.UserId == request.UserId).Select(m => m.Id).FirstOrDefault();
 
         var message = await _context.Messages
-            //.Include(m => m.Sender).ThenInclude(s => s.Member) // Include Member for Sender's profile info
-            .Include(m => m.Thread).ThenInclude(t => t.Property)
-            .Include(m => m.MessageRecipients) // To check if current user is a recipient or sender
+            .Include(m => m.Sender)
+            .Include(m => m.Thread)
+                .ThenInclude(t => t.Property)
+            .Include(m => m.MessageRecipients)
             .AsNoTracking()
             .FirstOrDefaultAsync(m => m.Id == request.MessageId, cancellationToken);
 
         if (message == null)
-        {
             throw new NotFoundException(nameof(Message), request.MessageId.ToString());
-        }
 
         // Check if current user is either the sender or one of the recipients
-        var userRecipientEntry = message.MessageRecipients.FirstOrDefault(mr => mr.RecipientId == currentUserIdString);
-        bool isSender = message.SenderId == currentUserIdString;
+        var userRecipientEntry = message.MessageRecipients.FirstOrDefault(mr => mr.RecipientId == memberId);
+        bool isSender = message.SenderId == memberId;
 
         if (!isSender && userRecipientEntry == null)
-        {
             throw new ForbiddenAccessException(); //[$"User does not have access to message {request.MessageId}."]
-        }
 
         var dto = _mapper.Map<MessageDetailDto>(message);
 

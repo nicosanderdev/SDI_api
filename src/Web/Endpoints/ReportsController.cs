@@ -13,64 +13,78 @@ namespace SDI_Api.Web.Endpoints;
 [Route("api/reports")]
 [ApiController]
 [Authorize]
-public class ReportsController : ControllerBase
+public class ReportsController(ISender sender) : ControllerBase
 {
-    private readonly ISender _sender;
-
-    public ReportsController(ISender sender)
-    {
-        _sender = sender;
-    }
-    
     [HttpGet("monthly-summary")]
-    public async Task<ActionResult<MonthlySummaryDataDto>> GetMonthlySummary([FromQuery] GetMonthlySummaryQuery query)
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetMonthlySummary([FromQuery] GetMonthlySummaryQuery query)
     {
-        var result = await _sender.Send(query);
+        var result = await sender.Send(query);
         return Ok(result);
     }
     
     [HttpGet("totals")]
-    public async Task<ActionResult<GeneralTotalsDataDto>> GetGeneralTotals()
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetGeneralTotals()
     {
-        var result = await _sender.Send(new GetGeneralTotalsQuery());
+        var result = await sender.Send(new GetGeneralTotalsQuery());
         return Ok(result);
     }
     
     [HttpGet("property-visits")]
-    public async Task<ActionResult<VisitsByPropertyDataDto>> GetVisitsByProperty([FromQuery] GetVisitsByPropertyQuery query)
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetVisitsByProperty([FromQuery] GetVisitsByPropertyQuery query)
     {
-        var result = await _sender.Send(query);
+        var result = await sender.Send(query);
         return Ok(result);
     }
     
     [HttpGet("properties/{propertyId}")]
-    public async Task<ActionResult<PropertySpecificReportDataDto>> GetPropertySpecificReport(string propertyId, [FromQuery] string period = "last30days")
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetPropertySpecificReport(string propertyId, [FromQuery] string period = "last30days")
     {
         if (!Guid.TryParse(propertyId, out var guidId))
             return BadRequest("Invalid Property ID format.");
         
-        var result = await _sender.Send(new GetPropertySpecificReportQuery { PropertyId = guidId, Period = period });
+        var result = await sender.Send(new GetPropertySpecificReportQuery { PropertyId = guidId, Period = period });
         return Ok(result);
     }
     
     [HttpGet("dashboard-summary")]
-    public async Task<ActionResult<DashboardSummaryDataDto>> GetDashboardSummary([FromQuery] GetDashboardSummaryQuery query)
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetDashboardSummary([FromQuery] GetDashboardSummaryQuery query)
     {
-        var result = await _sender.Send(query);
+        var result = await sender.Send(query);
         return Ok(result);
     }
     
     [HttpGet("daily-visits")]
-    public async Task<ActionResult<List<DailyVisitDto>>> GetDailyVisits([FromQuery] GetDailyVisitsQuery query)
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetDailyVisits([FromQuery] GetDailyVisitsQuery query)
     {
-        var result = await _sender.Send(query);
+        var result = await sender.Send(query);
         return Ok(result);
     }
     
     [HttpGet("visits-by-source")]
-    public async Task<ActionResult<List<VisitSourceDto>>> GetVisitsBySource([FromQuery] GetVisitsBySourceQuery query)
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetVisitsBySource([FromQuery] GetVisitsBySourceQuery query)
     {
-        var result = await _sender.Send(query);
+        var result = await sender.Send(query);
         return Ok(result);
     }
 }

@@ -8,7 +8,7 @@ public class MessageRecipient : BaseAuditableEntity
     public Member Recipient { get; set; } = null!;
     public DateTime ReceivedAtUtc { get; set; }
     public bool IsRead { get; set; }
-    public bool HasBeenRepliedToByRecipient { get; set; } // User has replied to this received message (or a later one in thread)
+    public bool HasBeenRepliedToByRecipient { get; set; }
     public bool IsStarred { get; set; }
     public bool IsArchived { get; set; }
 

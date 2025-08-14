@@ -5,7 +5,12 @@ namespace SDI_Api.Application.Messages.Commands;
 
 public class DeleteMessageCommand : IRequest
 {
-    public Guid Id { get; init; }
+    public Guid? MessageId { get; }
+    
+    public DeleteMessageCommand(Guid messageId)
+    {
+        MessageId = messageId;
+    }
 }
 
 public class DeleteMessageCommandHandler : IRequestHandler<DeleteMessageCommand>
@@ -19,18 +24,11 @@ public class DeleteMessageCommandHandler : IRequestHandler<DeleteMessageCommand>
     
     public async Task Handle(DeleteMessageCommand request, CancellationToken cancellationToken)
     {
-        var message = await _context.Messages.FirstOrDefaultAsync(m => m.Id == request.Id, cancellationToken);
+        var message = await _context.Messages.FirstOrDefaultAsync(m => m.Id == request.MessageId, cancellationToken);
         if (message == null)
-            throw new NotFoundException("Message not found.", request.Id.ToString());
+            throw new NotFoundException("Message not found.", request.MessageId.ToString()!);
 
         _context.Messages.Remove(message);
-        try
-        {
-            await _context.SaveChangesAsync(cancellationToken);
-        }
-        catch (DbUpdateException ex)
-        {
-            throw new DbUpdateException("An error occured while deleting message.", ex);
-        }
+        await _context.SaveChangesAsync(cancellationToken);
     }
 }

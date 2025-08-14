@@ -2142,11 +2142,11 @@ export class EstatePropertiesClient implements IEstatePropertiesClient {
 }
 
 export interface IMessagesClient {
-    messages_GetMessages(page: number | undefined, limit: number | undefined, filter: string | null | undefined, query: string | null | undefined, propertyId: string | null | undefined, sortBy: string | null | undefined): Observable<PaginatedMessageResultDto>;
-    messages_SendMessage(messageData: SendMessageDto): Observable<MessageDto>;
-    messages_GetMessageById(id: string): Observable<MessageDetailDto>;
-    messages_DeleteMessage(id: string): Observable<FileResponse>;
-    messages_MarkMessageAsRead(id: string): Observable<FileResponse>;
+    messages_GetMessages(page: number | undefined, limit: number | undefined, filter: string | null | undefined, query: string | null | undefined, propertyId: string | null | undefined, sortBy: string | null | undefined, userId: string | null | undefined): Observable<void>;
+    messages_SendMessage(messageData: SendMessageDto): Observable<void>;
+    messages_GetMessageById(messageId: string): Observable<void>;
+    messages_MarkMessageAsRead(id: string): Observable<void>;
+    messages_DeleteMessage(id: string): Observable<void>;
     messages_GetMessageCounts(): Observable<TabCountsDto>;
 }
 
@@ -2163,7 +2163,7 @@ export class MessagesClient implements IMessagesClient {
         this.baseUrl = baseUrl ?? "";
     }
 
-    messages_GetMessages(page: number | undefined, limit: number | undefined, filter: string | null | undefined, query: string | null | undefined, propertyId: string | null | undefined, sortBy: string | null | undefined): Observable<PaginatedMessageResultDto> {
+    messages_GetMessages(page: number | undefined, limit: number | undefined, filter: string | null | undefined, query: string | null | undefined, propertyId: string | null | undefined, sortBy: string | null | undefined, userId: string | null | undefined): Observable<void> {
         let url_ = this.baseUrl + "/api/messages?";
         if (page === null)
             throw new Error("The parameter 'page' cannot be null.");
@@ -2181,13 +2181,14 @@ export class MessagesClient implements IMessagesClient {
             url_ += "PropertyId=" + encodeURIComponent("" + propertyId) + "&";
         if (sortBy !== undefined && sortBy !== null)
             url_ += "SortBy=" + encodeURIComponent("" + sortBy) + "&";
+        if (userId !== undefined && userId !== null)
+            url_ += "UserId=" + encodeURIComponent("" + userId) + "&";
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ : any = {
             observe: "response",
             responseType: "blob",
             headers: new HttpHeaders({
-                "Accept": "application/json"
             })
         };
 
@@ -2198,14 +2199,14 @@ export class MessagesClient implements IMessagesClient {
                 try {
                     return this.processMessages_GetMessages(response_ as any);
                 } catch (e) {
-                    return _observableThrow(e) as any as Observable<PaginatedMessageResultDto>;
+                    return _observableThrow(e) as any as Observable<void>;
                 }
             } else
-                return _observableThrow(response_) as any as Observable<PaginatedMessageResultDto>;
+                return _observableThrow(response_) as any as Observable<void>;
         }));
     }
 
-    protected processMessages_GetMessages(response: HttpResponseBase): Observable<PaginatedMessageResultDto> {
+    protected processMessages_GetMessages(response: HttpResponseBase): Observable<void> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -2214,10 +2215,21 @@ export class MessagesClient implements IMessagesClient {
         let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
         if (status === 200) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = PaginatedMessageResultDto.fromJS(resultData200);
-            return _observableOf(result200);
+            return _observableOf(null as any);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            let resultData400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result400 = ProblemDetails.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            let resultData401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result401 = ProblemDetails.fromJS(resultData401);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result401);
             }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
@@ -2227,7 +2239,7 @@ export class MessagesClient implements IMessagesClient {
         return _observableOf(null as any);
     }
 
-    messages_SendMessage(messageData: SendMessageDto): Observable<MessageDto> {
+    messages_SendMessage(messageData: SendMessageDto): Observable<void> {
         let url_ = this.baseUrl + "/api/messages";
         url_ = url_.replace(/[?&]$/, "");
 
@@ -2239,7 +2251,6 @@ export class MessagesClient implements IMessagesClient {
             responseType: "blob",
             headers: new HttpHeaders({
                 "Content-Type": "application/json",
-                "Accept": "application/json"
             })
         };
 
@@ -2250,26 +2261,37 @@ export class MessagesClient implements IMessagesClient {
                 try {
                     return this.processMessages_SendMessage(response_ as any);
                 } catch (e) {
-                    return _observableThrow(e) as any as Observable<MessageDto>;
+                    return _observableThrow(e) as any as Observable<void>;
                 }
             } else
-                return _observableThrow(response_) as any as Observable<MessageDto>;
+                return _observableThrow(response_) as any as Observable<void>;
         }));
     }
 
-    protected processMessages_SendMessage(response: HttpResponseBase): Observable<MessageDto> {
+    protected processMessages_SendMessage(response: HttpResponseBase): Observable<void> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
             (response as any).error instanceof Blob ? (response as any).error : undefined;
 
         let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
-        if (status === 200) {
+        if (status === 201) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = MessageDto.fromJS(resultData200);
-            return _observableOf(result200);
+            return _observableOf(null as any);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            let resultData400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result400 = ProblemDetails.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            let resultData401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result401 = ProblemDetails.fromJS(resultData401);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result401);
             }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
@@ -2279,18 +2301,17 @@ export class MessagesClient implements IMessagesClient {
         return _observableOf(null as any);
     }
 
-    messages_GetMessageById(id: string): Observable<MessageDetailDto> {
-        let url_ = this.baseUrl + "/api/messages/{id}";
-        if (id === undefined || id === null)
-            throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+    messages_GetMessageById(messageId: string): Observable<void> {
+        let url_ = this.baseUrl + "/api/messages/{messageId}";
+        if (messageId === undefined || messageId === null)
+            throw new Error("The parameter 'messageId' must be defined.");
+        url_ = url_.replace("{messageId}", encodeURIComponent("" + messageId));
         url_ = url_.replace(/[?&]$/, "");
 
         let options_ : any = {
             observe: "response",
             responseType: "blob",
             headers: new HttpHeaders({
-                "Accept": "application/json"
             })
         };
 
@@ -2301,14 +2322,14 @@ export class MessagesClient implements IMessagesClient {
                 try {
                     return this.processMessages_GetMessageById(response_ as any);
                 } catch (e) {
-                    return _observableThrow(e) as any as Observable<MessageDetailDto>;
+                    return _observableThrow(e) as any as Observable<void>;
                 }
             } else
-                return _observableThrow(response_) as any as Observable<MessageDetailDto>;
+                return _observableThrow(response_) as any as Observable<void>;
         }));
     }
 
-    protected processMessages_GetMessageById(response: HttpResponseBase): Observable<MessageDetailDto> {
+    protected processMessages_GetMessageById(response: HttpResponseBase): Observable<void> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -2317,10 +2338,21 @@ export class MessagesClient implements IMessagesClient {
         let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
         if (status === 200) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = MessageDetailDto.fromJS(resultData200);
-            return _observableOf(result200);
+            return _observableOf(null as any);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            let resultData400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result400 = ProblemDetails.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            let resultData401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result401 = ProblemDetails.fromJS(resultData401);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result401);
             }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
@@ -2330,62 +2362,7 @@ export class MessagesClient implements IMessagesClient {
         return _observableOf(null as any);
     }
 
-    messages_DeleteMessage(id: string): Observable<FileResponse> {
-        let url_ = this.baseUrl + "/api/messages/{id}";
-        if (id === undefined || id === null)
-            throw new Error("The parameter 'id' must be defined.");
-        url_ = url_.replace("{id}", encodeURIComponent("" + id));
-        url_ = url_.replace(/[?&]$/, "");
-
-        let options_ : any = {
-            observe: "response",
-            responseType: "blob",
-            headers: new HttpHeaders({
-                "Accept": "application/octet-stream"
-            })
-        };
-
-        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
-            return this.processMessages_DeleteMessage(response_);
-        })).pipe(_observableCatch((response_: any) => {
-            if (response_ instanceof HttpResponseBase) {
-                try {
-                    return this.processMessages_DeleteMessage(response_ as any);
-                } catch (e) {
-                    return _observableThrow(e) as any as Observable<FileResponse>;
-                }
-            } else
-                return _observableThrow(response_) as any as Observable<FileResponse>;
-        }));
-    }
-
-    protected processMessages_DeleteMessage(response: HttpResponseBase): Observable<FileResponse> {
-        const status = response.status;
-        const responseBlob =
-            response instanceof HttpResponse ? response.body :
-            (response as any).error instanceof Blob ? (response as any).error : undefined;
-
-        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
-        if (status === 200 || status === 206) {
-            const contentDisposition = response.headers ? response.headers.get("content-disposition") : undefined;
-            let fileNameMatch = contentDisposition ? /filename\*=(?:(\\?['"])(.*?)\1|(?:[^\s]+'.*?')?([^;\n]*))/g.exec(contentDisposition) : undefined;
-            let fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[3] || fileNameMatch[2] : undefined;
-            if (fileName) {
-                fileName = decodeURIComponent(fileName);
-            } else {
-                fileNameMatch = contentDisposition ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition) : undefined;
-                fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[1] : undefined;
-            }
-            return _observableOf({ fileName: fileName, data: responseBlob as any, status: status, headers: _headers });
-        } else if (status !== 200 && status !== 204) {
-            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
-            }));
-        }
-        return _observableOf(null as any);
-    }
-
-    messages_MarkMessageAsRead(id: string): Observable<FileResponse> {
+    messages_MarkMessageAsRead(id: string): Observable<void> {
         let url_ = this.baseUrl + "/api/messages/{id}/read";
         if (id === undefined || id === null)
             throw new Error("The parameter 'id' must be defined.");
@@ -2396,42 +2373,95 @@ export class MessagesClient implements IMessagesClient {
             observe: "response",
             responseType: "blob",
             headers: new HttpHeaders({
-                "Accept": "application/octet-stream"
             })
         };
 
-        return this.http.request("patch", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
             return this.processMessages_MarkMessageAsRead(response_);
         })).pipe(_observableCatch((response_: any) => {
             if (response_ instanceof HttpResponseBase) {
                 try {
                     return this.processMessages_MarkMessageAsRead(response_ as any);
                 } catch (e) {
-                    return _observableThrow(e) as any as Observable<FileResponse>;
+                    return _observableThrow(e) as any as Observable<void>;
                 }
             } else
-                return _observableThrow(response_) as any as Observable<FileResponse>;
+                return _observableThrow(response_) as any as Observable<void>;
         }));
     }
 
-    protected processMessages_MarkMessageAsRead(response: HttpResponseBase): Observable<FileResponse> {
+    protected processMessages_MarkMessageAsRead(response: HttpResponseBase): Observable<void> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
             (response as any).error instanceof Blob ? (response as any).error : undefined;
 
         let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
-        if (status === 200 || status === 206) {
-            const contentDisposition = response.headers ? response.headers.get("content-disposition") : undefined;
-            let fileNameMatch = contentDisposition ? /filename\*=(?:(\\?['"])(.*?)\1|(?:[^\s]+'.*?')?([^;\n]*))/g.exec(contentDisposition) : undefined;
-            let fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[3] || fileNameMatch[2] : undefined;
-            if (fileName) {
-                fileName = decodeURIComponent(fileName);
-            } else {
-                fileNameMatch = contentDisposition ? /filename="?([^"]*?)"?(;|$)/g.exec(contentDisposition) : undefined;
-                fileName = fileNameMatch && fileNameMatch.length > 1 ? fileNameMatch[1] : undefined;
-            }
-            return _observableOf({ fileName: fileName, data: responseBlob as any, status: status, headers: _headers });
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            let resultData400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result400 = ProblemDetails.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    messages_DeleteMessage(id: string): Observable<void> {
+        let url_ = this.baseUrl + "/api/messages/{id}";
+        if (id === undefined || id === null)
+            throw new Error("The parameter 'id' must be defined.");
+        url_ = url_.replace("{id}", encodeURIComponent("" + id));
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+            })
+        };
+
+        return this.http.request("delete", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processMessages_DeleteMessage(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processMessages_DeleteMessage(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processMessages_DeleteMessage(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            let resultData400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result400 = ProblemDetails.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
             return throwException("An unexpected server error occurred.", status, _responseText, _headers);
@@ -2479,6 +2509,13 @@ export class MessagesClient implements IMessagesClient {
             let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
             result200 = TabCountsDto.fromJS(resultData200);
             return _observableOf(result200);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            let resultData400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result400 = ProblemDetails.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
             }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
@@ -2687,13 +2724,13 @@ export class ProfilesClient implements IProfilesClient {
 }
 
 export interface IReportsClient {
-    reports_GetMonthlySummary(year: number | undefined, month: number | undefined): Observable<MonthlySummaryDataDto>;
-    reports_GetGeneralTotals(): Observable<GeneralTotalsDataDto>;
-    reports_GetVisitsByProperty(period: string | undefined, page: number | undefined, limit: number | undefined): Observable<VisitsByPropertyDataDto>;
-    reports_GetPropertySpecificReport(propertyId: string, period: string | undefined): Observable<PropertySpecificReportDataDto>;
-    reports_GetDashboardSummary(period: string | null | undefined): Observable<DashboardSummaryDataDto>;
-    reports_GetDailyVisits(period: string | undefined, dateFormat: string | undefined): Observable<DailyVisitDto[]>;
-    reports_GetVisitsBySource(period: string | undefined): Observable<VisitSourceDto[]>;
+    reports_GetMonthlySummary(year: number | undefined, month: number | undefined): Observable<void>;
+    reports_GetGeneralTotals(): Observable<void>;
+    reports_GetVisitsByProperty(period: string | undefined, page: number | undefined, limit: number | undefined): Observable<void>;
+    reports_GetPropertySpecificReport(propertyId: string, period: string | undefined): Observable<void>;
+    reports_GetDashboardSummary(period: string | null | undefined): Observable<void>;
+    reports_GetDailyVisits(period: string | undefined, dateFormat: string | undefined): Observable<void>;
+    reports_GetVisitsBySource(period: string | undefined): Observable<void>;
 }
 
 @Injectable({
@@ -2709,7 +2746,7 @@ export class ReportsClient implements IReportsClient {
         this.baseUrl = baseUrl ?? "";
     }
 
-    reports_GetMonthlySummary(year: number | undefined, month: number | undefined): Observable<MonthlySummaryDataDto> {
+    reports_GetMonthlySummary(year: number | undefined, month: number | undefined): Observable<void> {
         let url_ = this.baseUrl + "/api/reports/monthly-summary?";
         if (year === null)
             throw new Error("The parameter 'year' cannot be null.");
@@ -2725,7 +2762,6 @@ export class ReportsClient implements IReportsClient {
             observe: "response",
             responseType: "blob",
             headers: new HttpHeaders({
-                "Accept": "application/json"
             })
         };
 
@@ -2736,14 +2772,14 @@ export class ReportsClient implements IReportsClient {
                 try {
                     return this.processReports_GetMonthlySummary(response_ as any);
                 } catch (e) {
-                    return _observableThrow(e) as any as Observable<MonthlySummaryDataDto>;
+                    return _observableThrow(e) as any as Observable<void>;
                 }
             } else
-                return _observableThrow(response_) as any as Observable<MonthlySummaryDataDto>;
+                return _observableThrow(response_) as any as Observable<void>;
         }));
     }
 
-    protected processReports_GetMonthlySummary(response: HttpResponseBase): Observable<MonthlySummaryDataDto> {
+    protected processReports_GetMonthlySummary(response: HttpResponseBase): Observable<void> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -2752,10 +2788,21 @@ export class ReportsClient implements IReportsClient {
         let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
         if (status === 200) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = MonthlySummaryDataDto.fromJS(resultData200);
-            return _observableOf(result200);
+            return _observableOf(null as any);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            let resultData400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result400 = ProblemDetails.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            let resultData401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result401 = ProblemDetails.fromJS(resultData401);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result401);
             }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
@@ -2765,7 +2812,7 @@ export class ReportsClient implements IReportsClient {
         return _observableOf(null as any);
     }
 
-    reports_GetGeneralTotals(): Observable<GeneralTotalsDataDto> {
+    reports_GetGeneralTotals(): Observable<void> {
         let url_ = this.baseUrl + "/api/reports/totals";
         url_ = url_.replace(/[?&]$/, "");
 
@@ -2773,7 +2820,6 @@ export class ReportsClient implements IReportsClient {
             observe: "response",
             responseType: "blob",
             headers: new HttpHeaders({
-                "Accept": "application/json"
             })
         };
 
@@ -2784,14 +2830,14 @@ export class ReportsClient implements IReportsClient {
                 try {
                     return this.processReports_GetGeneralTotals(response_ as any);
                 } catch (e) {
-                    return _observableThrow(e) as any as Observable<GeneralTotalsDataDto>;
+                    return _observableThrow(e) as any as Observable<void>;
                 }
             } else
-                return _observableThrow(response_) as any as Observable<GeneralTotalsDataDto>;
+                return _observableThrow(response_) as any as Observable<void>;
         }));
     }
 
-    protected processReports_GetGeneralTotals(response: HttpResponseBase): Observable<GeneralTotalsDataDto> {
+    protected processReports_GetGeneralTotals(response: HttpResponseBase): Observable<void> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -2800,10 +2846,21 @@ export class ReportsClient implements IReportsClient {
         let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
         if (status === 200) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = GeneralTotalsDataDto.fromJS(resultData200);
-            return _observableOf(result200);
+            return _observableOf(null as any);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            let resultData400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result400 = ProblemDetails.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            let resultData401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result401 = ProblemDetails.fromJS(resultData401);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result401);
             }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
@@ -2813,7 +2870,7 @@ export class ReportsClient implements IReportsClient {
         return _observableOf(null as any);
     }
 
-    reports_GetVisitsByProperty(period: string | undefined, page: number | undefined, limit: number | undefined): Observable<VisitsByPropertyDataDto> {
+    reports_GetVisitsByProperty(period: string | undefined, page: number | undefined, limit: number | undefined): Observable<void> {
         let url_ = this.baseUrl + "/api/reports/property-visits?";
         if (period === null)
             throw new Error("The parameter 'period' cannot be null.");
@@ -2833,7 +2890,6 @@ export class ReportsClient implements IReportsClient {
             observe: "response",
             responseType: "blob",
             headers: new HttpHeaders({
-                "Accept": "application/json"
             })
         };
 
@@ -2844,14 +2900,14 @@ export class ReportsClient implements IReportsClient {
                 try {
                     return this.processReports_GetVisitsByProperty(response_ as any);
                 } catch (e) {
-                    return _observableThrow(e) as any as Observable<VisitsByPropertyDataDto>;
+                    return _observableThrow(e) as any as Observable<void>;
                 }
             } else
-                return _observableThrow(response_) as any as Observable<VisitsByPropertyDataDto>;
+                return _observableThrow(response_) as any as Observable<void>;
         }));
     }
 
-    protected processReports_GetVisitsByProperty(response: HttpResponseBase): Observable<VisitsByPropertyDataDto> {
+    protected processReports_GetVisitsByProperty(response: HttpResponseBase): Observable<void> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -2860,10 +2916,21 @@ export class ReportsClient implements IReportsClient {
         let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
         if (status === 200) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = VisitsByPropertyDataDto.fromJS(resultData200);
-            return _observableOf(result200);
+            return _observableOf(null as any);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            let resultData400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result400 = ProblemDetails.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            let resultData401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result401 = ProblemDetails.fromJS(resultData401);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result401);
             }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
@@ -2873,7 +2940,7 @@ export class ReportsClient implements IReportsClient {
         return _observableOf(null as any);
     }
 
-    reports_GetPropertySpecificReport(propertyId: string, period: string | undefined): Observable<PropertySpecificReportDataDto> {
+    reports_GetPropertySpecificReport(propertyId: string, period: string | undefined): Observable<void> {
         let url_ = this.baseUrl + "/api/reports/properties/{propertyId}?";
         if (propertyId === undefined || propertyId === null)
             throw new Error("The parameter 'propertyId' must be defined.");
@@ -2888,7 +2955,6 @@ export class ReportsClient implements IReportsClient {
             observe: "response",
             responseType: "blob",
             headers: new HttpHeaders({
-                "Accept": "application/json"
             })
         };
 
@@ -2899,14 +2965,14 @@ export class ReportsClient implements IReportsClient {
                 try {
                     return this.processReports_GetPropertySpecificReport(response_ as any);
                 } catch (e) {
-                    return _observableThrow(e) as any as Observable<PropertySpecificReportDataDto>;
+                    return _observableThrow(e) as any as Observable<void>;
                 }
             } else
-                return _observableThrow(response_) as any as Observable<PropertySpecificReportDataDto>;
+                return _observableThrow(response_) as any as Observable<void>;
         }));
     }
 
-    protected processReports_GetPropertySpecificReport(response: HttpResponseBase): Observable<PropertySpecificReportDataDto> {
+    protected processReports_GetPropertySpecificReport(response: HttpResponseBase): Observable<void> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -2915,10 +2981,21 @@ export class ReportsClient implements IReportsClient {
         let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
         if (status === 200) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = PropertySpecificReportDataDto.fromJS(resultData200);
-            return _observableOf(result200);
+            return _observableOf(null as any);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            let resultData400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result400 = ProblemDetails.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            let resultData401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result401 = ProblemDetails.fromJS(resultData401);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result401);
             }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
@@ -2928,7 +3005,7 @@ export class ReportsClient implements IReportsClient {
         return _observableOf(null as any);
     }
 
-    reports_GetDashboardSummary(period: string | null | undefined): Observable<DashboardSummaryDataDto> {
+    reports_GetDashboardSummary(period: string | null | undefined): Observable<void> {
         let url_ = this.baseUrl + "/api/reports/dashboard-summary?";
         if (period !== undefined && period !== null)
             url_ += "Period=" + encodeURIComponent("" + period) + "&";
@@ -2938,7 +3015,6 @@ export class ReportsClient implements IReportsClient {
             observe: "response",
             responseType: "blob",
             headers: new HttpHeaders({
-                "Accept": "application/json"
             })
         };
 
@@ -2949,14 +3025,14 @@ export class ReportsClient implements IReportsClient {
                 try {
                     return this.processReports_GetDashboardSummary(response_ as any);
                 } catch (e) {
-                    return _observableThrow(e) as any as Observable<DashboardSummaryDataDto>;
+                    return _observableThrow(e) as any as Observable<void>;
                 }
             } else
-                return _observableThrow(response_) as any as Observable<DashboardSummaryDataDto>;
+                return _observableThrow(response_) as any as Observable<void>;
         }));
     }
 
-    protected processReports_GetDashboardSummary(response: HttpResponseBase): Observable<DashboardSummaryDataDto> {
+    protected processReports_GetDashboardSummary(response: HttpResponseBase): Observable<void> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -2965,10 +3041,21 @@ export class ReportsClient implements IReportsClient {
         let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
         if (status === 200) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            result200 = DashboardSummaryDataDto.fromJS(resultData200);
-            return _observableOf(result200);
+            return _observableOf(null as any);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            let resultData400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result400 = ProblemDetails.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            let resultData401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result401 = ProblemDetails.fromJS(resultData401);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result401);
             }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
@@ -2978,7 +3065,7 @@ export class ReportsClient implements IReportsClient {
         return _observableOf(null as any);
     }
 
-    reports_GetDailyVisits(period: string | undefined, dateFormat: string | undefined): Observable<DailyVisitDto[]> {
+    reports_GetDailyVisits(period: string | undefined, dateFormat: string | undefined): Observable<void> {
         let url_ = this.baseUrl + "/api/reports/daily-visits?";
         if (period === null)
             throw new Error("The parameter 'period' cannot be null.");
@@ -2994,7 +3081,6 @@ export class ReportsClient implements IReportsClient {
             observe: "response",
             responseType: "blob",
             headers: new HttpHeaders({
-                "Accept": "application/json"
             })
         };
 
@@ -3005,14 +3091,14 @@ export class ReportsClient implements IReportsClient {
                 try {
                     return this.processReports_GetDailyVisits(response_ as any);
                 } catch (e) {
-                    return _observableThrow(e) as any as Observable<DailyVisitDto[]>;
+                    return _observableThrow(e) as any as Observable<void>;
                 }
             } else
-                return _observableThrow(response_) as any as Observable<DailyVisitDto[]>;
+                return _observableThrow(response_) as any as Observable<void>;
         }));
     }
 
-    protected processReports_GetDailyVisits(response: HttpResponseBase): Observable<DailyVisitDto[]> {
+    protected processReports_GetDailyVisits(response: HttpResponseBase): Observable<void> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -3021,17 +3107,21 @@ export class ReportsClient implements IReportsClient {
         let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
         if (status === 200) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            if (Array.isArray(resultData200)) {
-                result200 = [] as any;
-                for (let item of resultData200)
-                    result200!.push(DailyVisitDto.fromJS(item));
-            }
-            else {
-                result200 = <any>null;
-            }
-            return _observableOf(result200);
+            return _observableOf(null as any);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            let resultData400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result400 = ProblemDetails.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            let resultData401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result401 = ProblemDetails.fromJS(resultData401);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result401);
             }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
@@ -3041,7 +3131,7 @@ export class ReportsClient implements IReportsClient {
         return _observableOf(null as any);
     }
 
-    reports_GetVisitsBySource(period: string | undefined): Observable<VisitSourceDto[]> {
+    reports_GetVisitsBySource(period: string | undefined): Observable<void> {
         let url_ = this.baseUrl + "/api/reports/visits-by-source?";
         if (period === null)
             throw new Error("The parameter 'period' cannot be null.");
@@ -3053,7 +3143,6 @@ export class ReportsClient implements IReportsClient {
             observe: "response",
             responseType: "blob",
             headers: new HttpHeaders({
-                "Accept": "application/json"
             })
         };
 
@@ -3064,14 +3153,14 @@ export class ReportsClient implements IReportsClient {
                 try {
                     return this.processReports_GetVisitsBySource(response_ as any);
                 } catch (e) {
-                    return _observableThrow(e) as any as Observable<VisitSourceDto[]>;
+                    return _observableThrow(e) as any as Observable<void>;
                 }
             } else
-                return _observableThrow(response_) as any as Observable<VisitSourceDto[]>;
+                return _observableThrow(response_) as any as Observable<void>;
         }));
     }
 
-    protected processReports_GetVisitsBySource(response: HttpResponseBase): Observable<VisitSourceDto[]> {
+    protected processReports_GetVisitsBySource(response: HttpResponseBase): Observable<void> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -3080,17 +3169,21 @@ export class ReportsClient implements IReportsClient {
         let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
         if (status === 200) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            let result200: any = null;
-            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
-            if (Array.isArray(resultData200)) {
-                result200 = [] as any;
-                for (let item of resultData200)
-                    result200!.push(VisitSourceDto.fromJS(item));
-            }
-            else {
-                result200 = <any>null;
-            }
-            return _observableOf(result200);
+            return _observableOf(null as any);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            let resultData400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result400 = ProblemDetails.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
+        } else if (status === 401) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result401: any = null;
+            let resultData401 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result401 = ProblemDetails.fromJS(resultData401);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result401);
             }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
@@ -4671,204 +4764,11 @@ export interface ICompleteTwoFactorAuthEnablingCommand {
     twoFactorCode?: string | undefined;
 }
 
-export class PaginatedMessageResultDto implements IPaginatedMessageResultDto {
-    data?: MessageDto[];
-    total?: number;
-    page?: number;
-    totalPages?: number;
-
-    constructor(data?: IPaginatedMessageResultDto) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(_data?: any) {
-        if (_data) {
-            if (Array.isArray(_data["data"])) {
-                this.data = [] as any;
-                for (let item of _data["data"])
-                    this.data!.push(MessageDto.fromJS(item));
-            }
-            this.total = _data["total"];
-            this.page = _data["page"];
-            this.totalPages = _data["totalPages"];
-        }
-    }
-
-    static fromJS(data: any): PaginatedMessageResultDto {
-        data = typeof data === 'object' ? data : {};
-        let result = new PaginatedMessageResultDto();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        if (Array.isArray(this.data)) {
-            data["data"] = [];
-            for (let item of this.data)
-                data["data"].push(item.toJSON());
-        }
-        data["total"] = this.total;
-        data["page"] = this.page;
-        data["totalPages"] = this.totalPages;
-        return data;
-    }
-}
-
-export interface IPaginatedMessageResultDto {
-    data?: MessageDto[];
-    total?: number;
-    page?: number;
-    totalPages?: number;
-}
-
-export class MessageDto implements IMessageDto {
-    id?: string;
-    threadId?: string | undefined;
-    senderId?: string | undefined;
-    senderName?: string;
-    senderEmail?: string | undefined;
-    recipientId?: string | undefined;
-    propertyId?: string | undefined;
-    propertyTitle?: string | undefined;
-    subject?: string;
-    snippet?: string;
-    createdAt?: string;
-    isRead?: boolean;
-    isReplied?: boolean;
-    isStarred?: boolean;
-    isArchived?: boolean;
-
-    constructor(data?: IMessageDto) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(_data?: any) {
-        if (_data) {
-            this.id = _data["id"];
-            this.threadId = _data["threadId"];
-            this.senderId = _data["senderId"];
-            this.senderName = _data["senderName"];
-            this.senderEmail = _data["senderEmail"];
-            this.recipientId = _data["recipientId"];
-            this.propertyId = _data["propertyId"];
-            this.propertyTitle = _data["propertyTitle"];
-            this.subject = _data["subject"];
-            this.snippet = _data["snippet"];
-            this.createdAt = _data["createdAt"];
-            this.isRead = _data["isRead"];
-            this.isReplied = _data["isReplied"];
-            this.isStarred = _data["isStarred"];
-            this.isArchived = _data["isArchived"];
-        }
-    }
-
-    static fromJS(data: any): MessageDto {
-        data = typeof data === 'object' ? data : {};
-        let result = new MessageDto();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["id"] = this.id;
-        data["threadId"] = this.threadId;
-        data["senderId"] = this.senderId;
-        data["senderName"] = this.senderName;
-        data["senderEmail"] = this.senderEmail;
-        data["recipientId"] = this.recipientId;
-        data["propertyId"] = this.propertyId;
-        data["propertyTitle"] = this.propertyTitle;
-        data["subject"] = this.subject;
-        data["snippet"] = this.snippet;
-        data["createdAt"] = this.createdAt;
-        data["isRead"] = this.isRead;
-        data["isReplied"] = this.isReplied;
-        data["isStarred"] = this.isStarred;
-        data["isArchived"] = this.isArchived;
-        return data;
-    }
-}
-
-export interface IMessageDto {
-    id?: string;
-    threadId?: string | undefined;
-    senderId?: string | undefined;
-    senderName?: string;
-    senderEmail?: string | undefined;
-    recipientId?: string | undefined;
-    propertyId?: string | undefined;
-    propertyTitle?: string | undefined;
-    subject?: string;
-    snippet?: string;
-    createdAt?: string;
-    isRead?: boolean;
-    isReplied?: boolean;
-    isStarred?: boolean;
-    isArchived?: boolean;
-}
-
-export class MessageDetailDto extends MessageDto implements IMessageDetailDto {
-    fullBody?: string;
-    previousMessagesInThread?: MessageDto[];
-
-    constructor(data?: IMessageDetailDto) {
-        super(data);
-    }
-
-    override init(_data?: any) {
-        super.init(_data);
-        if (_data) {
-            this.fullBody = _data["fullBody"];
-            if (Array.isArray(_data["previousMessagesInThread"])) {
-                this.previousMessagesInThread = [] as any;
-                for (let item of _data["previousMessagesInThread"])
-                    this.previousMessagesInThread!.push(MessageDto.fromJS(item));
-            }
-        }
-    }
-
-    static override fromJS(data: any): MessageDetailDto {
-        data = typeof data === 'object' ? data : {};
-        let result = new MessageDetailDto();
-        result.init(data);
-        return result;
-    }
-
-    override toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["fullBody"] = this.fullBody;
-        if (Array.isArray(this.previousMessagesInThread)) {
-            data["previousMessagesInThread"] = [];
-            for (let item of this.previousMessagesInThread)
-                data["previousMessagesInThread"].push(item.toJSON());
-        }
-        super.toJSON(data);
-        return data;
-    }
-}
-
-export interface IMessageDetailDto extends IMessageDto {
-    fullBody?: string;
-    previousMessagesInThread?: MessageDto[];
-}
-
 export class SendMessageDto implements ISendMessageDto {
-    recipientId!: string;
+    recipientId?: string | undefined;
     propertyId?: string | undefined;
-    subject!: string;
-    body!: string;
+    subject?: string | undefined;
+    body?: string | undefined;
     inReplyToMessageId?: string | undefined;
     threadId?: string | undefined;
 
@@ -4912,10 +4812,10 @@ export class SendMessageDto implements ISendMessageDto {
 }
 
 export interface ISendMessageDto {
-    recipientId: string;
+    recipientId?: string | undefined;
     propertyId?: string | undefined;
-    subject: string;
-    body: string;
+    subject?: string | undefined;
+    body?: string | undefined;
     inReplyToMessageId?: string | undefined;
     threadId?: string | undefined;
 }
@@ -5134,590 +5034,6 @@ export interface IAddressDto {
     state?: string | undefined;
     postalCode?: string | undefined;
     country?: string | undefined;
-}
-
-export class MonthlySummaryDataDto implements IMonthlySummaryDataDto {
-    visits?: DateCountDto[];
-    messages?: DateCountDto[];
-
-    constructor(data?: IMonthlySummaryDataDto) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(_data?: any) {
-        if (_data) {
-            if (Array.isArray(_data["visits"])) {
-                this.visits = [] as any;
-                for (let item of _data["visits"])
-                    this.visits!.push(DateCountDto.fromJS(item));
-            }
-            if (Array.isArray(_data["messages"])) {
-                this.messages = [] as any;
-                for (let item of _data["messages"])
-                    this.messages!.push(DateCountDto.fromJS(item));
-            }
-        }
-    }
-
-    static fromJS(data: any): MonthlySummaryDataDto {
-        data = typeof data === 'object' ? data : {};
-        let result = new MonthlySummaryDataDto();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        if (Array.isArray(this.visits)) {
-            data["visits"] = [];
-            for (let item of this.visits)
-                data["visits"].push(item.toJSON());
-        }
-        if (Array.isArray(this.messages)) {
-            data["messages"] = [];
-            for (let item of this.messages)
-                data["messages"].push(item.toJSON());
-        }
-        return data;
-    }
-}
-
-export interface IMonthlySummaryDataDto {
-    visits?: DateCountDto[];
-    messages?: DateCountDto[];
-}
-
-export class DateCountDto implements IDateCountDto {
-    date?: string;
-    count?: number;
-
-    constructor(data?: IDateCountDto) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(_data?: any) {
-        if (_data) {
-            this.date = _data["date"];
-            this.count = _data["count"];
-        }
-    }
-
-    static fromJS(data: any): DateCountDto {
-        data = typeof data === 'object' ? data : {};
-        let result = new DateCountDto();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["date"] = this.date;
-        data["count"] = this.count;
-        return data;
-    }
-}
-
-export interface IDateCountDto {
-    date?: string;
-    count?: number;
-}
-
-export class GeneralTotalsDataDto implements IGeneralTotalsDataDto {
-    totalProperties?: number;
-    totalVisitsLifetime?: number;
-    totalMessagesLifetime?: number;
-    activeListings?: number | undefined;
-    averagePrice?: number | undefined;
-
-    constructor(data?: IGeneralTotalsDataDto) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(_data?: any) {
-        if (_data) {
-            this.totalProperties = _data["totalProperties"];
-            this.totalVisitsLifetime = _data["totalVisitsLifetime"];
-            this.totalMessagesLifetime = _data["totalMessagesLifetime"];
-            this.activeListings = _data["activeListings"];
-            this.averagePrice = _data["averagePrice"];
-        }
-    }
-
-    static fromJS(data: any): GeneralTotalsDataDto {
-        data = typeof data === 'object' ? data : {};
-        let result = new GeneralTotalsDataDto();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["totalProperties"] = this.totalProperties;
-        data["totalVisitsLifetime"] = this.totalVisitsLifetime;
-        data["totalMessagesLifetime"] = this.totalMessagesLifetime;
-        data["activeListings"] = this.activeListings;
-        data["averagePrice"] = this.averagePrice;
-        return data;
-    }
-}
-
-export interface IGeneralTotalsDataDto {
-    totalProperties?: number;
-    totalVisitsLifetime?: number;
-    totalMessagesLifetime?: number;
-    activeListings?: number | undefined;
-    averagePrice?: number | undefined;
-}
-
-export class VisitsByPropertyDataDto implements IVisitsByPropertyDataDto {
-    data?: PropertyVisitStatDto[];
-    total?: number;
-    page?: number;
-    limit?: number;
-
-    constructor(data?: IVisitsByPropertyDataDto) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(_data?: any) {
-        if (_data) {
-            if (Array.isArray(_data["data"])) {
-                this.data = [] as any;
-                for (let item of _data["data"])
-                    this.data!.push(PropertyVisitStatDto.fromJS(item));
-            }
-            this.total = _data["total"];
-            this.page = _data["page"];
-            this.limit = _data["limit"];
-        }
-    }
-
-    static fromJS(data: any): VisitsByPropertyDataDto {
-        data = typeof data === 'object' ? data : {};
-        let result = new VisitsByPropertyDataDto();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        if (Array.isArray(this.data)) {
-            data["data"] = [];
-            for (let item of this.data)
-                data["data"].push(item.toJSON());
-        }
-        data["total"] = this.total;
-        data["page"] = this.page;
-        data["limit"] = this.limit;
-        return data;
-    }
-}
-
-export interface IVisitsByPropertyDataDto {
-    data?: PropertyVisitStatDto[];
-    total?: number;
-    page?: number;
-    limit?: number;
-}
-
-export class PropertyVisitStatDto implements IPropertyVisitStatDto {
-    propertyId?: string;
-    propertyTitle?: string;
-    address?: string | undefined;
-    visitCount?: number;
-    price?: number | undefined;
-    status?: string | undefined;
-    messages?: number | undefined;
-    messagesTrend?: string | undefined;
-    visitsTrend?: string | undefined;
-    conversion?: string | undefined;
-    conversionTrend?: string | undefined;
-
-    constructor(data?: IPropertyVisitStatDto) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(_data?: any) {
-        if (_data) {
-            this.propertyId = _data["propertyId"];
-            this.propertyTitle = _data["propertyTitle"];
-            this.address = _data["address"];
-            this.visitCount = _data["visitCount"];
-            this.price = _data["price"];
-            this.status = _data["status"];
-            this.messages = _data["messages"];
-            this.messagesTrend = _data["messagesTrend"];
-            this.visitsTrend = _data["visitsTrend"];
-            this.conversion = _data["conversion"];
-            this.conversionTrend = _data["conversionTrend"];
-        }
-    }
-
-    static fromJS(data: any): PropertyVisitStatDto {
-        data = typeof data === 'object' ? data : {};
-        let result = new PropertyVisitStatDto();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["propertyId"] = this.propertyId;
-        data["propertyTitle"] = this.propertyTitle;
-        data["address"] = this.address;
-        data["visitCount"] = this.visitCount;
-        data["price"] = this.price;
-        data["status"] = this.status;
-        data["messages"] = this.messages;
-        data["messagesTrend"] = this.messagesTrend;
-        data["visitsTrend"] = this.visitsTrend;
-        data["conversion"] = this.conversion;
-        data["conversionTrend"] = this.conversionTrend;
-        return data;
-    }
-}
-
-export interface IPropertyVisitStatDto {
-    propertyId?: string;
-    propertyTitle?: string;
-    address?: string | undefined;
-    visitCount?: number;
-    price?: number | undefined;
-    status?: string | undefined;
-    messages?: number | undefined;
-    messagesTrend?: string | undefined;
-    visitsTrend?: string | undefined;
-    conversion?: string | undefined;
-    conversionTrend?: string | undefined;
-}
-
-export class PropertySpecificReportDataDto implements IPropertySpecificReportDataDto {
-    propertyDetails?: PropertyDetailsForReportDto;
-    visitTrend?: DateCountDto[];
-    messageTrend?: DateCountDto[];
-    conversionRate?: number | undefined;
-    averageTimeToRespond?: string | undefined;
-
-    constructor(data?: IPropertySpecificReportDataDto) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(_data?: any) {
-        if (_data) {
-            this.propertyDetails = _data["propertyDetails"] ? PropertyDetailsForReportDto.fromJS(_data["propertyDetails"]) : <any>undefined;
-            if (Array.isArray(_data["visitTrend"])) {
-                this.visitTrend = [] as any;
-                for (let item of _data["visitTrend"])
-                    this.visitTrend!.push(DateCountDto.fromJS(item));
-            }
-            if (Array.isArray(_data["messageTrend"])) {
-                this.messageTrend = [] as any;
-                for (let item of _data["messageTrend"])
-                    this.messageTrend!.push(DateCountDto.fromJS(item));
-            }
-            this.conversionRate = _data["conversionRate"];
-            this.averageTimeToRespond = _data["averageTimeToRespond"];
-        }
-    }
-
-    static fromJS(data: any): PropertySpecificReportDataDto {
-        data = typeof data === 'object' ? data : {};
-        let result = new PropertySpecificReportDataDto();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["propertyDetails"] = this.propertyDetails ? this.propertyDetails.toJSON() : <any>undefined;
-        if (Array.isArray(this.visitTrend)) {
-            data["visitTrend"] = [];
-            for (let item of this.visitTrend)
-                data["visitTrend"].push(item.toJSON());
-        }
-        if (Array.isArray(this.messageTrend)) {
-            data["messageTrend"] = [];
-            for (let item of this.messageTrend)
-                data["messageTrend"].push(item.toJSON());
-        }
-        data["conversionRate"] = this.conversionRate;
-        data["averageTimeToRespond"] = this.averageTimeToRespond;
-        return data;
-    }
-}
-
-export interface IPropertySpecificReportDataDto {
-    propertyDetails?: PropertyDetailsForReportDto;
-    visitTrend?: DateCountDto[];
-    messageTrend?: DateCountDto[];
-    conversionRate?: number | undefined;
-    averageTimeToRespond?: string | undefined;
-}
-
-export class PropertyDetailsForReportDto implements IPropertyDetailsForReportDto {
-    id?: string;
-    title?: string;
-    address?: string | undefined;
-    price?: string | undefined;
-    status?: string | undefined;
-    type?: string | undefined;
-
-    constructor(data?: IPropertyDetailsForReportDto) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(_data?: any) {
-        if (_data) {
-            this.id = _data["id"];
-            this.title = _data["title"];
-            this.address = _data["address"];
-            this.price = _data["price"];
-            this.status = _data["status"];
-            this.type = _data["type"];
-        }
-    }
-
-    static fromJS(data: any): PropertyDetailsForReportDto {
-        data = typeof data === 'object' ? data : {};
-        let result = new PropertyDetailsForReportDto();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["id"] = this.id;
-        data["title"] = this.title;
-        data["address"] = this.address;
-        data["price"] = this.price;
-        data["status"] = this.status;
-        data["type"] = this.type;
-        return data;
-    }
-}
-
-export interface IPropertyDetailsForReportDto {
-    id?: string;
-    title?: string;
-    address?: string | undefined;
-    price?: string | undefined;
-    status?: string | undefined;
-    type?: string | undefined;
-}
-
-export class DashboardSummaryDataDto implements IDashboardSummaryDataDto {
-    visits?: DashboardSummaryStatDto;
-    messages?: DashboardSummaryStatDto;
-    totalProperties?: DashboardSummaryStatDto | undefined;
-    conversionRate?: DashboardSummaryStatDto | undefined;
-
-    constructor(data?: IDashboardSummaryDataDto) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(_data?: any) {
-        if (_data) {
-            this.visits = _data["visits"] ? DashboardSummaryStatDto.fromJS(_data["visits"]) : <any>undefined;
-            this.messages = _data["messages"] ? DashboardSummaryStatDto.fromJS(_data["messages"]) : <any>undefined;
-            this.totalProperties = _data["totalProperties"] ? DashboardSummaryStatDto.fromJS(_data["totalProperties"]) : <any>undefined;
-            this.conversionRate = _data["conversionRate"] ? DashboardSummaryStatDto.fromJS(_data["conversionRate"]) : <any>undefined;
-        }
-    }
-
-    static fromJS(data: any): DashboardSummaryDataDto {
-        data = typeof data === 'object' ? data : {};
-        let result = new DashboardSummaryDataDto();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["visits"] = this.visits ? this.visits.toJSON() : <any>undefined;
-        data["messages"] = this.messages ? this.messages.toJSON() : <any>undefined;
-        data["totalProperties"] = this.totalProperties ? this.totalProperties.toJSON() : <any>undefined;
-        data["conversionRate"] = this.conversionRate ? this.conversionRate.toJSON() : <any>undefined;
-        return data;
-    }
-}
-
-export interface IDashboardSummaryDataDto {
-    visits?: DashboardSummaryStatDto;
-    messages?: DashboardSummaryStatDto;
-    totalProperties?: DashboardSummaryStatDto | undefined;
-    conversionRate?: DashboardSummaryStatDto | undefined;
-}
-
-export class DashboardSummaryStatDto implements IDashboardSummaryStatDto {
-    currentPeriod?: number;
-    percentageChange?: number | undefined;
-    changeDirection?: string | undefined;
-
-    constructor(data?: IDashboardSummaryStatDto) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(_data?: any) {
-        if (_data) {
-            this.currentPeriod = _data["currentPeriod"];
-            this.percentageChange = _data["percentageChange"];
-            this.changeDirection = _data["changeDirection"];
-        }
-    }
-
-    static fromJS(data: any): DashboardSummaryStatDto {
-        data = typeof data === 'object' ? data : {};
-        let result = new DashboardSummaryStatDto();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["currentPeriod"] = this.currentPeriod;
-        data["percentageChange"] = this.percentageChange;
-        data["changeDirection"] = this.changeDirection;
-        return data;
-    }
-}
-
-export interface IDashboardSummaryStatDto {
-    currentPeriod?: number;
-    percentageChange?: number | undefined;
-    changeDirection?: string | undefined;
-}
-
-export class DailyVisitDto implements IDailyVisitDto {
-    date?: string;
-    dayName?: string | undefined;
-    visits?: number;
-
-    constructor(data?: IDailyVisitDto) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(_data?: any) {
-        if (_data) {
-            this.date = _data["date"];
-            this.dayName = _data["dayName"];
-            this.visits = _data["visits"];
-        }
-    }
-
-    static fromJS(data: any): DailyVisitDto {
-        data = typeof data === 'object' ? data : {};
-        let result = new DailyVisitDto();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["date"] = this.date;
-        data["dayName"] = this.dayName;
-        data["visits"] = this.visits;
-        return data;
-    }
-}
-
-export interface IDailyVisitDto {
-    date?: string;
-    dayName?: string | undefined;
-    visits?: number;
-}
-
-export class VisitSourceDto implements IVisitSourceDto {
-    source?: string;
-    visits?: number;
-    color?: string | undefined;
-
-    constructor(data?: IVisitSourceDto) {
-        if (data) {
-            for (var property in data) {
-                if (data.hasOwnProperty(property))
-                    (<any>this)[property] = (<any>data)[property];
-            }
-        }
-    }
-
-    init(_data?: any) {
-        if (_data) {
-            this.source = _data["source"];
-            this.visits = _data["visits"];
-            this.color = _data["color"];
-        }
-    }
-
-    static fromJS(data: any): VisitSourceDto {
-        data = typeof data === 'object' ? data : {};
-        let result = new VisitSourceDto();
-        result.init(data);
-        return result;
-    }
-
-    toJSON(data?: any) {
-        data = typeof data === 'object' ? data : {};
-        data["source"] = this.source;
-        data["visits"] = this.visits;
-        data["color"] = this.color;
-        return data;
-    }
-}
-
-export interface IVisitSourceDto {
-    source?: string;
-    visits?: number;
-    color?: string | undefined;
 }
 
 export class ChangePasswordDto implements IChangePasswordDto {

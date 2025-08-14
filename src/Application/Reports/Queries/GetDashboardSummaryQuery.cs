@@ -19,9 +19,9 @@ public class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboardSumma
         _context = context;
     }
 
-    private async Task<long> GetCountAsync(IQueryable<dynamic> queryableSource, DateTime startDate, DateTime endDate, CancellationToken cancellationToken)
+    private long GetCountAsync(IQueryable<dynamic> queryableSource, DateTime startDate, DateTime endDate, CancellationToken cancellationToken)
     {
-         if (queryableSource is IQueryable<PropertyVisitLog> visitLogs)
+        /* if (queryableSource is IQueryable<PropertyVisitLog> visitLogs)
         {
             return await visitLogs.LongCountAsync(v => v.VisitedOnUtc >= startDate && v.VisitedOnUtc <= endDate, cancellationToken);
         }
@@ -35,7 +35,7 @@ public class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboardSumma
             // This example assumes total active properties, not tied to period.
             // If it should be period-dependent (e.g. new listings), adjust this.
             return await properties.LongCountAsync(p => p.EstatePropertyValues.FirstOrDefault(epv => epv.IsFeatured)!.IsPropertyVisible, cancellationToken);
-        }
+        }*/
         return 0;
     }
 
@@ -85,11 +85,11 @@ public class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboardSumma
         var previousEndDate = currentStartDate.AddTicks(-1);
 
 
-        long currentVisits = await GetCountAsync(_context.PropertyVisitLogs, currentStartDate, currentEndDate, cancellationToken);
-        long previousVisits = await GetCountAsync(_context.PropertyVisitLogs, previousStartDate, previousEndDate, cancellationToken);
+        long currentVisits = GetCountAsync(_context.PropertyVisitLogs, currentStartDate, currentEndDate, cancellationToken);
+        long previousVisits = GetCountAsync(_context.PropertyVisitLogs, previousStartDate, previousEndDate, cancellationToken);
 
-        long currentMessages = await GetCountAsync(_context.PropertyMessageLogs, currentStartDate, currentEndDate, cancellationToken);
-        long previousMessages = await GetCountAsync(_context.PropertyMessageLogs, previousStartDate, previousEndDate, cancellationToken);
+        long currentMessages = GetCountAsync(_context.PropertyMessageLogs, currentStartDate, currentEndDate, cancellationToken);
+        long previousMessages = GetCountAsync(_context.PropertyMessageLogs, previousStartDate, previousEndDate, cancellationToken);
 
         // For TotalProperties, "period" might mean new properties in period, or just total active.
         // This example assumes total active properties, not comparing periods.

@@ -1573,15 +1573,38 @@
               "nullable": true
             },
             "x-position": 6
+          },
+          {
+            "name": "UserId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "guid",
+              "nullable": true
+            },
+            "x-position": 7
           }
         ],
         "responses": {
           "200": {
+            "description": ""
+          },
+          "400": {
             "description": "",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PaginatedMessageResultDto"
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1606,12 +1629,25 @@
           "x-position": 1
         },
         "responses": {
-          "200": {
+          "201": {
+            "description": ""
+          },
+          "400": {
             "description": "",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MessageDto"
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1619,12 +1655,56 @@
         }
       }
     },
-    "/api/messages/{id}": {
+    "/api/messages/{messageId}": {
       "get": {
         "tags": [
           "Messages"
         ],
         "operationId": "Messages_GetMessageById",
+        "parameters": [
+          {
+            "name": "messageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/messages/{id}/read": {
+      "get": {
+        "tags": [
+          "Messages"
+        ],
+        "operationId": "Messages_MarkMessageAsRead",
         "parameters": [
           {
             "name": "id",
@@ -1638,17 +1718,22 @@
         ],
         "responses": {
           "200": {
+            "description": ""
+          },
+          "400": {
             "description": "",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MessageDetailDto"
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
           }
         }
-      },
+      }
+    },
+    "/api/messages/{id}": {
       "delete": {
         "tags": [
           "Messages"
@@ -1667,44 +1752,14 @@
         ],
         "responses": {
           "200": {
+            "description": ""
+          },
+          "400": {
             "description": "",
             "content": {
-              "application/octet-stream": {
+              "application/json": {
                 "schema": {
-                  "type": "string",
-                  "format": "binary"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/messages/{id}/read": {
-      "patch": {
-        "tags": [
-          "Messages"
-        ],
-        "operationId": "Messages_MarkMessageAsRead",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "x-position": 1
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "",
-            "content": {
-              "application/octet-stream": {
-                "schema": {
-                  "type": "string",
-                  "format": "binary"
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1725,6 +1780,16 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/TabCountsDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1868,11 +1933,24 @@
         ],
         "responses": {
           "200": {
+            "description": ""
+          },
+          "400": {
             "description": "",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/MonthlySummaryDataDto"
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1888,11 +1966,24 @@
         "operationId": "Reports_GetGeneralTotals",
         "responses": {
           "200": {
+            "description": ""
+          },
+          "400": {
             "description": "",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/GeneralTotalsDataDto"
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1936,11 +2027,24 @@
         ],
         "responses": {
           "200": {
+            "description": ""
+          },
+          "400": {
             "description": "",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/VisitsByPropertyDataDto"
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -1976,11 +2080,24 @@
         ],
         "responses": {
           "200": {
+            "description": ""
+          },
+          "400": {
             "description": "",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/PropertySpecificReportDataDto"
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -2007,11 +2124,24 @@
         ],
         "responses": {
           "200": {
+            "description": ""
+          },
+          "400": {
             "description": "",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/DashboardSummaryDataDto"
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -2045,14 +2175,24 @@
         ],
         "responses": {
           "200": {
+            "description": ""
+          },
+          "400": {
             "description": "",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/DailyVisitDto"
-                  }
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -2078,14 +2218,24 @@
         ],
         "responses": {
           "200": {
+            "description": ""
+          },
+          "400": {
             "description": "",
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/VisitSourceDto"
-                  }
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -2744,121 +2894,13 @@
           }
         }
       },
-      "PaginatedMessageResultDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/MessageDto"
-            }
-          },
-          "total": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "page": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "totalPages": {
-            "type": "integer",
-            "format": "int32"
-          }
-        }
-      },
-      "MessageDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "threadId": {
-            "type": "string",
-            "nullable": true
-          },
-          "senderId": {
-            "type": "string",
-            "nullable": true
-          },
-          "senderName": {
-            "type": "string"
-          },
-          "senderEmail": {
-            "type": "string",
-            "nullable": true
-          },
-          "recipientId": {
-            "type": "string",
-            "nullable": true
-          },
-          "propertyId": {
-            "type": "string",
-            "nullable": true
-          },
-          "propertyTitle": {
-            "type": "string",
-            "nullable": true
-          },
-          "subject": {
-            "type": "string"
-          },
-          "snippet": {
-            "type": "string"
-          },
-          "createdAt": {
-            "type": "string"
-          },
-          "isRead": {
-            "type": "boolean"
-          },
-          "isReplied": {
-            "type": "boolean"
-          },
-          "isStarred": {
-            "type": "boolean"
-          },
-          "isArchived": {
-            "type": "boolean"
-          }
-        }
-      },
-      "MessageDetailDto": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/MessageDto"
-          },
-          {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "fullBody": {
-                "type": "string"
-              },
-              "previousMessagesInThread": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/MessageDto"
-                }
-              }
-            }
-          }
-        ]
-      },
       "SendMessageDto": {
         "type": "object",
         "additionalProperties": false,
-        "required": [
-          "recipientId",
-          "subject",
-          "body"
-        ],
         "properties": {
           "recipientId": {
             "type": "string",
-            "minLength": 1
+            "nullable": true
           },
           "propertyId": {
             "type": "string",
@@ -2866,11 +2908,11 @@
           },
           "subject": {
             "type": "string",
-            "minLength": 1
+            "nullable": true
           },
           "body": {
             "type": "string",
-            "minLength": 1
+            "nullable": true
           },
           "inReplyToMessageId": {
             "type": "string",
@@ -2997,278 +3039,6 @@
             "nullable": true
           },
           "country": {
-            "type": "string",
-            "nullable": true
-          }
-        }
-      },
-      "MonthlySummaryDataDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "visits": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DateCountDto"
-            }
-          },
-          "messages": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DateCountDto"
-            }
-          }
-        }
-      },
-      "DateCountDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "date": {
-            "type": "string"
-          },
-          "count": {
-            "type": "integer",
-            "format": "int32"
-          }
-        }
-      },
-      "GeneralTotalsDataDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "totalProperties": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "totalVisitsLifetime": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "totalMessagesLifetime": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "activeListings": {
-            "type": "integer",
-            "format": "int32",
-            "nullable": true
-          },
-          "averagePrice": {
-            "type": "number",
-            "format": "decimal",
-            "nullable": true
-          }
-        }
-      },
-      "VisitsByPropertyDataDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PropertyVisitStatDto"
-            }
-          },
-          "total": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "page": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "limit": {
-            "type": "integer",
-            "format": "int32"
-          }
-        }
-      },
-      "PropertyVisitStatDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "propertyId": {
-            "type": "string"
-          },
-          "propertyTitle": {
-            "type": "string"
-          },
-          "address": {
-            "type": "string",
-            "nullable": true
-          },
-          "visitCount": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "price": {
-            "type": "number",
-            "format": "decimal",
-            "nullable": true
-          },
-          "status": {
-            "type": "string",
-            "nullable": true
-          },
-          "messages": {
-            "type": "integer",
-            "format": "int32",
-            "nullable": true
-          },
-          "messagesTrend": {
-            "type": "string",
-            "nullable": true
-          },
-          "visitsTrend": {
-            "type": "string",
-            "nullable": true
-          },
-          "conversion": {
-            "type": "string",
-            "nullable": true
-          },
-          "conversionTrend": {
-            "type": "string",
-            "nullable": true
-          }
-        }
-      },
-      "PropertySpecificReportDataDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "propertyDetails": {
-            "$ref": "#/components/schemas/PropertyDetailsForReportDto"
-          },
-          "visitTrend": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DateCountDto"
-            }
-          },
-          "messageTrend": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/DateCountDto"
-            }
-          },
-          "conversionRate": {
-            "type": "number",
-            "format": "decimal",
-            "nullable": true
-          },
-          "averageTimeToRespond": {
-            "type": "string",
-            "nullable": true
-          }
-        }
-      },
-      "PropertyDetailsForReportDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "title": {
-            "type": "string"
-          },
-          "address": {
-            "type": "string",
-            "nullable": true
-          },
-          "price": {
-            "type": "string",
-            "nullable": true
-          },
-          "status": {
-            "type": "string",
-            "nullable": true
-          },
-          "type": {
-            "type": "string",
-            "nullable": true
-          }
-        }
-      },
-      "DashboardSummaryDataDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "visits": {
-            "$ref": "#/components/schemas/DashboardSummaryStatDto"
-          },
-          "messages": {
-            "$ref": "#/components/schemas/DashboardSummaryStatDto"
-          },
-          "totalProperties": {
-            "nullable": true,
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/DashboardSummaryStatDto"
-              }
-            ]
-          },
-          "conversionRate": {
-            "nullable": true,
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/DashboardSummaryStatDto"
-              }
-            ]
-          }
-        }
-      },
-      "DashboardSummaryStatDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "currentPeriod": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "percentageChange": {
-            "type": "number",
-            "format": "decimal",
-            "nullable": true
-          },
-          "changeDirection": {
-            "type": "string",
-            "nullable": true
-          }
-        }
-      },
-      "DailyVisitDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "date": {
-            "type": "string"
-          },
-          "dayName": {
-            "type": "string",
-            "nullable": true
-          },
-          "visits": {
-            "type": "integer",
-            "format": "int32"
-          }
-        }
-      },
-      "VisitSourceDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "source": {
-            "type": "string"
-          },
-          "visits": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "color": {
             "type": "string",
             "nullable": true
           }

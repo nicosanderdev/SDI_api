@@ -30,7 +30,7 @@ else
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
 }
 
-app.UseMiddleware<ExceptionHandlingMiddleware>();
+// app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseHealthChecks("/health");
 app.UseHttpsRedirection();

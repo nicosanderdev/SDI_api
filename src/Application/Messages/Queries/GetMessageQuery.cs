@@ -8,32 +8,29 @@ public class GetMessagesQuery : IRequest<PaginatedMessageResultDto>
 {
     public int Page { get; set; } = 1;
     public int Limit { get; set; } = 15;
-    public string? Filter { get; set; } // 'inbox', 'starred', 'archived', 'sent', 'trash'
-    public string? Query { get; set; } // Search query
+    public string? Filter { get; set; }
+    public string? Query { get; set; }
     public string? PropertyId { get; set; }
-    public string? SortBy { get; set; } = "createdAt_desc"; // e.g., "createdAt_desc"
+    public string? SortBy { get; set; } = "createdAt_desc";
+    public Guid? UserId { get; set; }
 }
 
 public class GetMessagesQueryHandler : IRequestHandler<GetMessagesQuery, PaginatedMessageResultDto>
 {
     private readonly IApplicationDbContext _context;
     private readonly IMapper _mapper;
-    private readonly ICurrentUserService _currentUserService;
 
-    public GetMessagesQueryHandler(IApplicationDbContext context, IMapper mapper, ICurrentUserService currentUserService)
+    public GetMessagesQueryHandler(IApplicationDbContext context, IMapper mapper)
     {
         _context = context;
         _mapper = mapper;
-        _currentUserService = currentUserService;
     }
 
     public async Task<PaginatedMessageResultDto> Handle(GetMessagesQuery request, CancellationToken cancellationToken)
     {
-        var currentUserIdString = _currentUserService.GetUserId();
-        if (currentUserIdString != Guid.Empty)
-        {
+        if (request.UserId == Guid.Empty)
             throw new UnauthorizedAccessException("User is not authenticated.");
-        }
+        var memberId = _context.Members.Where(m => m.UserId == request.UserId).Select(m => m.Id).FirstOrDefault();
 
         IQueryable<MessageRecipient> query = _context.MessageRecipients
             .Include(mr => mr.Message)
@@ -42,7 +39,7 @@ public class GetMessagesQueryHandler : IRequestHandler<GetMessagesQuery, Paginat
             .Include(mr => mr.Message)
                 .ThenInclude(m => m.Thread)
                     .ThenInclude(t => t.Property)
-            .Where(mr => mr.RecipientId == currentUserIdString); // RecipientId is ApplicationUser string ID
+            .Where(mr => mr.RecipientId == memberId);
 
         // Apply Filters
         request.Filter = request.Filter?.ToLowerInvariant() ?? "inbox";
@@ -67,7 +64,7 @@ public class GetMessagesQueryHandler : IRequestHandler<GetMessagesQuery, Paginat
                     .Include(m => m.Thread).ThenInclude(t => t.Property)
                     .Include(m => m.MessageRecipients).ThenInclude(mr => mr.Recipient)
                         // .ThenInclude(r => r.Member) // For Recipient info display
-                    .Where(m => m.SenderId == currentUserIdString)
+                    .Where(m => m.SenderId == memberId)
                     .Select(m => new MessageDto
                     {
                         Id = m.Id.ToString(),
@@ -118,9 +115,7 @@ public class GetMessagesQueryHandler : IRequestHandler<GetMessagesQuery, Paginat
         }
 
         if (Guid.TryParse(request.PropertyId, out var propertyGuid))
-        {
             query = query.Where(mr => mr.Message.Thread.PropertyId == propertyGuid);
-        }
 
         query = request.SortBy switch { "createdAt_asc" => query.OrderBy(mr => mr.Message.CreatedAtUtc), _ => query.OrderByDescending(mr => mr.Message.CreatedAtUtc), };
         
