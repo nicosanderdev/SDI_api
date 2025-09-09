@@ -61,7 +61,6 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, LoginResultDto>
         }
         var checkPasswordResult = await _identityService.CheckPasswordSignInAsync(user, request.Password!, lockoutOnFailure: true);
         return await CreateLoginResultDto(checkPasswordResult, user);
-        
     }
     
     private async Task<LoginResultDto> CreateLoginResultDto(SignInResult result, IUser? user)

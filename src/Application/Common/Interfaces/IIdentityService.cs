@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Identity;
+﻿using System.Diagnostics.CodeAnalysis;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Identity;
 using SDI_Api.Application.Common.Models;
 
 namespace SDI_Api.Application.Common.Interfaces;
@@ -13,7 +15,7 @@ public interface IIdentityService
     Task<IUser?> FindUserByUsernameAsync(string username);
     Task<bool> GetTwoFactorEnabledAsync(IUser user);
     Task<bool> CheckPasswordAsync(IUser user, string password);
-    Task<(Result Result, string UserId)> CreateUserAsync(string email, string password, string? firstName, string? lastName, CancellationToken cancellationToken); // Modified to include names for Member creation
+    Task<(Result Result, string UserId)> CreateUserAsync(string email, string? password, string? firstName, string? lastName, CancellationToken cancellationToken); // Modified to include names for Member creation
     Task<Result> DeleteUserAsync(string userId);
     Task SignOutAsync();
     
@@ -40,6 +42,13 @@ public interface IIdentityService
     Task<SignInResult> TwoFactorAuthenticatorSignInAsync(string userId, string twoFactorCode);
     Task<IUser?> GetTwoFactorAuthenticationUserAsync();
     Task<Result> EnableTwoFactorAuthenticationAsync(string userId);
-    // TODO: refactor to return string instead of tuple
     Task<(string sharedKey, string authenticatorUri)> GenerateTwoFactorAuthenticatorKeyAsync(IUser user);
+    
+    // --- External login configuration ---
+    Task<AuthenticationProperties> ConfigureExternalAuthenticationProperties(string? provider, [StringSyntax("Uri")] string? redirectUrl,
+        string? userId = null);
+    Task<ExternalLoginInfo?> GetExternalLoginInfoAsync();
+    Task ExternalLoginSignInAsync(string provider, string providerKey);
+    Task<IUser> FindLoginAsync(string loginProvider, string providerKey);
+    Task<SignInResult> AddLoginAsync(IUser user, UserLoginInfo login);
 }

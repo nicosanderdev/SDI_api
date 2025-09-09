@@ -1,3 +1,5 @@
+using System.Diagnostics.CodeAnalysis;
+using Microsoft.AspNetCore.Authentication;
 using SDI_Api.Application.Common.Interfaces;
 using SDI_Api.Application.Common.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -92,7 +94,7 @@ public class IdentityService : IIdentityService
         return await _signInManager.PasswordSignInAsync(userDb, password, isPersistent, lockoutOnFailure);
     }
 
-    public async Task<(Result Result, string UserId)> CreateUserAsync(string email, string password, string? firstName, string? lastName, CancellationToken cancellationToken)
+    public async Task<(Result Result, string UserId)> CreateUserAsync(string email, string? password, string? firstName, string? lastName, CancellationToken cancellationToken)
     {
         var existingUser = await _userManager.FindByEmailAsync(email);
         if (existingUser != null)
@@ -105,8 +107,13 @@ public class IdentityService : IIdentityService
             Email = email,
             EmailConfirmed = false
         };
+
+        IdentityResult identityResult;
+        if (string.IsNullOrEmpty(password))
+            identityResult = await _userManager.CreateAsync(user, password!);
+        else
+            identityResult = await _userManager.CreateAsync(user);
         
-        var identityResult = await _userManager.CreateAsync(user, password);
         if (identityResult.Succeeded)
         {
             var identityRoleResult = await _userManager.AddToRoleAsync(user, "User");
@@ -290,6 +297,36 @@ public class IdentityService : IIdentityService
         user.TwoFactorEnabled = true;
         await _userManager.UpdateAsync(user);
         return Result.Success();
+    }
+
+    public Task<AuthenticationProperties> ConfigureExternalAuthenticationProperties(string? provider, [StringSyntax("Uri")] string? redirectUrl, string? userId = null)
+    {
+        var properties =  _signInManager.ConfigureExternalAuthenticationProperties(provider, redirectUrl, userId);
+        return Task.FromResult(properties);
+    }
+
+    public async Task<ExternalLoginInfo?> GetExternalLoginInfoAsync()
+    {
+        return await _signInManager.GetExternalLoginInfoAsync();
+    }
+
+    public async Task ExternalLoginSignInAsync(string provider, string providerKey)
+    {
+        await _signInManager.ExternalLoginSignInAsync(provider, providerKey, isPersistent: false,
+            bypassTwoFactor: true);
+    }
+    
+    public async Task<IUser> FindLoginAsync(string loginProvider, string providerKey)
+    {
+        var user = await _userManager.FindByLoginAsync(loginProvider, providerKey);
+        return user!;
+    }
+
+    public async Task<SignInResult> AddLoginAsync(IUser user, UserLoginInfo login)
+    {
+        var applicationUser = (ApplicationUser)user;
+        var result = await _userManager.AddLoginAsync(applicationUser, login);
+        return result.Succeeded ? SignInResult.Success : SignInResult.Failed;
     }
 
     /// <summary>

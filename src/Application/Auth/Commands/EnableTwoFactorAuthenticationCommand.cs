@@ -34,14 +34,14 @@ public class EnableTwoFactorAuthCommandHandler : IRequestHandler<EnableTwoFactor
     {
         var user = await _identityService.FindUserByIdAsync(request.UserId!);
         if (user == null)
-            throw new UnauthorizedAccessException();
-        
+            return Result.Failure(new List<string>());
+
         if (!user.isEmailConfirmed())
-            throw new ArgumentException();
+            return Result.Failure(new List<string>() { "Email not confirmed." });
         
         var signInResult = await _identityService.CheckPasswordSignInAsync(user, request.Password!, false);
         if (!signInResult.Succeeded)
-            throw new UnauthorizedAccessException();
+            return Result.Failure(new List<string>() { "Password is incorrect" });
             
         var verificationCode = await _identityService.GenerateTwoFactorAuthenticatorKeyAsync(user);
         var emailBody = _emailTemplateProvider.GetTwoFactorCodeBody(verificationCode.sharedKey);

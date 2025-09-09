@@ -605,7 +605,7 @@ export class Client implements IClient {
 export interface IAuthClient {
     auth_RegisterUser(command: RegisterUserCommand): Observable<UserAuthDto>;
     auth_Login(command: LoginCommand): Observable<LoginResultDto>;
-    auth_Logout(): Observable<void>;
+    auth_Logout(): Observable<LoginResultDto>;
     auth_Verify(): Observable<UserAuthDto>;
     auth_ForgotPasswordCustom(command: ForgotPasswordCommand): Observable<FileResponse>;
     auth_ForgotPasswordConfirmEmail(command: ForgotPasswordConfirmEmailCommand): Observable<FileResponse>;
@@ -618,6 +618,8 @@ export interface IAuthClient {
     auth_GenerateTwoFactorKeyCustom(): Observable<GenerateTwoFactorKeyResponse>;
     auth_EnableTwoFactorAuthCustom(command: EnableTwoFactorAuthCommand): Observable<void>;
     auth_CompleteTwoFactorAuthEnabling(command: CompleteTwoFactorAuthEnablingCommand): Observable<void>;
+    auth_GoogleLogin(): Observable<void>;
+    auth_GoogleCallback(): Observable<void>;
 }
 
 @Injectable({
@@ -751,7 +753,7 @@ export class AuthClient implements IAuthClient {
         return _observableOf(null as any);
     }
 
-    auth_Logout(): Observable<void> {
+    auth_Logout(): Observable<LoginResultDto> {
         let url_ = this.baseUrl + "/api/auth/logout-custom";
         url_ = url_.replace(/[?&]$/, "");
 
@@ -759,6 +761,7 @@ export class AuthClient implements IAuthClient {
             observe: "response",
             responseType: "blob",
             headers: new HttpHeaders({
+                "Accept": "application/json"
             })
         };
 
@@ -769,14 +772,14 @@ export class AuthClient implements IAuthClient {
                 try {
                     return this.processAuth_Logout(response_ as any);
                 } catch (e) {
-                    return _observableThrow(e) as any as Observable<void>;
+                    return _observableThrow(e) as any as Observable<LoginResultDto>;
                 }
             } else
-                return _observableThrow(response_) as any as Observable<void>;
+                return _observableThrow(response_) as any as Observable<LoginResultDto>;
         }));
     }
 
-    protected processAuth_Logout(response: HttpResponseBase): Observable<void> {
+    protected processAuth_Logout(response: HttpResponseBase): Observable<LoginResultDto> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -785,7 +788,17 @@ export class AuthClient implements IAuthClient {
         let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
         if (status === 200) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
-            return _observableOf(null as any);
+            let result200: any = null;
+            let resultData200 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result200 = LoginResultDto.fromJS(resultData200);
+            return _observableOf(result200);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            let resultData400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result400 = LoginResultDto.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
             }));
         } else if (status !== 200 && status !== 204) {
             return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
@@ -1431,6 +1444,108 @@ export class AuthClient implements IAuthClient {
     }
 
     protected processAuth_CompleteTwoFactorAuthEnabling(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            let resultData400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result400 = Result.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    auth_GoogleLogin(): Observable<void> {
+        let url_ = this.baseUrl + "/api/auth/google-login";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processAuth_GoogleLogin(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processAuth_GoogleLogin(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processAuth_GoogleLogin(response: HttpResponseBase): Observable<void> {
+        const status = response.status;
+        const responseBlob =
+            response instanceof HttpResponse ? response.body :
+            (response as any).error instanceof Blob ? (response as any).error : undefined;
+
+        let _headers: any = {}; if (response.headers) { for (let key of response.headers.keys()) { _headers[key] = response.headers.get(key); }}
+        if (status === 200) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return _observableOf(null as any);
+            }));
+        } else if (status === 400) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            let result400: any = null;
+            let resultData400 = _responseText === "" ? null : JSON.parse(_responseText, this.jsonParseReviver);
+            result400 = Result.fromJS(resultData400);
+            return throwException("A server side error occurred.", status, _responseText, _headers, result400);
+            }));
+        } else if (status !== 200 && status !== 204) {
+            return blobToText(responseBlob).pipe(_observableMergeMap((_responseText: string) => {
+            return throwException("An unexpected server error occurred.", status, _responseText, _headers);
+            }));
+        }
+        return _observableOf(null as any);
+    }
+
+    auth_GoogleCallback(): Observable<void> {
+        let url_ = this.baseUrl + "/api/auth/google-callback";
+        url_ = url_.replace(/[?&]$/, "");
+
+        let options_ : any = {
+            observe: "response",
+            responseType: "blob",
+            headers: new HttpHeaders({
+            })
+        };
+
+        return this.http.request("get", url_, options_).pipe(_observableMergeMap((response_ : any) => {
+            return this.processAuth_GoogleCallback(response_);
+        })).pipe(_observableCatch((response_: any) => {
+            if (response_ instanceof HttpResponseBase) {
+                try {
+                    return this.processAuth_GoogleCallback(response_ as any);
+                } catch (e) {
+                    return _observableThrow(e) as any as Observable<void>;
+                }
+            } else
+                return _observableThrow(response_) as any as Observable<void>;
+        }));
+    }
+
+    protected processAuth_GoogleCallback(response: HttpResponseBase): Observable<void> {
         const status = response.status;
         const responseBlob =
             response instanceof HttpResponse ? response.body :
@@ -4221,6 +4336,7 @@ export class LoginResultDto implements ILoginResultDto {
     requires2FA?: boolean;
     user?: UserAuthDto | undefined;
     errorMessage?: string | undefined;
+    rememberMe?: boolean;
 
     constructor(data?: ILoginResultDto) {
         if (data) {
@@ -4237,6 +4353,7 @@ export class LoginResultDto implements ILoginResultDto {
             this.requires2FA = _data["requires2FA"];
             this.user = _data["user"] ? UserAuthDto.fromJS(_data["user"]) : <any>undefined;
             this.errorMessage = _data["errorMessage"];
+            this.rememberMe = _data["rememberMe"];
         }
     }
 
@@ -4253,6 +4370,7 @@ export class LoginResultDto implements ILoginResultDto {
         data["requires2FA"] = this.requires2FA;
         data["user"] = this.user ? this.user.toJSON() : <any>undefined;
         data["errorMessage"] = this.errorMessage;
+        data["rememberMe"] = this.rememberMe;
         return data;
     }
 }
@@ -4262,6 +4380,7 @@ export interface ILoginResultDto {
     requires2FA?: boolean;
     user?: UserAuthDto | undefined;
     errorMessage?: string | undefined;
+    rememberMe?: boolean;
 }
 
 export class LoginCommand implements ILoginCommand {

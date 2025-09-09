@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using SDI_Api.Application.Auth.Commands;
 using SDI_Api.Application.Auth.Queries;
@@ -12,6 +11,7 @@ using SDI_Api.Application.DTOs.Auth;
 using SDI_Api.Application.Users.Commands;
 using SDI_Api.Infrastructure.Identity;
 using SendGrid.Helpers.Errors.Model;
+using SignInResult = Microsoft.AspNetCore.Identity.SignInResult;
 
 namespace SDI_Api.Web.Endpoints;
 
@@ -21,16 +21,14 @@ namespace SDI_Api.Web.Endpoints;
 public class AuthController : ControllerBase
 {
     private readonly ISender _sender;
-    private readonly SignInManager<ApplicationUser> _signInManager;
-    private readonly UserManager<ApplicationUser> _userManager;
     private readonly IIdentityService _identityService;
+    private readonly IConfiguration _config;
     
-    public AuthController(SignInManager<ApplicationUser> signInManager, UserManager<ApplicationUser> userManager, ISender sender, IIdentityService identityService)
+    public AuthController(ISender sender, IIdentityService identityService, IConfiguration config)
     {
-        _signInManager = signInManager;
-        _userManager = userManager;
         _identityService = identityService;
         _sender = sender;
+        _config = config;
     }
     
     /// <summary>
@@ -40,9 +38,17 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     [ProducesResponseType(typeof(UserAuthDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<UserAuthDto>> RegisterUser([FromBody] RegisterUserCommand command)
+    public async Task<IActionResult> RegisterUser([FromBody] RegisterUserCommand command)
     {  
-        var newUser = await _sender.Send(command);
+        var registerResult = await _sender.Send(command);
+        if (registerResult.Succeeded == false)
+        {
+            return Ok(new SdiApiResponseDto()
+            {
+                Success = false,
+                ErrorMessage = registerResult.Errors.FirstOrDefault() ?? "Registration failed. Please try again."
+            });
+        }
         
         var loginCommand = new LoginCommand
         {
@@ -53,11 +59,12 @@ public class AuthController : ControllerBase
         };
 
         var result = await _sender.Send(loginCommand);
-        if (result.Requires2FA)
-            return Ok(result);
-        
-        if (result.Succeeded == false)
-            throw new ApplicationException();
+        if (result.Succeeded == false || result.Requires2FA)
+            return Ok(new SdiApiResponseDto()
+            {
+                Success = false,
+                ErrorMessage = result.ErrorMessage
+            });
         
         var user = result.User!;
         var claims = new List<Claim>
@@ -72,9 +79,15 @@ public class AuthController : ControllerBase
         var principal = new ClaimsPrincipal(identity);
 
         await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
-        return Ok(result);
+        return Ok(new SdiApiResponseDto()
+        {
+            Success = true,
+        });
     }
     
+    /// <summary>
+    /// TODO
+    /// </summary>
     [HttpPost("login-custom")]
     [ProducesResponseType(typeof(LoginResultDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(LoginResultDto), StatusCodes.Status400BadRequest)]
@@ -82,20 +95,30 @@ public class AuthController : ControllerBase
     {
         
         var result = await _sender.Send(command);
-
         if (result.Succeeded == false)
         {
             if (result.Requires2FA)
                 return Ok(result);
 
-            throw new UnauthorizedAccessException(result.ErrorMessage ?? "Invalid login attempt.");
+            return Ok(new LoginResultDto
+            {
+                Succeeded = false,
+                Requires2FA = false,
+                User = null,
+                ErrorMessage = "Invalid login attempt. Please check your username and password."
+            });
         }
-        
+        result.RememberMe = command.RememberMe;
         await LoginUserInfo(result);
         return Ok(result);
     }
 
+    /// <summary>
+    /// TODO
+    /// </summary>
     [HttpPost("logout-custom")]
+    [ProducesResponseType(typeof(LoginResultDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(LoginResultDto), StatusCodes.Status400BadRequest)]
     [Authorize]
     public async Task Logout()
     {
@@ -108,6 +131,9 @@ public class AuthController : ControllerBase
         }
     }
     
+    /// <summary>
+    /// TODO
+    /// </summary>
     [HttpGet("verify")]
     [ProducesResponseType(typeof(UserAuthDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -118,7 +144,17 @@ public class AuthController : ControllerBase
         var userId = HttpContext.User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)!.Value;
         var user = await _identityService.FindUserByIdAsync(userId.ToString());
         if (user == null)
-            throw new UnauthorizedAccessException();
+            /* Guardrail to prevent unauthorized access */
+            return Ok(new UserAuthDto
+            {
+                Id = null,
+                UserName = null,
+                Email = null,
+                IsEmailConfirmed = false,
+                IsAuthenticated = false,
+                Is2FAEnabled = false,
+                Roles = new List<string>()
+            });
         
         var roles = await _identityService.GetUserRolesAsync(user.getId()!);
     
@@ -129,11 +165,14 @@ public class AuthController : ControllerBase
             Email = user.getUserEmail()!,
             IsEmailConfirmed = user.isEmailConfirmed(),
             IsAuthenticated = true,
-            Is2FAEnabled = false,
+            Is2FAEnabled = user.isTwoFactorEnabled(),
             Roles = roles
         });
     }
     
+    /// <summary>
+    /// TODO
+    /// </summary>
     [HttpPost("forgot-password-custom")]
     [AllowAnonymous]
     public async Task<IActionResult> ForgotPasswordCustom([FromBody] ForgotPasswordCommand command)
@@ -142,6 +181,9 @@ public class AuthController : ControllerBase
         return Ok(result);
     }
     
+    /// <summary>
+    /// TODO
+    /// </summary>
     [HttpPost("forgot-password-confirm-email")]
     [AllowAnonymous]
     public async Task<IActionResult> ForgotPasswordConfirmEmail([FromBody] ForgotPasswordConfirmEmailCommand command)
@@ -155,6 +197,9 @@ public class AuthController : ControllerBase
         return BadRequest(result.LoginResultDto!.ErrorMessage ?? "Failed to confirm email for password reset.");
     }
     
+    /// <summary>
+    /// TODO
+    /// </summary>
     [HttpPost("reset-password-init")]
     public async Task<IActionResult> ResetPasswordInit([FromBody] ResetPasswordInitCommand command)
     {
@@ -166,6 +211,9 @@ public class AuthController : ControllerBase
         return Ok(result);
     }
     
+    /// <summary>
+    /// TODO
+    /// </summary>
     [HttpPost("reset-password-2fa-validate")]
     [AllowAnonymous]
     public async Task<IActionResult> ResetPassword2FaValidate([FromBody] ResetPassword2FaValidateCommand command)
@@ -178,11 +226,13 @@ public class AuthController : ControllerBase
         return Ok(result);
     }
     
+    /// <summary>
+    /// TODO
+    /// </summary>
     [HttpPost("validate-recovery-code")]
     [AllowAnonymous]
     public async Task<IActionResult> ValidateRecoveryCode([FromBody] ValidateRecoveryCodeCommand command)
     {
-        // TODO : try catch?
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (userId != null)
             command.UserId = userId;
@@ -191,6 +241,9 @@ public class AuthController : ControllerBase
         return Ok(result);
     }
     
+    /// <summary>
+    /// TODO
+    /// </summary>
     [HttpPost("reset-password-custom")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(Result), StatusCodes.Status400BadRequest)]
@@ -203,6 +256,9 @@ public class AuthController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>
+    /// TODO
+    /// </summary>
     [HttpPost("confirm-email-custom")]
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -217,6 +273,9 @@ public class AuthController : ControllerBase
         return Ok();
     }
     
+    /// <summary>
+    /// TODO
+    /// </summary>
     [HttpGet("resend-confirmation-email-custom")]
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -233,6 +292,9 @@ public class AuthController : ControllerBase
         return Ok(new { message = "If an account with this email exists and is unconfirmed, a new verification email has been sent." });
     }
 
+    /// <summary>
+    /// TODO
+    /// </summary>
     [HttpPost("2fa/generate-custom")]
     [Authorize]
     [ProducesResponseType(typeof(GenerateTwoFactorKeyResponse), StatusCodes.Status200OK)]
@@ -250,6 +312,9 @@ public class AuthController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>
+    /// TODO
+    /// </summary>
     [HttpPost("2fa/enable-2fa-first-step")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -262,13 +327,23 @@ public class AuthController : ControllerBase
 
         command.UserId = userId;
         var result = await _sender.Send(command);
-        
-        if (!result.Succeeded)
-            throw new ArgumentException(result.ToString());
 
-        return Ok(new { message = "Two-factor authentication has been enabled successfully." });
+        if (!result.Succeeded)
+            return Ok(new SdiApiResponseDto()
+            {
+                Success = false,
+                ErrorMessage = "Failed to enable two-factor authentication. Please try again."
+            });
+
+        return Ok(new SdiApiResponseDto()
+        {
+            Success = true,
+        });
     }
     
+    /// <summary>
+    /// TODO
+    /// </summary>
     [HttpPost("2fa/enable-confirm")]
     [Authorize]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -287,7 +362,94 @@ public class AuthController : ControllerBase
         return Ok(result);
     }
     
-    // Private methods //
+    /// //////////////////////////////////
+    /// GOOGLE AUTHENTICATION ENDPOINTS //
+    /// //////////////////////////////////
+    
+    /// <summary>
+    /// TODO
+    /// </summary>
+    [HttpGet("google-login")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(Result), StatusCodes.Status400BadRequest)]
+    public Task<IActionResult> GoogleLogin()
+    {
+        var redirectUrl = _config["Authentication:Google:RedirectUrl"];
+        if (string.IsNullOrEmpty(redirectUrl))
+            throw new ApplicationException("Google redirect url is not configured");
+        
+        var properties = _identityService.ConfigureExternalAuthenticationProperties("Google", redirectUrl).Result;
+        return Task.FromResult<IActionResult>(new ChallengeResult("Google", properties));
+    }
+
+    /// <summary>
+    /// TODO
+    /// </summary>
+    [HttpGet("google-callback")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(Result), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GoogleCallback()
+    {
+        var info = await _identityService.GetExternalLoginInfoAsync();
+        if (info == null)
+            return Ok(new LoginResultDto
+            {
+                Succeeded = false,
+                ErrorMessage = "User's Google information not available"
+            });
+        
+        var result = _identityService.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey);
+        ApplicationUser? user;
+
+        if (result.IsCompletedSuccessfully)
+            user = (ApplicationUser?)await _identityService.FindLoginAsync(info.LoginProvider, info.ProviderKey);
+        else
+        {
+            // User does not exist or is not linked. Create a new user.
+            var email = info.Principal.FindFirstValue(ClaimTypes.Email)!;
+            user = (ApplicationUser?)(await _identityService.FindUserByEmailAsync(email));
+            if (user == null)
+            {
+                // Create a new user if no one has this email
+                user = new ApplicationUser() { UserName = email, Email = email, EmailConfirmed = true };
+                var createUserResult = 
+                    await _identityService.CreateUserAsync(user.getUserEmail()!, null, user.getUsername(), null, CancellationToken.None);
+                
+                if (!createUserResult.Result.Succeeded)
+                    return Ok(new LoginResultDto
+                    {
+                        Succeeded = false,
+                        ErrorMessage = "Error creating user"
+                    });
+            }
+            
+            SignInResult addLoginResult = await _identityService.AddLoginAsync(user, info);
+            if (!addLoginResult.Succeeded)
+                return Ok(new LoginResultDto
+                {
+                    Succeeded = false,
+                    ErrorMessage = "Error logging in user"
+                });
+        }
+
+        var userAuth = new UserAuthDto(user!);
+        return await LoginUserInfo(new LoginResultDto
+        {
+            Succeeded = true,
+            Requires2FA = false,
+            User = userAuth,
+            ErrorMessage = null,
+            RememberMe = false
+        });
+    }
+
+    /// /////////////////
+    /// Private methods//
+    /// /////////////////
+    
+    /// <summary>
+    /// TODO
+    /// </summary>
     private async Task<IActionResult> LoginUserInfo(LoginResultDto result)
     {
         var user = result.User!;
@@ -300,11 +462,12 @@ public class AuthController : ControllerBase
 
         var roles = await _identityService.GetUserRolesAsync(user.Id!);
         claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
-
+        
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         var principal = new ClaimsPrincipal(identity);
+        var authProperties = new AuthenticationProperties { IsPersistent = result.RememberMe };
 
-        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
+        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal, authProperties);
         return Ok();
     }
 }

@@ -447,7 +447,24 @@
         "operationId": "Auth_Logout",
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResultDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LoginResultDto"
+                }
+              }
+            }
           }
         }
       }
@@ -823,6 +840,52 @@
           "required": true,
           "x-position": 1
         },
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Result"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/google-login": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "Auth_GoogleLogin",
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Result"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/google-callback": {
+      "get": {
+        "tags": [
+          "Auth"
+        ],
+        "operationId": "Auth_GoogleCallback",
         "responses": {
           "200": {
             "description": ""
@@ -2711,6 +2774,9 @@
           "errorMessage": {
             "type": "string",
             "nullable": true
+          },
+          "rememberMe": {
+            "type": "boolean"
           }
         }
       },

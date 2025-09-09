@@ -102,7 +102,7 @@ public static class DependencyInjection
                 options.LoginPath = "/login";
                 options.LogoutPath = "/logout";
                 options.AccessDeniedPath = "/unauthorized";
-                options.ExpireTimeSpan = TimeSpan.FromHours(12);
+                options.ExpireTimeSpan = TimeSpan.FromDays(14);
                 options.SlidingExpiration = true;
 
                 // THIS IS THE KEY PART TO PREVENT REDIRECTS
@@ -117,7 +117,8 @@ public static class DependencyInjection
                     context.Response.StatusCode = StatusCodes.Status403Forbidden;
                     return Task.CompletedTask;
                 };
-            });
+            })
+            .AddGoogle(options => builder.Configuration.GetSection("Authentication:Google").Bind(options));
 
         builder.Services
             .AddDefaultIdentity<ApplicationUser>()

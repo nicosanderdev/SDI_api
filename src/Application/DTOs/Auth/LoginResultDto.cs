@@ -6,4 +6,5 @@ public class LoginResultDto
     public bool Requires2FA { get; set; }
     public UserAuthDto? User { get; set; }
     public string? ErrorMessage { get; set; }
+    public bool RememberMe { get; set; } = false;
 }

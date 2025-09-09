@@ -21,4 +21,26 @@ public class Result
     {
         return new Result(false, errors);
     }
+    
+    // New generic factory methods
+    public static Result<T> Success<T>(T value)
+    {
+        return new Result<T>(true, Array.Empty<string>(), value);
+    }
+
+    public static Result<T> Failure<T>(IEnumerable<string> errors)
+    {
+        return new Result<T>(false, errors, default!);
+    }
+}
+
+public class Result<T> : Result
+{
+    internal Result(bool succeeded, IEnumerable<string> errors, T value)
+        : base(succeeded, errors)
+    {
+        Value = value;
+    }
+
+    public T Value { get; init; }
 }

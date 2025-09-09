@@ -1,5 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-using Microsoft.AspNetCore.Identity;
+﻿using Microsoft.AspNetCore.Identity;
 using SDI_Api.Application.Common.Interfaces;
 
 namespace SDI_Api.Infrastructure.Identity;

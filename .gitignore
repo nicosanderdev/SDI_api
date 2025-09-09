@@ -491,3 +491,7 @@ src/Web/appsettings.Development.json
 
 
 *.yml
+
+.idea/.idea.SDI_Api/.idea/
+
+*.props

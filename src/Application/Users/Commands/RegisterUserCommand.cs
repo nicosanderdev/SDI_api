@@ -1,6 +1,7 @@
 ﻿using FluentValidation.Results;
 using Microsoft.Extensions.Configuration;
 using SDI_Api.Application.Common.Interfaces;
+using SDI_Api.Application.Common.Models;
 using SDI_Api.Application.DTOs.Users;
 using SDI_Api.Domain.Entities;
 using NotFoundException = SDI_Api.Application.Common.Exceptions.NotFoundException;
@@ -8,12 +9,12 @@ using ValidationException = FluentValidation.ValidationException;
 
 namespace SDI_Api.Application.Users.Commands;
 
-public class RegisterUserCommand : IRequest<UserDto>
+public class RegisterUserCommand : IRequest<Result<UserDto>>
 {
     public required RegisterUserDto RegisterUserDto { get; set; }
 }
 
-public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, UserDto>
+public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, Result<UserDto>>
 {
     private readonly IMapper _mapper;
     private readonly IIdentityService _identityService;
@@ -40,7 +41,7 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, U
         _tokenService = tokenService;
     }
     
-    public async Task<UserDto> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
+    public async Task<Result<UserDto>> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
     {
         var (result, userId) = await _identityService.CreateUserAsync(
             request.RegisterUserDto.Email,
@@ -48,11 +49,9 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, U
             request.RegisterUserDto.FirstName,
             request.RegisterUserDto.LastName,
             cancellationToken);
-        
+
         if (!result.Succeeded)
-        {
-            throw new ValidationException(result.Errors.Select(e => new ValidationFailure(string.Empty, e)));
-        }
+            return Result.Failure<UserDto>(result.Errors);
         
         var member = new Member()
         {
@@ -67,13 +66,14 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, U
         
         var user = await _identityService.FindUserByIdAsync(userId);
         if (user is null)
-            throw new NotFoundException($"A user with the ID '{userId}' could not be found after creation.");
+            return Result.Failure<UserDto>( new List<string> { $"A user with the ID '{userId}' could not be found after creation." }); 
         
         // Send email for confirmation
         var confirmationLink = _configuration["AppUrls:ReactAppConfirmationUrl"];
         var token = _tokenService.GenerateToken(userId, user.getUserEmail()!);
+        
         if (string.IsNullOrEmpty(confirmationLink))
-            throw new InvalidOperationException("Confirmation Link is not configured in appsettings.json.");
+            return Result.Failure<UserDto>( new List<string> { "Confirmation Link is not configured in appsettings.json." });
             
         var emailBody = _emailTemplateProvider.GetConfirmationEmailBody(confirmationLink+$"?token={token}");
         await _emailService.SendEmailAsync(
@@ -83,6 +83,6 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, U
             true);
         
         var userDto = _mapper.Map<UserDto>(user);
-        return userDto;
+        return Result.Success(userDto);
     }
 }
