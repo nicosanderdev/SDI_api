@@ -495,3 +495,5 @@ src/Web/appsettings.Development.json
 .idea/.idea.SDI_Api/.idea/
 
 *.props
+
+src/Web/ClientApp/src/app/

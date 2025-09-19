@@ -40,7 +40,7 @@ public class GetUsersEstatePropertiesQueryHandler : IRequestHandler<GetUsersEsta
         {
             var dto = _mapper.Map<UsersEstatePropertyDto>(estateProperty);
             _mapper.Map(estateProperty.EstatePropertyValues.FirstOrDefault(ep => ep.IsFeatured)!, dto);
-            _mapper.Map(estateProperty.PropertyImages.Where(pi => !pi.IsDeleted), dto.PropertyImages);
+            _mapper.Map(estateProperty.PropertyImages.Where(pi => !pi.IsDeleted), dto.Images);
             estatePropertyDtos.Add(dto);
         }
         return new PaginatedResult<UsersEstatePropertyDto>(estatePropertyDtos, result.TotalCount, result.PageNumber, result.TotalPages);

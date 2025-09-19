@@ -35,7 +35,7 @@ public class GetUsersEstatePropertyQueryHandler : IRequestHandler<GetUsersEstate
         
         var dto = _mapper.Map<UsersEstatePropertyDto>(estateProperty);
         _mapper.Map(estateProperty.EstatePropertyValues.FirstOrDefault(ep => ep.IsFeatured)!, dto);
-        _mapper.Map(estateProperty.PropertyImages.Where(pi => !pi.IsDeleted), dto.PropertyImages);
+        _mapper.Map(estateProperty.PropertyImages.Where(pi => !pi.IsDeleted), dto.Images);
         return dto;
     }
 }

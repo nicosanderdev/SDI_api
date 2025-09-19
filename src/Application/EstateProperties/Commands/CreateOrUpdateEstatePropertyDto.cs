@@ -59,9 +59,7 @@ public class CreateOrUpdateEstatePropertyDto
     /// </summary>
     [FromForm(Name = "Location")]
     public string? LocationString { get; set; }
-
-    // This property will hold the deserialized object.
-    // We ignore it for model binding purposes as we will populate it manually.
+    
     [JsonIgnore]
     public LocationDto? Location { get; set; }
 
@@ -103,7 +101,9 @@ public class CreateOrUpdateEstatePropertyDto
     /// </summary>
     [Required]
     public int GarageSpaces { get; set; } = 0;
+    
     // other info
+    
     /// <summary>
     /// Maps to 'visits'.
     /// </summary>
@@ -114,16 +114,18 @@ public class CreateOrUpdateEstatePropertyDto
     public DateTime CreatedOnUtc { get; set; } = DateTime.UtcNow;
     
     // Relationships
+    
     public List<IFormFile> Documents { get; set; } = new List<IFormFile>();
     /// <summary>
-    /// Maps to 'mainImage'. This is the primary image file to be uploaded.
+    /// Maps to ID of 'Image' entity with 'isMain' set to 'true'.
     /// </summary>
-    public string? MainImageUrl { get; set; }
+    public string? MainImageId { get; set; }
+
     /// <summary>
     /// A list of DTOs representing the processed images, including their URLs.
     /// This is for reading data, not for uploading.
     /// </summary>
-    public List<IFormFile> Images { get; set; } = new List<IFormFile>();
+    public List<PropertyImageDto>? Images { get; set; } = null;
     /// <summary>
     /// A string representing the owner ID.
     /// </summary>

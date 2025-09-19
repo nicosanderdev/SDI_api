@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using System.ComponentModel.DataAnnotations;
 using SDI_Api.Application.Dtos;
+using SDI_Api.Domain.Entities;
 using SDI_Api.Domain.Enums;
 
 namespace SDI_Api.Application.DTOs.EstateProperties;
@@ -116,35 +117,24 @@ public class UsersEstatePropertyDto
     /// Represents the list of files to be uploaded.
     /// </summary>
     [Required]
-    public List<IFormFile> Images { get; set; } = new();
-    /// <summary>
-    /// Maps to 'publicDeed'. The file to be uploaded.
-    /// </summary>
-    [Required]
-    public IFormFile PublicDeed { get; set; } = null!;
-    /// <summary>
-    /// Maps to 'propertyPlans'. The file to be uploaded.
-    /// </summary>
-    [Required]
-    public IFormFile PropertyPlans { get; set; } = null!;
-    /// <summary>
-    /// Maps to 'taxReceipts'. The file to be uploaded.
-    /// </summary>
-    [Required]
-    public IFormFile TaxReceipts { get; set; } = null!;
+    public List<PropertyImageDto> Images { get; set; } = new();
     /// <summary>
     /// Maps to optional 'otherDocuments'. A list of additional files to upload.
     /// </summary>
-    public List<IFormFile>? OtherDocuments { get; set; }
+    public List<PropertyDocument>? Documents { get; set; }
     /// <summary>
     /// Maps to optional 'mainImage'. This is the primary image file to be uploaded.
     /// </summary>
     public string? MainImageId { get; set; }
-    /// <summary>
+    /* /// <summary>
     /// A list of DTOs representing the processed images, including their URLs.
     /// This is for reading data, not for uploading.
     /// </summary>
-    public List<PropertyImageDto>? PropertyImages { get; set; }
+    public List<PropertyImageDto>? PropertyImages { get; set; } */
+    
+    /// <summary>
+    /// Maps to Member's entity ID
+    /// </summary>
     public string? OwnerId { get; set; }
     
     ///////////////////////////
@@ -191,7 +181,7 @@ public class UsersEstatePropertyDto
     /// <summary>
     /// Maps to 'commonExpensesAmount'
     /// </summary>
-    public decimal? CommonExpensesAmount { get; set; }
+    public decimal? CommonExpensesValue { get; set; }
     /// <summary>
     /// Maps to 'isElectricityIncluded'.
     /// </summary>

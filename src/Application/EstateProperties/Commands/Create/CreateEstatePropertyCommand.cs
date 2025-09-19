@@ -50,27 +50,30 @@ public class CreateEstatePropertyCommandHandler : IRequestHandler<CreateEstatePr
         
         // Process Images
         var imgExtensions = new[] { ".jpg", ".jpeg", ".png" };
-        foreach (var imgFile in request.Images)
+        if (request.Images != null)
         {
-            var fileResult = await _fileStorageService.SaveFileAsync(
-                imgFile, 
-                "StoragePaths:PropertyImages",
-                imgExtensions, 
-                propertyFolderId // Group files by property
-            );
+            foreach (var imgFile in request.Images)
+            {
+                var fileResult = await _fileStorageService.SaveFileAsync(
+                    imgFile.File!, 
+                    "StoragePaths:PropertyImages",
+                    imgExtensions, 
+                    propertyFolderId
+                );
 
-            var propertyImageToAdd = new PropertyImage
-            {
-                AltText = fileResult.FileName, 
-                Url = fileResult.RelativePath
-            };
-            
-            if (fileResult.FileName == request.MainImageUrl)
-            {
-                propertyImageToAdd.IsMain = true;
-                estateProperty.MainImageId = propertyImageToAdd.Id;
+                var propertyImageToAdd = new PropertyImage
+                {
+                    AltText = fileResult.FileName, 
+                    Url = fileResult.RelativePath
+                };
+                
+                if (imgFile.IsMain != null && imgFile.IsMain.Value)
+                {
+                    propertyImageToAdd.IsMain = true;
+                    estateProperty.MainImageId = propertyImageToAdd.Id;
+                }
+                estateProperty.PropertyImages.Add(propertyImageToAdd);
             }
-            estateProperty.PropertyImages.Add(propertyImageToAdd);
         }
         
         var member = await _context.Members.FirstOrDefaultAsync(m => m.UserId.ToString() == request!.OwnerId, cancellationToken);

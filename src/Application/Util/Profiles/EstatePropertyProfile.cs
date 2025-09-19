@@ -55,7 +55,7 @@ public class EstatePropertyProfile : Profile
         CreateMap<EstateProperty, UsersEstatePropertyDto>()
             .ForMember(dest => dest.Id, opt =>
                 opt.MapFrom(src => src.Id.ToString()))
-            .ForMember(dest => dest.PropertyImages,
+            .ForMember(dest => dest.Images,
                 opt =>
                     opt.MapFrom(src => src.PropertyImages
                         .Where(pi => !pi.IsDeleted)))

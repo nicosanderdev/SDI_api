@@ -43,7 +43,8 @@ public class UpdateEstatePropertyCommandHandler : IRequestHandler<UpdateEstatePr
         
         var propertyFolderId = GetOrGeneratePropertyFolderId(entity);
         await UpdateDocumentsAsync(entity, request.Documents, propertyFolderId);
-        await UpdateImagesAsync(entity, request.Images, request.MainImageUrl, propertyFolderId);
+        List<IFormFile> images = request.Images != null ? request.Images.Select(i => i.File).ToList()! : new List<IFormFile>(); 
+        await UpdateImagesAsync(entity, images, request.MainImageId, propertyFolderId);
         UpdatePropertyValue(entity, request);
         
         await _context.SaveChangesAsync(cancellationToken);

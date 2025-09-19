@@ -191,9 +191,9 @@ public class PublicEstatePropertyDto
     /// </summary>
     public bool HasCommonExpenses { get; set; }
     /// <summary>
-    /// Maps to 'commonExpensesAmount'
+    /// Maps to 'CommonExpensesValue'
     /// </summary>
-    public decimal? CommonExpensesAmount { get; set; }
+    public decimal? CommonExpensesValue { get; set; }
     /// <summary>
     /// Maps to 'isElectricityIncluded'.
     /// </summary>

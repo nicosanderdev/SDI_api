@@ -1146,7 +1146,7 @@
                       "format": "binary"
                     }
                   },
-                  "MainImageUrl": {
+                  "MainImageId": {
                     "type": "string",
                     "nullable": true
                   },
@@ -1154,8 +1154,7 @@
                     "type": "array",
                     "nullable": true,
                     "items": {
-                      "type": "string",
-                      "format": "binary"
+                      "$ref": "#/components/schemas/PropertyImageDto"
                     }
                   },
                   "OwnerId": {
@@ -1482,7 +1481,7 @@
                       "format": "binary"
                     }
                   },
-                  "MainImageUrl": {
+                  "MainImageId": {
                     "type": "string",
                     "nullable": true
                   },
@@ -1490,8 +1489,7 @@
                     "type": "array",
                     "nullable": true,
                     "items": {
-                      "type": "string",
-                      "format": "binary"
+                      "$ref": "#/components/schemas/PropertyImageDto"
                     }
                   },
                   "OwnerId": {
@@ -2957,6 +2955,40 @@
           "twoFactorCode": {
             "type": "string",
             "nullable": true
+          }
+        }
+      },
+      "PropertyImageDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "url": {
+            "type": "string",
+            "nullable": true
+          },
+          "altText": {
+            "type": "string",
+            "nullable": true
+          },
+          "isMain": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "estatePropertyId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "nullable": true
+          },
+          "isPublic": {
+            "type": "boolean"
           }
         }
       },
