@@ -16,10 +16,10 @@ public class EstatePropertyProfile : Profile
         
         CreateMap<PropertyImage, PropertyImageDto>()
             .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.ToString()));
-        
+
         CreateMap<EstateProperty, PublicEstatePropertyDto>()
-            .ForMember(dest => dest.Images, opt => 
-                opt.MapFrom(src => src.PropertyImages));
+            .ForMember(dest => dest.Images, opt =>
+                opt.Ignore());
 
         // =================================================================
         // Mappings from DTO to ENTITY (For Writing/Updating Data)

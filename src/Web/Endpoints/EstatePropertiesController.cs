@@ -37,7 +37,6 @@ public class EstatePropertiesController : ControllerBase
     {
         var response = await _sender.Send(query);
         return Ok(response);
-
     }
     
     [AllowAnonymous]
