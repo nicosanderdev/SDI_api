@@ -28,7 +28,9 @@ public class EstatePropertyProfile : Profile
                 opt => opt.MapFrom(src =>
                     src.EstatePropertyValues.FirstOrDefault(v => v.IsFeatured)!.RentPrice))
             .ForMember(dest => dest.Description,
-                opt => opt.MapFrom(src => src.EstatePropertyValues.FirstOrDefault(v => v.IsFeatured)!.Description));
+                opt => opt.MapFrom(src => src.EstatePropertyValues.FirstOrDefault(v => v.IsFeatured)!.Description))
+            .ForMember(dest => dest.Location, opt =>
+                opt.MapFrom(src => new LocationDto { Latitude = (double)src.LocationLatitude, Longitude = (double)src.LocationLongitude }));
 
         // =================================================================
         // Mappings from DTO to ENTITY (For Writing/Updating Data)
@@ -37,7 +39,11 @@ public class EstatePropertyProfile : Profile
             .ForMember(dest => dest.PropertyImages, opt =>
                 opt.Ignore())
             .ForMember(dest => dest.Amenities, opt =>
-                opt.MapFrom(src => src.Amenities));
+                opt.MapFrom(src => src.Amenities))
+            .ForMember(dest => dest.LocationLatitude, opt =>
+                opt.MapFrom(src => src.Location!.Latitude))
+            .ForMember(dest => dest.LocationLongitude, opt =>
+                opt.MapFrom(src => src.Location!.Longitude));
 
         CreateMap<PublicEstatePropertyDto, EstatePropertyValues>()
             .ForMember(dest => dest.Description, opt =>
