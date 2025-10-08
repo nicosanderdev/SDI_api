@@ -116,6 +116,7 @@ public class CreateOrUpdateEstatePropertyDto
     // Relationships
     
     public List<IFormFile> Documents { get; set; } = new List<IFormFile>();
+    
     /// <summary>
     /// Maps to ID of 'Image' entity with 'isMain' set to 'true'.
     /// </summary>
@@ -125,7 +126,8 @@ public class CreateOrUpdateEstatePropertyDto
     /// A list of DTOs representing the processed images, including their URLs.
     /// This is for reading data, not for uploading.
     /// </summary>
-    public List<PropertyImageDto>? Images { get; set; } = null;
+    public List<PropertyImageDto>? PropertyImages { get; set; } = null;
+    
     /// <summary>
     /// A string representing the owner ID.
     /// </summary>

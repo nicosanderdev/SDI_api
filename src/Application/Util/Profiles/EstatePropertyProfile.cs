@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using Microsoft.AspNetCore.SignalR;
 using SDI_Api.Application.Dtos;
 using SDI_Api.Application.DTOs.EstateProperties;
 using SDI_Api.Application.EstateProperties.Commands;
@@ -19,25 +20,38 @@ public class EstatePropertyProfile : Profile
 
         CreateMap<EstateProperty, PublicEstatePropertyDto>()
             .ForMember(dest => dest.Images, opt =>
-                opt.Ignore());
+                opt.Ignore())
+            .ForMember(dest => dest.SalePrice,
+                opt => opt.MapFrom(src =>
+                    src.EstatePropertyValues.FirstOrDefault(v => v.IsFeatured)!.SalePrice))
+            .ForMember(dest => dest.RentPrice,
+                opt => opt.MapFrom(src =>
+                    src.EstatePropertyValues.FirstOrDefault(v => v.IsFeatured)!.RentPrice))
+            .ForMember(dest => dest.Description,
+                opt => opt.MapFrom(src => src.EstatePropertyValues.FirstOrDefault(v => v.IsFeatured)!.Description));
 
         // =================================================================
         // Mappings from DTO to ENTITY (For Writing/Updating Data)
         // =================================================================
         CreateMap<PublicEstatePropertyDto, EstateProperty>()
-            .ForMember(dest => dest.PropertyImages, opt => 
-                opt.Ignore());
+            .ForMember(dest => dest.PropertyImages, opt =>
+                opt.Ignore())
+            .ForMember(dest => dest.Amenities, opt =>
+                opt.MapFrom(src => src.Amenities));
 
         CreateMap<PublicEstatePropertyDto, EstatePropertyValues>()
             .ForMember(dest => dest.Description, opt =>
                 opt.MapFrom(src => src.Description))
-            .ForMember(dest => dest.Id, opt => opt.Ignore());
+            .ForMember(dest => dest.Id, opt =>
+                opt.Ignore());
 
         CreateMap<CreateOrUpdateEstatePropertyDto, EstateProperty>()
             .ForMember(dest => dest.PropertyImages, opt =>
                 opt.Ignore())
             .ForMember(dest => dest.Documents, opt =>
                 opt.Ignore())
+            .ForMember(dest => dest.MainImageId, opt =>
+                opt.MapFrom(src => src.MainImageId != null ? Guid.Parse(src.MainImageId!) : Guid.Empty))
             .ForMember(dest => dest.Title, opt =>
                 opt.MapFrom(src => src.Title))
             .ForMember(dest => dest.LocationLatitude, opt =>
@@ -57,17 +71,24 @@ public class EstatePropertyProfile : Profile
                 opt.MapFrom(src => src.Id.ToString()))
             .ForMember(dest => dest.Images,
                 opt =>
-                    opt.MapFrom(src => src.PropertyImages
-                        .Where(pi => !pi.IsDeleted)))
+                opt.MapFrom(src => src.PropertyImages
+                    .Where(pi => !pi.IsDeleted)))
+            .ForMember(dest => dest.Videos,
+                opt =>
+                opt.MapFrom(src => src.PropertyVideos
+                    .Where(pv => !pv.IsDeleted)))
+            .ForMember(dest => dest.Amenities,
+                opt => 
+                opt.MapFrom(src => src.Amenities))
             .ForMember(dest => dest.MainImageId,
                 opt =>
-                    opt.MapFrom(src => src.MainImageId))
+                opt.MapFrom(src => src.MainImageId))
             .ForMember(dest => dest.Location,
                 opt =>
-                    opt.MapFrom(src => new LocationDto
-                    {
-                        Latitude = (double) src.LocationLatitude, Longitude = (double) src.LocationLongitude
-                    }));
+                opt.MapFrom(src => new LocationDto
+                {
+                    Latitude = (double) src.LocationLatitude, Longitude = (double) src.LocationLongitude
+                }));
 
         CreateMap<EstatePropertyValues, UsersEstatePropertyDto>()
             .ForMember(dest => dest.Id, opt => 
@@ -80,7 +101,13 @@ public class EstatePropertyProfile : Profile
                 opt.MapFrom(src => src.Status.ToString()))
             .ForMember(dest => dest.Description, opt =>
                 opt.MapFrom(src => src.Description));
+
+        CreateMap<PropertyVideo, PropertyVideoDto>()
+            .ReverseMap();
         
+        CreateMap<Amenity, AmenityDto>()
+            .ReverseMap();
+
         /* CreateMap<CreateOrUpdatePropertyImageDto, PropertyImage>()
             .ForMember(dest => dest.Id, opt => {
                 opt.PreCondition(src => !string.IsNullOrEmpty(src.Id) && Guid.TryParse(src.Id, out _));

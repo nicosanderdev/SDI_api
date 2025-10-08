@@ -1,7 +1,8 @@
 ﻿using SDI_Api.Application.Common.Interfaces;
 using SDI_Api.Domain.Entities;
 using Ardalis.GuardClauses;
-using Microsoft.AspNetCore.Http; // Or your preferred exception library
+using Microsoft.AspNetCore.Http;
+using SDI_Api.Application.Dtos; // Or your preferred exception library
 
 namespace SDI_Api.Application.EstateProperties.Commands.Edit;
 
@@ -43,8 +44,8 @@ public class UpdateEstatePropertyCommandHandler : IRequestHandler<UpdateEstatePr
         
         var propertyFolderId = GetOrGeneratePropertyFolderId(entity);
         await UpdateDocumentsAsync(entity, request.Documents, propertyFolderId);
-        List<IFormFile> images = request.Images != null ? request.Images.Select(i => i.File).ToList()! : new List<IFormFile>(); 
-        await UpdateImagesAsync(entity, images, request.MainImageId, propertyFolderId);
+
+        await UpdateImagesAsync(entity, request.PropertyImages, request.MainImageId, propertyFolderId);
         UpdatePropertyValue(entity, request);
         
         await _context.SaveChangesAsync(cancellationToken);
@@ -53,7 +54,6 @@ public class UpdateEstatePropertyCommandHandler : IRequestHandler<UpdateEstatePr
 
     private string GetOrGeneratePropertyFolderId(EstateProperty entity)
     {
-        // Try to extract folder ID from an existing file URL
         var anyFileUrl = entity.PropertyImages.FirstOrDefault()?.Url ?? entity.Documents.FirstOrDefault()?.Url;
 
         if (!string.IsNullOrEmpty(anyFileUrl))
@@ -71,8 +71,7 @@ public class UpdateEstatePropertyCommandHandler : IRequestHandler<UpdateEstatePr
             await _fileStorageService.DeleteFileAsync(oldDoc.Url);
         _context.PropertyDocuments.RemoveRange(entity.Documents);
         entity.Documents.Clear();
-
-        // 2. Add new documents, same as in Create
+        
         var docExtensions = new[] { ".pdf", ".doc", ".docx" };
         foreach (var docFile in newDocuments)
         {
@@ -91,48 +90,98 @@ public class UpdateEstatePropertyCommandHandler : IRequestHandler<UpdateEstatePr
         }
     }
 
-    private async Task UpdateImagesAsync(EstateProperty entity, List<IFormFile> newImages, string? mainImageUrl, string propertyFolderId)
+    /// <summary>
+    /// Updates the images associated with an EstateProperty.
+    /// </summary>
+    /// <param name="entity"></param>
+    /// <param name="newImages"></param>
+    /// <param name="mainImageUrl"></param>
+    /// <param name="propertyFolderId"></param>
+    private async Task UpdateImagesAsync(EstateProperty entity, List<PropertyImageDto>? newImages, string? mainImageUrl, string propertyFolderId)
     {
-        foreach (var oldImage in entity.PropertyImages)
-            await _fileStorageService.DeleteFileAsync(oldImage.Url);
+        var incomingImageNames = newImages?.Where(img => img.File != null)
+            .Select(img => img.File!.FileName)
+            .ToHashSet() ?? new HashSet<string>();
         
-        _context.PropertyImages.RemoveRange(entity.PropertyImages);
-        entity.PropertyImages.Clear();
-        entity.MainImageId = null;
+        var imagesToDelete = entity.PropertyImages
+            .Where(img => !incomingImageNames.Contains(Path.GetFileName(img.Url)))
+            .ToList();
+        
+        foreach (var oldImage in imagesToDelete)
+        {
+            await _fileStorageService.DeleteFileAsync(oldImage.Url);
+            _context.PropertyImages.Remove(oldImage);
+        }
+        entity.PropertyImages = entity.PropertyImages.Except(imagesToDelete).ToList();
+        
+        var existingImageNames = entity.PropertyImages
+            .Select(img => Path.GetFileName(img.Url))
+            .ToHashSet();
         
         var imgExtensions = new[] { ".jpg", ".jpeg", ".png" };
-        foreach (var imgFile in newImages)
+        if (newImages != null)
         {
-            var fileResult = await _fileStorageService.SaveFileAsync(
-                imgFile, 
-                "StoragePaths:PropertyImages",
-                imgExtensions, 
-                propertyFolderId
-            );
+            foreach (var imgDto in newImages)
+            {
+                if (imgDto.File == null)
+                    continue;
+                
+                if (existingImageNames.Contains(imgDto.File.FileName))
+                    continue;
+                    
+                var fileResult = await _fileStorageService.SaveFileAsync(
+                    imgDto.File, 
+                    "StoragePaths:PropertyImages",
+                    imgExtensions, 
+                    propertyFolderId
+                );
 
-            var propertyImageToAdd = new PropertyImage
-            {
-                AltText = fileResult.FileName, 
-                Url = fileResult.RelativePath
-            };
-            
-            if (fileResult.FileName == mainImageUrl)
-            {
-                propertyImageToAdd.IsMain = true;
-                entity.MainImageId = propertyImageToAdd.Id;
+                var propertyImageToAdd = new PropertyImage
+                {
+                    AltText = imgDto.AltText ?? fileResult.FileName, 
+                    Url = fileResult.RelativePath,
+                    IsMain = fileResult.FileName == mainImageUrl || (imgDto.IsMain != null && imgDto.IsMain.Value)
+                };
+                
+                entity.PropertyImages.Add(propertyImageToAdd);
             }
-            entity.PropertyImages.Add(propertyImageToAdd);
         }
 
-        // Ensure one image is marked as main
-        if (!entity.PropertyImages.Any(i => i.IsMain) && entity.PropertyImages.Any())
+        // Now set IsMain flags and MainImageId after all images are added
+        if (!string.IsNullOrEmpty(mainImageUrl))
         {
+            foreach (var img in entity.PropertyImages)
+                img.IsMain = false;
+            
+            var mainImage = entity.PropertyImages
+                .FirstOrDefault(img => Path.GetFileName(img.Url) == mainImageUrl);
+            
+            if (mainImage != null)
+            {
+                mainImage.IsMain = true;
+            }
+        }
+        
+        // Set MainImageId only after determining which image is main
+        var mainImageEntity = entity.PropertyImages.FirstOrDefault(i => i.IsMain);
+        if (mainImageEntity != null)
+        {
+            entity.MainImageId = mainImageEntity.Id;
+        }
+        else if (entity.PropertyImages.Any())
+        {
+            // If no main image is set, make the first one main
             var firstImage = entity.PropertyImages.First();
             firstImage.IsMain = true;
             entity.MainImageId = firstImage.Id;
         }
+        else
+        {
+            entity.MainImageId = null;
+        }
     }
-    
+
+
     /// <summary>
     /// Manages the single EstatePropertyValue associated with an EstateProperty.
     /// It creates, updates, or deletes the value object based on the provided DTO.

@@ -35,15 +35,38 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
                 .HasForeignKey(pi => pi.EstatePropertyId)
                 .OnDelete(DeleteBehavior.Cascade); // Or Restrict, SetNull
 
+            entity.HasMany(e => e.PropertyVideos)
+                .WithOne(pv => pv.EstateProperty)
+                .HasForeignKey(pi => pi.EstatePropertyId)
+                .OnDelete(DeleteBehavior.Cascade);
+            
             entity.HasMany(e => e.EstatePropertyValues)
                 .WithOne(pd => pd.EstateProperty)
                 .HasForeignKey(pd => pd.EstatePropertyId)
                 .OnDelete(DeleteBehavior.Cascade);
+            
+            entity.HasMany(e => e.Amenities)
+                .WithMany(a => a.EstateProperties)
+                .UsingEntity<Dictionary<string, object>>(
+                    "EstatePropertyAmenity",
+                    j => j.HasOne<Amenity>().WithMany().HasForeignKey("AmenityId").OnDelete(DeleteBehavior.Cascade),
+                    j => j.HasOne<EstateProperty>().WithMany().HasForeignKey("EstatePropertyId").OnDelete(DeleteBehavior.Cascade),
+                    j =>
+                    {
+                        j.HasKey("EstatePropertyId", "AmenityId");
+                        j.ToTable("EstatePropertyAmenities");
+                    });
+
         });
 
         builder.Entity<PropertyImage>(entity =>
         {
             // PropertyImage is owned by EstateProperty
+        });
+        
+        builder.Entity<PropertyVideo>(entity =>
+        {
+            // PropertyVideo is owned by EstateProperty
         });
 
         builder.Entity<EstatePropertyValues>(entity =>
@@ -51,6 +74,11 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
             // EstatePropertyDescription is owned by EstateProperty
         });
 
+        builder.Entity<Amenity>(entity =>
+        {
+            // Aminities is owned by EstateProperty
+        });
+        
         // Consider adding indexes to PropertyVisitLog.VisitedOnUtc, PropertyVisitLog.PropertyId,
         // PropertyMessageLog.SentOnUtc, PropertyMessageLog.PropertyId for performance.
         builder.Entity<PropertyVisitLog>(entity =>

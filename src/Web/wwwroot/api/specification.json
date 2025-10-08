@@ -1150,7 +1150,7 @@
                     "type": "string",
                     "nullable": true
                   },
-                  "Images": {
+                  "PropertyImages": {
                     "type": "array",
                     "nullable": true,
                     "items": {
@@ -1485,7 +1485,7 @@
                     "type": "string",
                     "nullable": true
                   },
-                  "Images": {
+                  "PropertyImages": {
                     "type": "array",
                     "nullable": true,
                     "items": {
@@ -2981,6 +2981,10 @@
           "estatePropertyId": {
             "type": "string",
             "format": "guid"
+          },
+          "fileName": {
+            "type": "string",
+            "nullable": true
           },
           "file": {
             "type": "string",
