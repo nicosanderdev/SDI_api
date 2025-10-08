@@ -50,9 +50,9 @@ public class CreateEstatePropertyCommandHandler : IRequestHandler<CreateEstatePr
         
         // Process Images
         var imgExtensions = new[] { ".jpg", ".jpeg", ".png" };
-        if (request.Images != null)
+        if (request.PropertyImages != null)
         {
-            foreach (var imgFile in request.Images)
+            foreach (var imgFile in request.PropertyImages)
             {
                 var fileResult = await _fileStorageService.SaveFileAsync(
                     imgFile.File!, 

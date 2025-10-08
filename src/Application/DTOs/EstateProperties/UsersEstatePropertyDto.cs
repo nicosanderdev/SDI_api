@@ -133,6 +133,16 @@ public class UsersEstatePropertyDto
     public List<PropertyImageDto>? PropertyImages { get; set; } */
     
     /// <summary>
+    /// Maps to optional 'videos'. A list of additional files to upload.
+    /// </summary>
+    public List<PropertyVideoDto>? Videos { get; set; }
+    
+    /// <summary>
+    /// Maps to optional 'amenities'.
+    /// </summary>
+    public List<AmenityDto>? Amenities { get; set; }
+    
+    /// <summary>
     /// Maps to Member's entity ID
     /// </summary>
     public string? OwnerId { get; set; }
