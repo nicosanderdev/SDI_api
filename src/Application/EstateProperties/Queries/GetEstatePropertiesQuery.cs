@@ -58,6 +58,25 @@ public class GetEstatePropertiesQueryHandler : IRequestHandler<GetEstateProperti
             );
         }
         
+        if (filter.SwLat.HasValue && filter.SwLng.HasValue && filter.NeLat.HasValue && filter.NeLng.HasValue)
+        {
+            var swLat = (decimal)filter.SwLat.Value;
+            var swLng = (decimal)filter.SwLng.Value;
+            var neLat = (decimal)filter.NeLat.Value;
+            var neLng = (decimal)filter.NeLng.Value;
+            
+            query = query.Where(p => p.LocationLatitude >= swLat && p.LocationLatitude <= neLat);
+            
+            if (swLng <= neLng)
+            {
+                query = query.Where(p => p.LocationLongitude >= swLng && p.LocationLongitude <= neLng);
+            }
+            else
+            {
+                query = query.Where(p => p.LocationLongitude >= swLng || p.LocationLongitude <= neLng);
+            }
+        }
+        
         query = query.OrderByDescending(p => p.Created);
         var result = await PaginatedResult<EstateProperty>.CreateAsync(query, request.PageNumber, request.PageSize);
         var estatePropertyDtos = _mapper.Map<List<PublicEstatePropertyDto>>(result.Items);

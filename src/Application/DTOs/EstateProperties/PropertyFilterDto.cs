@@ -8,4 +8,10 @@ public class PropertyFilterDto
     public DateTime? CreatedBefore { get; set; }
     public string? Status { get; set; }
     public string? SearchTerm { get; set; }
+
+    // Optional bounding box coordinates (south-west and north-east corners)
+    public float? SwLat { get; set; }
+    public float? SwLng { get; set; }
+    public float? NeLat { get; set; }
+    public float? NeLng { get; set; }
 }

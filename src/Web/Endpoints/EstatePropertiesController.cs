@@ -30,10 +30,10 @@ public class EstatePropertiesController : ControllerBase
     }
 
     [AllowAnonymous]
-    [HttpGet]
+    [HttpPost]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> GetEstateProperties([FromQuery] GetEstatePropertiesQuery query)
+    public async Task<IActionResult> GetEstateProperties([FromBody] GetEstatePropertiesQuery query)
     {
         var response = await _sender.Send(query);
         return Ok(response);
