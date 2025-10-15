@@ -115,7 +115,7 @@ public class CreateOrUpdateEstatePropertyDto
     
     // Relationships
     
-    public List<IFormFile> Documents { get; set; } = new List<IFormFile>();
+    public List<PropertyDocumentDto>? PropertyDocuments { get; set; } = new List<PropertyDocumentDto>();
     
     /// <summary>
     /// Maps to ID of 'Image' entity with 'isMain' set to 'true'.

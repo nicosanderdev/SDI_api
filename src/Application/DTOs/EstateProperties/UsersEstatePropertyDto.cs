@@ -117,20 +117,17 @@ public class UsersEstatePropertyDto
     /// Represents the list of files to be uploaded.
     /// </summary>
     [Required]
-    public List<PropertyImageDto> Images { get; set; } = new();
+    public List<PropertyImageDto> PropertyImages { get; set; } = new();
+    
     /// <summary>
-    /// Maps to optional 'otherDocuments'. A list of additional files to upload.
+    /// Maps to optional 'propertyDocuments'. A list of additional files to upload.
     /// </summary>
-    public List<PropertyDocument>? Documents { get; set; }
+    public List<PropertyDocumentDto>? PropertyDocuments { get; set; }
+    
     /// <summary>
     /// Maps to optional 'mainImage'. This is the primary image file to be uploaded.
     /// </summary>
     public string? MainImageId { get; set; }
-    /* /// <summary>
-    /// A list of DTOs representing the processed images, including their URLs.
-    /// This is for reading data, not for uploading.
-    /// </summary>
-    public List<PropertyImageDto>? PropertyImages { get; set; } */
     
     /// <summary>
     /// Maps to optional 'videos'. A list of additional files to upload.

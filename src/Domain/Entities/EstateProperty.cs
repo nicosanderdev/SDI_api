@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Data.Common;
 
 namespace SDI_Api.Domain.Entities;
@@ -39,7 +40,7 @@ public class EstateProperty : BaseAuditableEntity
     public int? Visits { get; set; }
     
     // Relationships
-    public List<PropertyDocument> Documents { get; set; } = new List<PropertyDocument>();
+    public List<PropertyDocument> PropertyDocuments { get; set; } = new List<PropertyDocument>();
     public Guid? MainImageId { get; set; }
     public virtual ICollection<PropertyImage> PropertyImages { get; set; } = new List<PropertyImage>();
     public virtual ICollection<PropertyVideo> PropertyVideos { get; set; } = new List<PropertyVideo>();

@@ -1053,7 +1053,6 @@
           "content": {
             "multipart/form-data": {
               "schema": {
-                "type": "object",
                 "properties": {
                   "Id": {
                     "type": "string",
@@ -1138,12 +1137,11 @@
                     "type": "string",
                     "format": "date-time"
                   },
-                  "Documents": {
+                  "PropertyDocuments": {
                     "type": "array",
                     "nullable": true,
                     "items": {
-                      "type": "string",
-                      "format": "binary"
+                      "$ref": "#/components/schemas/PropertyDocumentDto"
                     }
                   },
                   "MainImageId": {
@@ -1388,7 +1386,6 @@
           "content": {
             "multipart/form-data": {
               "schema": {
-                "type": "object",
                 "properties": {
                   "Id": {
                     "type": "string",
@@ -1473,12 +1470,11 @@
                     "type": "string",
                     "format": "date-time"
                   },
-                  "Documents": {
+                  "PropertyDocuments": {
                     "type": "array",
                     "nullable": true,
                     "items": {
-                      "type": "string",
-                      "format": "binary"
+                      "$ref": "#/components/schemas/PropertyDocumentDto"
                     }
                   },
                   "MainImageId": {
@@ -2955,6 +2951,40 @@
           "twoFactorCode": {
             "type": "string",
             "nullable": true
+          }
+        }
+      },
+      "PropertyDocumentDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "url": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "fileName": {
+            "type": "string",
+            "nullable": true
+          },
+          "estatePropertyId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "nullable": true
+          },
+          "isPublic": {
+            "type": "boolean"
           }
         }
       },

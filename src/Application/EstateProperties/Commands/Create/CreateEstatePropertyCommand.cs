@@ -32,19 +32,21 @@ public class CreateEstatePropertyCommandHandler : IRequestHandler<CreateEstatePr
 
         // Process Documents
         var docExtensions = new[] { ".pdf", ".doc", ".docx" };
-        foreach (var docFile in request!.Documents)
+        foreach (var docDto in request!.PropertyDocuments!)
         {
             var fileResult = await _fileStorageService.SaveFileAsync(
-                docFile, 
+                docDto.File!, 
                 "StoragePaths:PropertyDocuments",
                 docExtensions, 
                 propertyFolderId
             );
             
-            estateProperty.Documents.Add(new PropertyDocument {
+            estateProperty.PropertyDocuments.Add(new PropertyDocument {
                 Name = fileResult.FileName,
+                EstatePropertyId = request.Id,
                 FileType = fileResult.ContentType,
-                Url = fileResult.RelativePath
+                Url = fileResult.RelativePath,
+                IsPublic = docDto.IsPublic
             });
         }
         

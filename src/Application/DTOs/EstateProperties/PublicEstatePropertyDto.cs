@@ -146,6 +146,12 @@ public class PublicEstatePropertyDto
     public List<PropertyImageDto>? PropertyImages { get; set; }
     
     /// <summary>
+    /// A list of DTOs representing the processed documents, including their URLs.
+    /// This is for reading data, not for uploading.
+    /// </summary>
+    public List<PropertyDocumentDto>? PropertyDocuments { get; set; }
+    
+    /// <summary>
     /// A list of DTOs representing the processed videos, including their URLs.
     /// This is for reading data, not for uploading.
     /// </summary>

@@ -2,7 +2,8 @@
 using SDI_Api.Domain.Entities;
 using Ardalis.GuardClauses;
 using Microsoft.AspNetCore.Http;
-using SDI_Api.Application.Dtos; // Or your preferred exception library
+using SDI_Api.Application.Dtos;
+using SDI_Api.Application.DTOs.EstateProperties; // Or your preferred exception library
 
 namespace SDI_Api.Application.EstateProperties.Commands.Edit;
 
@@ -33,7 +34,7 @@ public class UpdateEstatePropertyCommandHandler : IRequestHandler<UpdateEstatePr
 
         var entity = await _context.EstateProperties
             .Include(p => p.PropertyImages)
-            .Include(p => p.Documents)
+            .Include(p => p.PropertyDocuments)
             .Include(p => p.EstatePropertyValues)
             .FirstOrDefaultAsync(p => p.Id == request.Id, cancellationToken);
 
@@ -41,52 +42,76 @@ public class UpdateEstatePropertyCommandHandler : IRequestHandler<UpdateEstatePr
             throw new NotFoundException(nameof(EstateProperty), request.Id.ToString());
         
         _mapper.Map(request, entity);
-        
-        var propertyFolderId = GetOrGeneratePropertyFolderId(entity);
-        await UpdateDocumentsAsync(entity, request.Documents, propertyFolderId);
 
-        await UpdateImagesAsync(entity, request.PropertyImages, request.MainImageId, propertyFolderId);
+        var propertyFolderId = entity.Id.ToString();
+        await UpdateDocumentsAsync(entity, request.PropertyDocuments, propertyFolderId!);
+
+        await UpdateImagesAsync(entity, request.PropertyImages, request.MainImageId, propertyFolderId!);
         UpdatePropertyValue(entity, request);
         
         await _context.SaveChangesAsync(cancellationToken);
         return Unit.Value;
     }
 
-    private string GetOrGeneratePropertyFolderId(EstateProperty entity)
+    private async Task UpdateDocumentsAsync(EstateProperty entity, List<PropertyDocumentDto>? newDocuments, string propertyFolderId)
     {
-        var anyFileUrl = entity.PropertyImages.FirstOrDefault()?.Url ?? entity.Documents.FirstOrDefault()?.Url;
-
-        if (!string.IsNullOrEmpty(anyFileUrl))
+        var incomingDocumentsIds = newDocuments?
+            .Where(img => !string.IsNullOrWhiteSpace(img.Id))
+            .Select(img => img.Id!)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase) ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        
+        var documentsToDelete = entity.PropertyDocuments
+            .Where(img => !incomingDocumentsIds.Contains(img.Id.ToString()))
+            .ToList();
+        
+        foreach (var oldDocument in documentsToDelete)
         {
-            var pathSegments = anyFileUrl.Split(new[] { '/', '\\' });
-            if (pathSegments.Length >= 2)
-                return pathSegments[pathSegments.Length - 2];
+            await _fileStorageService.DeleteFileAsync(oldDocument.Url);
+            _context.PropertyDocuments.Remove(oldDocument);
         }
-        return Guid.NewGuid().ToString();
-    }
-
-    private async Task UpdateDocumentsAsync(EstateProperty entity, List<IFormFile> newDocuments, string propertyFolderId)
-    {
-        foreach (var oldDoc in entity.Documents)
-            await _fileStorageService.DeleteFileAsync(oldDoc.Url);
-        _context.PropertyDocuments.RemoveRange(entity.Documents);
-        entity.Documents.Clear();
+        entity.PropertyDocuments = entity.PropertyDocuments.Except(documentsToDelete).ToList();
+        
+        
+        var existingDbDocumentsIds = entity.PropertyDocuments
+            .Select(doc => doc.Id.ToString())
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
         
         var docExtensions = new[] { ".pdf", ".doc", ".docx" };
-        foreach (var docFile in newDocuments)
+        if (newDocuments != null)
         {
-            var fileResult = await _fileStorageService.SaveFileAsync(
-                docFile, 
-                "StoragePaths:PropertyDocuments",
-                docExtensions, 
-                propertyFolderId
-            );
-            
-            entity.Documents.Add(new PropertyDocument {
-                Name = fileResult.FileName,
-                FileType = fileResult.ContentType,
-                Url = fileResult.RelativePath
-            });
+            var newPropertyDocuments = new List<PropertyDocument>();
+            foreach (var docFile in newDocuments)
+            {
+                if (docFile.File == null)
+                    continue;
+                
+                if (!string.IsNullOrWhiteSpace(docFile.Id) && existingDbDocumentsIds.Contains(docFile.Id))
+                    continue;
+                
+                var fileResult = await _fileStorageService.SaveFileAsync(
+                    docFile.File, 
+                    "StoragePaths:PropertyDocuments",
+                    docExtensions, 
+                    propertyFolderId
+                );
+                
+                Guid parsedId;
+                Guid.TryParse(docFile.Id, out parsedId);
+                var propertyDocumentsToAdd = new PropertyDocument
+                {
+                    Id = parsedId,
+                    Name = docFile.Name,
+                    Url = fileResult.RelativePath,
+                    EstateProperty = entity
+                };
+                
+                entity.PropertyDocuments.Add(propertyDocumentsToAdd);
+                newPropertyDocuments.Add(propertyDocumentsToAdd);
+            }
+            if (newPropertyDocuments.Count > 0)
+            {
+                _context.PropertyDocuments.AddRange(newPropertyDocuments);
+            }
         }
     }
 
@@ -99,12 +124,13 @@ public class UpdateEstatePropertyCommandHandler : IRequestHandler<UpdateEstatePr
     /// <param name="propertyFolderId"></param>
     private async Task UpdateImagesAsync(EstateProperty entity, List<PropertyImageDto>? newImages, string? mainImageUrl, string propertyFolderId)
     {
-        var incomingImageNames = newImages?.Where(img => img.File != null)
-            .Select(img => img.File!.FileName)
-            .ToHashSet() ?? new HashSet<string>();
+        var incomingImageIds = newImages?
+            .Where(img => !string.IsNullOrWhiteSpace(img.Id))
+            .Select(img => img.Id!)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase) ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         
         var imagesToDelete = entity.PropertyImages
-            .Where(img => !incomingImageNames.Contains(Path.GetFileName(img.Url)))
+            .Where(img => !incomingImageIds.Contains(img.Id.ToString()))
             .ToList();
         
         foreach (var oldImage in imagesToDelete)
@@ -114,40 +140,49 @@ public class UpdateEstatePropertyCommandHandler : IRequestHandler<UpdateEstatePr
         }
         entity.PropertyImages = entity.PropertyImages.Except(imagesToDelete).ToList();
         
-        var existingImageNames = entity.PropertyImages
-            .Select(img => Path.GetFileName(img.Url))
-            .ToHashSet();
+        var existingDbImageIds = entity.PropertyImages
+            .Select(img => img.Id.ToString())
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
         
         var imgExtensions = new[] { ".jpg", ".jpeg", ".png" };
         if (newImages != null)
         {
+            var newPropertyImages = new List<PropertyImage>();
             foreach (var imgDto in newImages)
             {
                 if (imgDto.File == null)
                     continue;
                 
-                if (existingImageNames.Contains(imgDto.File.FileName))
+                if (!string.IsNullOrWhiteSpace(imgDto.Id) && existingDbImageIds.Contains(imgDto.Id))
                     continue;
-                    
+                
                 var fileResult = await _fileStorageService.SaveFileAsync(
                     imgDto.File, 
                     "StoragePaths:PropertyImages",
                     imgExtensions, 
                     propertyFolderId
                 );
-
+                
+                Guid parsedId;
+                Guid.TryParse(imgDto.Id, out parsedId);
                 var propertyImageToAdd = new PropertyImage
                 {
-                    AltText = imgDto.AltText ?? fileResult.FileName, 
+                    Id = parsedId,
+                    AltText = imgDto.AltText,
                     Url = fileResult.RelativePath,
-                    IsMain = fileResult.FileName == mainImageUrl || (imgDto.IsMain != null && imgDto.IsMain.Value)
+                    IsMain = imgDto.IsMain ?? false,
+                    EstateProperty = entity
                 };
                 
                 entity.PropertyImages.Add(propertyImageToAdd);
+                newPropertyImages.Add(propertyImageToAdd);
+            }
+            if (newPropertyImages.Count > 0)
+            {
+                _context.PropertyImages.AddRange(newPropertyImages);
             }
         }
-
-        // Now set IsMain flags and MainImageId after all images are added
+        
         if (!string.IsNullOrEmpty(mainImageUrl))
         {
             foreach (var img in entity.PropertyImages)
@@ -157,9 +192,7 @@ public class UpdateEstatePropertyCommandHandler : IRequestHandler<UpdateEstatePr
                 .FirstOrDefault(img => Path.GetFileName(img.Url) == mainImageUrl);
             
             if (mainImage != null)
-            {
                 mainImage.IsMain = true;
-            }
         }
         
         // Set MainImageId only after determining which image is main

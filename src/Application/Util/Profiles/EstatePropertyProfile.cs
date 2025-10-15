@@ -18,6 +18,9 @@ public class EstatePropertyProfile : Profile
         CreateMap<PropertyImage, PropertyImageDto>()
             .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.ToString()));
 
+        CreateMap<PropertyDocument, PropertyDocumentDto>()
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.ToString()));
+        
         CreateMap<EstateProperty, PublicEstatePropertyDto>()
             .ForMember(dest => dest.Images, opt =>
                 opt.Ignore())
@@ -48,7 +51,7 @@ public class EstatePropertyProfile : Profile
         CreateMap<CreateOrUpdateEstatePropertyDto, EstateProperty>()
             .ForMember(dest => dest.PropertyImages, opt =>
                 opt.Ignore())
-            .ForMember(dest => dest.Documents, opt =>
+            .ForMember(dest => dest.PropertyDocuments, opt =>
                 opt.Ignore())
             .ForMember(dest => dest.MainImageId, opt =>
                 opt.MapFrom(src => src.MainImageId != null ? Guid.Parse(src.MainImageId!) : Guid.Empty))
@@ -69,7 +72,7 @@ public class EstatePropertyProfile : Profile
         CreateMap<EstateProperty, UsersEstatePropertyDto>()
             .ForMember(dest => dest.Id, opt =>
                 opt.MapFrom(src => src.Id.ToString()))
-            .ForMember(dest => dest.Images,
+            .ForMember(dest => dest.PropertyImages,
                 opt =>
                 opt.MapFrom(src => src.PropertyImages
                     .Where(pi => !pi.IsDeleted)))

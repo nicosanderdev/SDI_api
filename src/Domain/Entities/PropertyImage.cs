@@ -13,9 +13,4 @@ public class PropertyImage : BaseAuditableEntity
 
     public Guid EstatePropertyId { get; set; }
     public virtual EstateProperty EstateProperty { get; set; } = null!;
-
-    public PropertyImage()
-    {
-        Id = Guid.NewGuid();
-    }
 }
