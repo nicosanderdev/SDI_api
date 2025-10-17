@@ -142,4 +142,13 @@ public class EstatePropertiesController : ControllerBase
         await _sender.Send(new DeleteEstatePropertyCommand(guidId));
         return NoContent();
     }
+
+    [HttpGet("amenities")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetAllAmenities()
+    {
+        var result = await _sender.Send(new GetAllAmenitiesQuery());
+        return Ok(result);
+    }
 }

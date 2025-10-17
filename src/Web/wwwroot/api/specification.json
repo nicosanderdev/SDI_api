@@ -1155,6 +1155,13 @@
                       "$ref": "#/components/schemas/PropertyImageDto"
                     }
                   },
+                  "PropertyVideos": {
+                    "type": "array",
+                    "nullable": true,
+                    "items": {
+                      "$ref": "#/components/schemas/PropertyVideoDto"
+                    }
+                  },
                   "OwnerId": {
                     "type": "string",
                     "nullable": true
@@ -1488,6 +1495,13 @@
                       "$ref": "#/components/schemas/PropertyImageDto"
                     }
                   },
+                  "PropertyVideos": {
+                    "type": "array",
+                    "nullable": true,
+                    "items": {
+                      "$ref": "#/components/schemas/PropertyVideoDto"
+                    }
+                  },
                   "OwnerId": {
                     "type": "string",
                     "nullable": true
@@ -1553,6 +1567,29 @@
             }
           }
         },
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/properties/amenities": {
+      "get": {
+        "tags": [
+          "EstateProperties"
+        ],
+        "operationId": "EstateProperties_GetAllAmenities",
         "responses": {
           "200": {
             "description": ""
@@ -3020,6 +3057,35 @@
             "type": "string",
             "format": "binary",
             "nullable": true
+          },
+          "isPublic": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PropertyVideoDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "url": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "estatePropertyId": {
+            "type": "string",
+            "format": "guid"
           },
           "isPublic": {
             "type": "boolean"

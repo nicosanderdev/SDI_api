@@ -13,6 +13,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<EstateProperty> EstateProperties => Set<EstateProperty>();
     public DbSet<EstatePropertyValues> EstatePropertyValues => Set<EstatePropertyValues>();
     public DbSet<PropertyImage> PropertyImages => Set<PropertyImage>();
+    public DbSet<PropertyVideo> PropertyVideos => Set<PropertyVideo>();
+    public DbSet<PropertyDocument> PropertyDocuments => Set<PropertyDocument>();
     public DbSet<MessageThread> MessageThreads => Set<MessageThread>();
     public DbSet<Message> Messages => Set<Message>();
     public DbSet<MessageRecipient> MessageRecipients => Set<MessageRecipient>();
@@ -20,7 +22,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<PropertyMessageLog> PropertyMessageLogs => Set<PropertyMessageLog>();
     public DbSet<Member> Members => Set<Member>();
     public DbSet<RecoveryCode> RecoveryCodes => Set<RecoveryCode>();
-    public DbSet<PropertyDocument> PropertyDocuments => Set<PropertyDocument>();
+    public DbSet<Amenity> Amenities => Set<Amenity>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -36,6 +38,11 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
                 .OnDelete(DeleteBehavior.Cascade); // Or Restrict, SetNull
 
             entity.HasMany(e => e.PropertyVideos)
+                .WithOne(pv => pv.EstateProperty)
+                .HasForeignKey(pi => pi.EstatePropertyId)
+                .OnDelete(DeleteBehavior.Cascade);
+            
+            entity.HasMany(e => e.PropertyDocuments)
                 .WithOne(pv => pv.EstateProperty)
                 .HasForeignKey(pi => pi.EstatePropertyId)
                 .OnDelete(DeleteBehavior.Cascade);

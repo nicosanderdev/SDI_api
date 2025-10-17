@@ -132,7 +132,7 @@ public class UsersEstatePropertyDto
     /// <summary>
     /// Maps to optional 'videos'. A list of additional files to upload.
     /// </summary>
-    public List<PropertyVideoDto>? Videos { get; set; }
+    public List<PropertyVideoDto>? PropertyVideos { get; set; }
     
     /// <summary>
     /// Maps to optional 'amenities'.

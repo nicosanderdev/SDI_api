@@ -35,6 +35,7 @@ public class UpdateEstatePropertyCommandHandler : IRequestHandler<UpdateEstatePr
         var entity = await _context.EstateProperties
             .Include(p => p.PropertyImages)
             .Include(p => p.PropertyDocuments)
+            .Include(p => p.PropertyVideos)
             .Include(p => p.EstatePropertyValues)
             .FirstOrDefaultAsync(p => p.Id == request.Id, cancellationToken);
 
@@ -45,8 +46,8 @@ public class UpdateEstatePropertyCommandHandler : IRequestHandler<UpdateEstatePr
 
         var propertyFolderId = entity.Id.ToString();
         await UpdateDocumentsAsync(entity, request.PropertyDocuments, propertyFolderId!);
-
         await UpdateImagesAsync(entity, request.PropertyImages, request.MainImageId, propertyFolderId!);
+        await UpdateVideosAsync(entity, request.PropertyVideos);
         UpdatePropertyValue(entity, request);
         
         await _context.SaveChangesAsync(cancellationToken);
@@ -70,7 +71,6 @@ public class UpdateEstatePropertyCommandHandler : IRequestHandler<UpdateEstatePr
             _context.PropertyDocuments.Remove(oldDocument);
         }
         entity.PropertyDocuments = entity.PropertyDocuments.Except(documentsToDelete).ToList();
-        
         
         var existingDbDocumentsIds = entity.PropertyDocuments
             .Select(doc => doc.Id.ToString())
@@ -97,13 +97,11 @@ public class UpdateEstatePropertyCommandHandler : IRequestHandler<UpdateEstatePr
                 
                 Guid parsedId;
                 Guid.TryParse(docFile.Id, out parsedId);
-                var propertyDocumentsToAdd = new PropertyDocument
-                {
-                    Id = parsedId,
-                    Name = docFile.Name,
-                    Url = fileResult.RelativePath,
-                    EstateProperty = entity
-                };
+                var propertyDocumentsToAdd = _mapper.Map<PropertyDocument>(docFile);
+                propertyDocumentsToAdd.Id = parsedId;
+                propertyDocumentsToAdd.Url = fileResult.RelativePath;
+                propertyDocumentsToAdd.EstatePropertyId = entity.Id;
+                propertyDocumentsToAdd.EstateProperty = entity;
                 
                 entity.PropertyDocuments.Add(propertyDocumentsToAdd);
                 newPropertyDocuments.Add(propertyDocumentsToAdd);
@@ -165,14 +163,11 @@ public class UpdateEstatePropertyCommandHandler : IRequestHandler<UpdateEstatePr
                 
                 Guid parsedId;
                 Guid.TryParse(imgDto.Id, out parsedId);
-                var propertyImageToAdd = new PropertyImage
-                {
-                    Id = parsedId,
-                    AltText = imgDto.AltText,
-                    Url = fileResult.RelativePath,
-                    IsMain = imgDto.IsMain ?? false,
-                    EstateProperty = entity
-                };
+                var propertyImageToAdd = _mapper.Map<PropertyImage>(imgDto);
+                propertyImageToAdd.Id = parsedId;
+                propertyImageToAdd.Url = fileResult.RelativePath;
+                propertyImageToAdd.EstatePropertyId = entity.Id;
+                propertyImageToAdd.EstateProperty = entity;
                 
                 entity.PropertyImages.Add(propertyImageToAdd);
                 newPropertyImages.Add(propertyImageToAdd);
@@ -213,8 +208,64 @@ public class UpdateEstatePropertyCommandHandler : IRequestHandler<UpdateEstatePr
             entity.MainImageId = null;
         }
     }
-
-
+    
+    private Task UpdateVideosAsync(EstateProperty entity, List<PropertyVideoDto>? newVideos)
+    {
+        var incomingVideoIds = newVideos?
+            .Where(v => !string.IsNullOrWhiteSpace(v.Id))
+            .Select(v => v.Id!)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase) ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        
+        var videosToDelete = entity.PropertyVideos
+            .Where(v => !incomingVideoIds.Contains(v.Id.ToString()))
+            .ToList();
+        
+        foreach (var oldVideo in videosToDelete)
+        {
+            _context.PropertyVideos.Remove(oldVideo);
+        }
+        entity.PropertyVideos = entity.PropertyVideos.Except(videosToDelete).ToList();
+        
+        var existingDbVideoIds = entity.PropertyVideos
+            .Select(v => v.Id.ToString())
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        
+        if (newVideos != null)
+        {
+            var newPropertyVideos = new List<PropertyVideo>();
+            foreach (var videoDto in newVideos)
+            {
+                if (!string.IsNullOrWhiteSpace(videoDto.Id) && existingDbVideoIds.Contains(videoDto.Id))
+                {
+                    var existing = entity.PropertyVideos.FirstOrDefault(v => v.Id.ToString() == videoDto.Id);
+                    if (existing != null)
+                    {
+                        if (!string.IsNullOrWhiteSpace(videoDto.Url))
+                            existing.Url = videoDto.Url!;
+                        existing.Description = videoDto.Description;
+                    }
+                    continue;
+                }
+                
+                if (!existingDbVideoIds.Contains(videoDto.Id!))
+                {
+                    Guid.TryParse(videoDto.Id, out var parsedId);
+                    var videoToAdd = _mapper.Map<PropertyVideo>(videoDto);
+                    videoToAdd.Id = parsedId;
+                    videoToAdd.EstatePropertyId = entity.Id;
+                    videoToAdd.EstateProperty = entity;
+                    entity.PropertyVideos.Add(videoToAdd);
+                    newPropertyVideos.Add(videoToAdd);
+                }
+            }
+            if (newPropertyVideos.Count > 0)
+            {
+                _context.PropertyVideos.AddRange(newPropertyVideos);
+            }
+        }
+        return Task.CompletedTask;
+    }
+    
     /// <summary>
     /// Manages the single EstatePropertyValue associated with an EstateProperty.
     /// It creates, updates, or deletes the value object based on the provided DTO.

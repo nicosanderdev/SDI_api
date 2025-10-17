@@ -53,6 +53,8 @@ public class EstatePropertyProfile : Profile
                 opt.Ignore())
             .ForMember(dest => dest.PropertyDocuments, opt =>
                 opt.Ignore())
+            .ForMember(dest => dest.PropertyVideos, opt => 
+                opt.Ignore())
             .ForMember(dest => dest.MainImageId, opt =>
                 opt.MapFrom(src => src.MainImageId != null ? Guid.Parse(src.MainImageId!) : Guid.Empty))
             .ForMember(dest => dest.Title, opt =>
@@ -76,7 +78,7 @@ public class EstatePropertyProfile : Profile
                 opt =>
                 opt.MapFrom(src => src.PropertyImages
                     .Where(pi => !pi.IsDeleted)))
-            .ForMember(dest => dest.Videos,
+            .ForMember(dest => dest.PropertyVideos,
                 opt =>
                 opt.MapFrom(src => src.PropertyVideos
                     .Where(pv => !pv.IsDeleted)))
@@ -104,12 +106,32 @@ public class EstatePropertyProfile : Profile
                 opt.MapFrom(src => src.Status.ToString()))
             .ForMember(dest => dest.Description, opt =>
                 opt.MapFrom(src => src.Description));
-
+        
+        CreateMap<PropertyImageDto, PropertyImage>()
+            .ForMember(dest => dest.Id, opt =>
+            {
+                opt.PreCondition(src => !string.IsNullOrWhiteSpace(src.Id) && Guid.TryParse(src.Id, out _));
+                opt.MapFrom(src => Guid.Parse(src.Id!));
+            });
+        
         CreateMap<PropertyVideo, PropertyVideoDto>()
-            .ReverseMap();
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.ToString()));
+        CreateMap<PropertyVideoDto, PropertyVideo>()
+            .ForMember(dest => dest.Id, opt =>
+            {
+                opt.PreCondition(src => !string.IsNullOrWhiteSpace(src.Id) && Guid.TryParse(src.Id, out _));
+                opt.MapFrom(src => Guid.Parse(src.Id!));
+            });
+        
+        CreateMap<PropertyDocumentDto, PropertyDocument>()
+            .ForMember(dest => dest.Id, opt =>
+            {
+                opt.PreCondition(src => !string.IsNullOrWhiteSpace(src.Id) && Guid.TryParse(src.Id, out _));
+                opt.MapFrom(src => Guid.Parse(src.Id!));
+            });
         
         CreateMap<Amenity, AmenityDto>()
-            .ReverseMap();
+            .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id.ToString()));
 
         /* CreateMap<CreateOrUpdatePropertyImageDto, PropertyImage>()
             .ForMember(dest => dest.Id, opt => {

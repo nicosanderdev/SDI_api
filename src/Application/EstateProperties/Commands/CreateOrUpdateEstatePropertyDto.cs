@@ -129,6 +129,11 @@ public class CreateOrUpdateEstatePropertyDto
     public List<PropertyImageDto>? PropertyImages { get; set; } = null;
     
     /// <summary>
+    /// A list of property videos to keep associated with the property. Each video is identified by Id; new entries have empty Id.
+    /// </summary>
+    public List<PropertyVideoDto>? PropertyVideos { get; set; } = new List<PropertyVideoDto>();
+    
+    /// <summary>
     /// A string representing the owner ID.
     /// </summary>
     public string? OwnerId { get; set; }

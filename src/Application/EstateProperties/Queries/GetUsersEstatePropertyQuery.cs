@@ -27,8 +27,10 @@ public class GetUsersEstatePropertyQueryHandler : IRequestHandler<GetUsersEstate
         var estateProperty = await _context.EstateProperties
             .Where(ep => ep.Owner.UserId == request.UserId && ep.Id == request.PropertyId && !ep.IsDeleted)
             .Include(ep => ep.PropertyImages)
+            .Include(ep => ep.PropertyVideos)
             .Include(ep => ep.PropertyDocuments)
             .Include(ep => ep.EstatePropertyValues)
+            .Include(ep => ep.Amenities)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (estateProperty == null)

@@ -1,6 +1,6 @@
 ﻿namespace SDI_Api.Domain.Entities;
 
-public class PropertyDocument : BaseEntity
+public class PropertyDocument : BaseAuditableEntity
 {
     public string? Name { get; set; }
     // public string? FileName { get; set; }
