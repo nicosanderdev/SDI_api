@@ -32,27 +32,29 @@ public class CreateEstatePropertyCommandHandler : IRequestHandler<CreateEstatePr
 
         // Process Documents
         var docExtensions = new[] { ".pdf", ".doc", ".docx" };
-        foreach (var docFile in request!.Documents)
+        foreach (var docDto in request!.PropertyDocuments!)
         {
             var fileResult = await _fileStorageService.SaveFileAsync(
-                docFile, 
+                docDto.File!, 
                 "StoragePaths:PropertyDocuments",
                 docExtensions, 
                 propertyFolderId
             );
             
-            estateProperty.Documents.Add(new PropertyDocument {
+            estateProperty.PropertyDocuments.Add(new PropertyDocument {
                 Name = fileResult.FileName,
+                EstatePropertyId = request.Id,
                 FileType = fileResult.ContentType,
-                Url = fileResult.RelativePath
+                Url = fileResult.RelativePath,
+                IsPublic = docDto.IsPublic
             });
         }
         
         // Process Images
         var imgExtensions = new[] { ".jpg", ".jpeg", ".png" };
-        if (request.Images != null)
+        if (request.PropertyImages != null)
         {
-            foreach (var imgFile in request.Images)
+            foreach (var imgFile in request.PropertyImages)
             {
                 var fileResult = await _fileStorageService.SaveFileAsync(
                     imgFile.File!, 
@@ -73,6 +75,46 @@ public class CreateEstatePropertyCommandHandler : IRequestHandler<CreateEstatePr
                     estateProperty.MainImageId = propertyImageToAdd.Id;
                 }
                 estateProperty.PropertyImages.Add(propertyImageToAdd);
+            }
+        }
+        
+        // Process Videos
+        if (request.PropertyVideos != null)
+        {
+            foreach (var videoDto in request.PropertyVideos)
+            {
+                var propertyVideoToAdd = new PropertyVideo
+                {
+                    IsDeleted = false,
+                    Url = videoDto.Url!,
+                    Title = videoDto.Title ?? null,
+                    Description = videoDto.Description ?? null,
+                    EstatePropertyId = estateProperty.Id,
+                    EstateProperty = estateProperty
+                };
+                
+                estateProperty.PropertyVideos.Add(propertyVideoToAdd);
+            }
+        }
+        
+        // Process Amenities
+        var amenitiesDb = await _context.Amenities.ToListAsync(cancellationToken);
+        if (request.Amenities != null)
+        {
+            foreach (var amenityDto in request.Amenities)
+            {
+                Guid.TryParse(amenityDto.Id, out var amenityId);
+                var amenityToAdd = new EstatePropertyAmenity
+                {
+                    EstatePropertyId = estateProperty.Id,
+                    EstateProperty = estateProperty,
+                    AmenityId = amenityId,
+                    Amenity = amenitiesDb.FirstOrDefault(a => a.Id == amenityId)!,
+                    CreatedAtUtc = DateTimeOffset.Now,
+                    DeletedAtUtc = null
+                };
+                
+                estateProperty.EstatePropertyAmenities.Add(amenityToAdd);
             }
         }
         

@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Data.Common;
 
 namespace SDI_Api.Domain.Entities;
@@ -36,13 +37,15 @@ public class EstateProperty : BaseAuditableEntity
     public int Bathrooms { get; set; }
     public bool HasGarage { get; set; }
     public int GarageSpaces { get; set; } = 0;
-    // Other info
     public int? Visits { get; set; }
+    
     // Relationships
-    public List<PropertyDocument> Documents { get; set; } = new List<PropertyDocument>();
+    public List<PropertyDocument> PropertyDocuments { get; set; } = new List<PropertyDocument>();
     public Guid? MainImageId { get; set; }
     public virtual ICollection<PropertyImage> PropertyImages { get; set; } = new List<PropertyImage>();
+    public virtual ICollection<PropertyVideo> PropertyVideos { get; set; } = new List<PropertyVideo>();
     public virtual ICollection<EstatePropertyValues> EstatePropertyValues { get; set; } = new List<EstatePropertyValues>();
+    public virtual ICollection<EstatePropertyAmenity> EstatePropertyAmenities { get; set; } = new List<EstatePropertyAmenity>();
     public Guid? OwnerId { get; set; }
     public Member Owner { get; set; } = null!;
 

@@ -28,8 +28,10 @@ public class GetUsersEstatePropertiesQueryHandler : IRequestHandler<GetUsersEsta
 
         IQueryable<EstateProperty> query = _context.EstateProperties
             .Where(ep => ep.Owner.UserId == request.UserId && !ep.IsDeleted)
-            .Include(ep => ep.PropertyImages)
             .Include(ep => ep.EstatePropertyValues)
+            .Include(ep => ep.PropertyImages)
+            .Include(p => p.EstatePropertyAmenities)
+                .ThenInclude(ea => ea.Amenity)
             .AsNoTracking();
 
         // MapperProfile filters EstatePropertyValues and PropertyImages
@@ -40,7 +42,7 @@ public class GetUsersEstatePropertiesQueryHandler : IRequestHandler<GetUsersEsta
         {
             var dto = _mapper.Map<UsersEstatePropertyDto>(estateProperty);
             _mapper.Map(estateProperty.EstatePropertyValues.FirstOrDefault(ep => ep.IsFeatured)!, dto);
-            _mapper.Map(estateProperty.PropertyImages.Where(pi => !pi.IsDeleted), dto.Images);
+            _mapper.Map(estateProperty.PropertyImages.Where(pi => !pi.IsDeleted), dto.PropertyImages);
             estatePropertyDtos.Add(dto);
         }
         return new PaginatedResult<UsersEstatePropertyDto>(estatePropertyDtos, result.TotalCount, result.PageNumber, result.TotalPages);

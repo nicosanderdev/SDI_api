@@ -131,6 +131,9 @@ public class PublicEstatePropertyDto
     [Required]
     public List<IFormFile> Images { get; set; } = new();
     
+    [Required]
+    public List<IFormFile> Videos { get; set; } = new();
+    
     /// <summary>
     /// Maps to optional 'mainImage'. This is the primary image file to be uploaded.
     /// </summary>
@@ -141,6 +144,24 @@ public class PublicEstatePropertyDto
     /// This is for reading data, not for uploading.
     /// </summary>
     public List<PropertyImageDto>? PropertyImages { get; set; }
+    
+    /// <summary>
+    /// A list of DTOs representing the processed documents, including their URLs.
+    /// This is for reading data, not for uploading.
+    /// </summary>
+    public List<PropertyDocumentDto>? PropertyDocuments { get; set; }
+    
+    /// <summary>
+    /// A list of DTOs representing the processed videos, including their URLs.
+    /// This is for reading data, not for uploading.
+    /// </summary>
+    public List<PropertyVideoDto>? PropertyVideos { get; set; }
+
+    /// <summary>
+    /// A list of DTOs representing the processed videos, including their URLs.
+    /// This is for reading data, not for uploading.
+    /// </summary>
+    public List<AmenityDto>? Amenities { get; set; } = new List<AmenityDto>();
     
     public string? OwnerId { get; set; }
     

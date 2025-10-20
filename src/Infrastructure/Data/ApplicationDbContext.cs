@@ -13,6 +13,8 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<EstateProperty> EstateProperties => Set<EstateProperty>();
     public DbSet<EstatePropertyValues> EstatePropertyValues => Set<EstatePropertyValues>();
     public DbSet<PropertyImage> PropertyImages => Set<PropertyImage>();
+    public DbSet<PropertyVideo> PropertyVideos => Set<PropertyVideo>();
+    public DbSet<PropertyDocument> PropertyDocuments => Set<PropertyDocument>();
     public DbSet<MessageThread> MessageThreads => Set<MessageThread>();
     public DbSet<Message> Messages => Set<Message>();
     public DbSet<MessageRecipient> MessageRecipients => Set<MessageRecipient>();
@@ -20,7 +22,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<PropertyMessageLog> PropertyMessageLogs => Set<PropertyMessageLog>();
     public DbSet<Member> Members => Set<Member>();
     public DbSet<RecoveryCode> RecoveryCodes => Set<RecoveryCode>();
-    public DbSet<PropertyDocument> PropertyDocuments => Set<PropertyDocument>();
+    public DbSet<Amenity> Amenities => Set<Amenity>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -35,15 +37,45 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
                 .HasForeignKey(pi => pi.EstatePropertyId)
                 .OnDelete(DeleteBehavior.Cascade); // Or Restrict, SetNull
 
+            entity.HasMany(e => e.PropertyVideos)
+                .WithOne(pv => pv.EstateProperty)
+                .HasForeignKey(pi => pi.EstatePropertyId)
+                .OnDelete(DeleteBehavior.Cascade);
+            
+            entity.HasMany(e => e.PropertyDocuments)
+                .WithOne(pv => pv.EstateProperty)
+                .HasForeignKey(pi => pi.EstatePropertyId)
+                .OnDelete(DeleteBehavior.Cascade);
+            
             entity.HasMany(e => e.EstatePropertyValues)
                 .WithOne(pd => pd.EstateProperty)
                 .HasForeignKey(pd => pd.EstatePropertyId)
                 .OnDelete(DeleteBehavior.Cascade);
+            
+
+        });
+
+        builder.Entity<EstatePropertyAmenity>(entity =>
+        {
+            entity.HasKey(ea => new { ea.EstatePropertyId, ea.AmenityId });
+
+            entity.HasOne(ea => ea.EstateProperty)
+                .WithMany(e => e.EstatePropertyAmenities)
+                .HasForeignKey(ea => ea.EstatePropertyId);
+
+            entity.HasOne(ea => ea.Amenity)
+                .WithMany(a => a.EstatePropertyAmenities)
+                .HasForeignKey(ea => ea.AmenityId);
         });
 
         builder.Entity<PropertyImage>(entity =>
         {
             // PropertyImage is owned by EstateProperty
+        });
+        
+        builder.Entity<PropertyVideo>(entity =>
+        {
+            // PropertyVideo is owned by EstateProperty
         });
 
         builder.Entity<EstatePropertyValues>(entity =>
@@ -51,6 +83,11 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
             // EstatePropertyDescription is owned by EstateProperty
         });
 
+        builder.Entity<Amenity>(entity =>
+        {
+            // Aminities is owned by EstateProperty
+        });
+        
         // Consider adding indexes to PropertyVisitLog.VisitedOnUtc, PropertyVisitLog.PropertyId,
         // PropertyMessageLog.SentOnUtc, PropertyMessageLog.PropertyId for performance.
         builder.Entity<PropertyVisitLog>(entity =>
