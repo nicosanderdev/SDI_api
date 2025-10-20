@@ -23,7 +23,8 @@ public class GetEstatePropertyByIdQueryHandler : IRequestHandler<GetEstateProper
             .Include(p => p.PropertyImages)
             .Include(p => p.PropertyVideos)
             .Include(p => p.EstatePropertyValues)
-            .Include(p => p.Amenities)
+            .Include(p => p.EstatePropertyAmenities)
+                .ThenInclude(epa => epa.Amenity)
             .AsNoTracking()
             .FirstOrDefaultAsync(p => p.Id == request.id, cancellationToken);
 

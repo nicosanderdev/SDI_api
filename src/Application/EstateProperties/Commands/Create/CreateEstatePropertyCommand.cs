@@ -78,6 +78,46 @@ public class CreateEstatePropertyCommandHandler : IRequestHandler<CreateEstatePr
             }
         }
         
+        // Process Videos
+        if (request.PropertyVideos != null)
+        {
+            foreach (var videoDto in request.PropertyVideos)
+            {
+                var propertyVideoToAdd = new PropertyVideo
+                {
+                    IsDeleted = false,
+                    Url = videoDto.Url!,
+                    Title = videoDto.Title ?? null,
+                    Description = videoDto.Description ?? null,
+                    EstatePropertyId = estateProperty.Id,
+                    EstateProperty = estateProperty
+                };
+                
+                estateProperty.PropertyVideos.Add(propertyVideoToAdd);
+            }
+        }
+        
+        // Process Amenities
+        var amenitiesDb = await _context.Amenities.ToListAsync(cancellationToken);
+        if (request.Amenities != null)
+        {
+            foreach (var amenityDto in request.Amenities)
+            {
+                Guid.TryParse(amenityDto.Id, out var amenityId);
+                var amenityToAdd = new EstatePropertyAmenity
+                {
+                    EstatePropertyId = estateProperty.Id,
+                    EstateProperty = estateProperty,
+                    AmenityId = amenityId,
+                    Amenity = amenitiesDb.FirstOrDefault(a => a.Id == amenityId)!,
+                    CreatedAtUtc = DateTimeOffset.Now,
+                    DeletedAtUtc = null
+                };
+                
+                estateProperty.EstatePropertyAmenities.Add(amenityToAdd);
+            }
+        }
+        
         var member = await _context.Members.FirstOrDefaultAsync(m => m.UserId.ToString() == request!.OwnerId, cancellationToken);
         if (member == null || member.IsDeleted)
             throw new NotFoundException(nameof(Member), request!.OwnerId!);

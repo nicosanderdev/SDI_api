@@ -132,6 +132,11 @@ public class CreateOrUpdateEstatePropertyDto
     /// A list of property videos to keep associated with the property. Each video is identified by Id; new entries have empty Id.
     /// </summary>
     public List<PropertyVideoDto>? PropertyVideos { get; set; } = new List<PropertyVideoDto>();
+
+    /// <summary>
+    /// A list of DTOs representing the listed amenities.
+    /// </summary>
+    public List<AmenityDto>? Amenities { get; set; } = new List<AmenityDto>();
     
     /// <summary>
     /// A string representing the owner ID.

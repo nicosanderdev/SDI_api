@@ -45,8 +45,7 @@ public class EstateProperty : BaseAuditableEntity
     public virtual ICollection<PropertyImage> PropertyImages { get; set; } = new List<PropertyImage>();
     public virtual ICollection<PropertyVideo> PropertyVideos { get; set; } = new List<PropertyVideo>();
     public virtual ICollection<EstatePropertyValues> EstatePropertyValues { get; set; } = new List<EstatePropertyValues>();
-    
-    public virtual ICollection<Amenity> Amenities { get; set; } = new List<Amenity>();
+    public virtual ICollection<EstatePropertyAmenity> EstatePropertyAmenities { get; set; } = new List<EstatePropertyAmenity>();
     public Guid? OwnerId { get; set; }
     public Member Owner { get; set; } = null!;
 

@@ -30,7 +30,8 @@ public class GetUsersEstatePropertyQueryHandler : IRequestHandler<GetUsersEstate
             .Include(ep => ep.PropertyVideos)
             .Include(ep => ep.PropertyDocuments)
             .Include(ep => ep.EstatePropertyValues)
-            .Include(ep => ep.Amenities)
+            .Include(p => p.EstatePropertyAmenities)
+                .ThenInclude(ea => ea.Amenity)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (estateProperty == null)

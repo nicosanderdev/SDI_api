@@ -37,6 +37,8 @@ public class UpdateEstatePropertyCommandHandler : IRequestHandler<UpdateEstatePr
             .Include(p => p.PropertyDocuments)
             .Include(p => p.PropertyVideos)
             .Include(p => p.EstatePropertyValues)
+            .Include(p => p.EstatePropertyAmenities)
+                .ThenInclude(epa => epa.Amenity)
             .FirstOrDefaultAsync(p => p.Id == request.Id, cancellationToken);
 
         if (entity == null)
@@ -49,6 +51,7 @@ public class UpdateEstatePropertyCommandHandler : IRequestHandler<UpdateEstatePr
         await UpdateImagesAsync(entity, request.PropertyImages, request.MainImageId, propertyFolderId!);
         await UpdateVideosAsync(entity, request.PropertyVideos);
         UpdatePropertyValue(entity, request);
+        await UpdateAmenitiesAsync(entity, request.Amenities);
         
         await _context.SaveChangesAsync(cancellationToken);
         return Unit.Value;
@@ -292,5 +295,47 @@ public class UpdateEstatePropertyCommandHandler : IRequestHandler<UpdateEstatePr
         }
         else if (existingValue != null)
             _context.EstatePropertyValues.Remove(existingValue);
+    }
+
+    private async Task UpdateAmenitiesAsync(EstateProperty entity, List<AmenityDto>? newAmenities)
+    {
+        if (newAmenities == null)
+            return;
+
+        var incomingIds = newAmenities
+            .Where(a => Guid.TryParse(a.Id, out _))
+            .Select(a => Guid.Parse(a.Id!))
+            .ToHashSet();
+
+        var currentIds = entity.EstatePropertyAmenities
+            .Select(ea => ea.AmenityId)
+            .ToHashSet();
+
+        // Remove old relationships
+        var toRemove = entity.EstatePropertyAmenities
+            .Where(ea => !incomingIds.Contains(ea.AmenityId))
+            .ToList();
+
+        foreach (var rel in toRemove)
+        {
+            entity.EstatePropertyAmenities.Remove(rel);
+        }
+
+        // Add new relationships
+        var toAddIds = incomingIds.Except(currentIds).ToList();
+        foreach (var id in toAddIds)
+        {
+            // only add if amenity exists and not deleted
+            bool exists = await _context.Amenities.AnyAsync(a => a.Id == id && !a.IsDeleted);
+            if (exists)
+            {
+                entity.EstatePropertyAmenities.Add(new EstatePropertyAmenity
+                {
+                    EstatePropertyId = entity.Id,
+                    AmenityId = id,
+                    CreatedAtUtc = DateTimeOffset.Now
+                });
+            }
+        }
     }
 }

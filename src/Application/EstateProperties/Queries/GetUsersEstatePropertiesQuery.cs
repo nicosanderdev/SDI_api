@@ -28,8 +28,10 @@ public class GetUsersEstatePropertiesQueryHandler : IRequestHandler<GetUsersEsta
 
         IQueryable<EstateProperty> query = _context.EstateProperties
             .Where(ep => ep.Owner.UserId == request.UserId && !ep.IsDeleted)
-            .Include(ep => ep.PropertyImages)
             .Include(ep => ep.EstatePropertyValues)
+            .Include(ep => ep.PropertyImages)
+            .Include(p => p.EstatePropertyAmenities)
+                .ThenInclude(ea => ea.Amenity)
             .AsNoTracking();
 
         // MapperProfile filters EstatePropertyValues and PropertyImages

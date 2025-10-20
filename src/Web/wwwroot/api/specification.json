@@ -1162,6 +1162,13 @@
                       "$ref": "#/components/schemas/PropertyVideoDto"
                     }
                   },
+                  "Amenities": {
+                    "type": "array",
+                    "nullable": true,
+                    "items": {
+                      "$ref": "#/components/schemas/AmenityDto"
+                    }
+                  },
                   "OwnerId": {
                     "type": "string",
                     "nullable": true
@@ -1500,6 +1507,13 @@
                     "nullable": true,
                     "items": {
                       "$ref": "#/components/schemas/PropertyVideoDto"
+                    }
+                  },
+                  "Amenities": {
+                    "type": "array",
+                    "nullable": true,
+                    "items": {
+                      "$ref": "#/components/schemas/AmenityDto"
                     }
                   },
                   "OwnerId": {
@@ -3089,6 +3103,24 @@
           },
           "isPublic": {
             "type": "boolean"
+          }
+        }
+      },
+      "AmenityDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "iconId": {
+            "type": "string",
+            "nullable": true
           }
         }
       },

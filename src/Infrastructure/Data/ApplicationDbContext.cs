@@ -52,18 +52,20 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
                 .HasForeignKey(pd => pd.EstatePropertyId)
                 .OnDelete(DeleteBehavior.Cascade);
             
-            entity.HasMany(e => e.Amenities)
-                .WithMany(a => a.EstateProperties)
-                .UsingEntity<Dictionary<string, object>>(
-                    "EstatePropertyAmenity",
-                    j => j.HasOne<Amenity>().WithMany().HasForeignKey("AmenityId").OnDelete(DeleteBehavior.Cascade),
-                    j => j.HasOne<EstateProperty>().WithMany().HasForeignKey("EstatePropertyId").OnDelete(DeleteBehavior.Cascade),
-                    j =>
-                    {
-                        j.HasKey("EstatePropertyId", "AmenityId");
-                        j.ToTable("EstatePropertyAmenities");
-                    });
 
+        });
+
+        builder.Entity<EstatePropertyAmenity>(entity =>
+        {
+            entity.HasKey(ea => new { ea.EstatePropertyId, ea.AmenityId });
+
+            entity.HasOne(ea => ea.EstateProperty)
+                .WithMany(e => e.EstatePropertyAmenities)
+                .HasForeignKey(ea => ea.EstatePropertyId);
+
+            entity.HasOne(ea => ea.Amenity)
+                .WithMany(a => a.EstatePropertyAmenities)
+                .HasForeignKey(ea => ea.AmenityId);
         });
 
         builder.Entity<PropertyImage>(entity =>
