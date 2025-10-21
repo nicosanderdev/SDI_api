@@ -92,6 +92,30 @@ public class EstatePropertiesController : ControllerBase
         return Ok(updatedPropertyDto);
     }
 
+    [HttpPost("{id:guid}/duplicate")]
+    [ProducesResponseType(typeof(DuplicatedEstatePropertyDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DuplicateProperty(Guid id)
+    {
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userIdValue))
+            throw new UnauthorizedAccessException("User identifier not found.");
+
+        if (!Guid.TryParse(userIdValue, out var userGuid))
+            throw new ArgumentException("Invalid user identifier format.");
+        
+        var command = new DuplicateEstatePropertyCommand
+        {
+            OriginalPropertyId = id,
+            UserId = userGuid
+        };
+        
+        var response = await _sender.Send(command);
+        return Ok(response);
+    }
+    
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

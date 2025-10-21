@@ -1693,6 +1693,68 @@
         }
       }
     },
+    "/api/properties/{id}/duplicate": {
+      "post": {
+        "tags": [
+          "EstateProperties"
+        ],
+        "operationId": "EstateProperties_DuplicateProperty",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "guid"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DuplicatedEstatePropertyDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/properties/amenities": {
       "get": {
         "tags": [
@@ -3687,6 +3749,20 @@
           },
           "isPropertyVisible": {
             "type": "boolean"
+          }
+        }
+      },
+      "DuplicatedEstatePropertyDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "newPropertyId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
           }
         }
       },
