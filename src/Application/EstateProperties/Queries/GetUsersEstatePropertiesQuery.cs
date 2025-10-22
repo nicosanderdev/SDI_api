@@ -40,7 +40,7 @@ public class GetUsersEstatePropertiesQueryHandler : IRequestHandler<GetUsersEsta
     {
         IQueryable<EstateProperty> baseQuery = _context.EstateProperties
             .Where(ep => ep.Owner.UserId == request.UserId)
-            .Include(ep => ep.EstatePropertyValues)
+            .Include(ep => ep.EstatePropertyValues.Where(epv => !epv.IsFeatured))
             .AsNoTracking();
         
         var queryByFilter = baseQuery;
