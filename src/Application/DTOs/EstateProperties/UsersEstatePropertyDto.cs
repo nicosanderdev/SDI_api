@@ -113,6 +113,11 @@ public class UsersEstatePropertyDto
     // Relationships
     
     /// <summary>
+    /// Maps to optional 'estatePropertyValues'.
+    /// </summary>
+    public List<EstatePropertyValuesDto>? EstatePropertyValues { get; set; }
+    
+    /// <summary>
     /// Maps to 'images'. This property will be populated from a multipart/form-data request.
     /// Represents the list of files to be uploaded.
     /// </summary>
