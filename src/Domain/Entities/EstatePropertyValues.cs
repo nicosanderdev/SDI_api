@@ -8,7 +8,6 @@ public class EstatePropertyValues : BaseAuditableEntity
     public string? Description { get; set; }
     [Required]
     public DateTime AvailableFrom { get; set; }
-    public bool ArePetsAllowed { get; set; }
     public int Capacity { get; set; }
     
     // Price and status

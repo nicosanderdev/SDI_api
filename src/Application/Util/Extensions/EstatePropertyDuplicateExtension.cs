@@ -35,8 +35,7 @@ public static class EstatePropertyDuplicateExtension
         target.GarageSpaces = source.GarageSpaces;
         target.Visits = source.Visits;
 
-        // Relationships (scalar FKs only, not collections)
-        target.MainImageId = source.MainImageId;
+        // Relationships
         target.OwnerId = source.OwnerId;
     }
 }

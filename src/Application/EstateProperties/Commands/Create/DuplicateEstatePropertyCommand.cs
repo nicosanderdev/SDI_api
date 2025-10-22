@@ -21,10 +21,12 @@ public class DuplicateEstatePropertyCommand : IRequest<DuplicatedEstatePropertyD
 public class DuplicateEstatePropertyCommandHandler : IRequestHandler<DuplicateEstatePropertyCommand, DuplicatedEstatePropertyDto>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IFileStorageService _fileStorageService;
 
-    public DuplicateEstatePropertyCommandHandler(IApplicationDbContext context)
+    public DuplicateEstatePropertyCommandHandler(IApplicationDbContext context, IFileStorageService fileStorageService)
     {
         _context = context;
+        _fileStorageService = fileStorageService;
     }
 
     public async Task<DuplicatedEstatePropertyDto> Handle(DuplicateEstatePropertyCommand request, CancellationToken cancellationToken)
@@ -34,6 +36,7 @@ public class DuplicateEstatePropertyCommandHandler : IRequestHandler<DuplicateEs
             .Include(p => p.PropertyImages
                 .Where(pi => !pi.IsDeleted))
             .Include(p => p.PropertyVideos)
+            .Include(p => p.PropertyDocuments)
             .Include(p => p.EstatePropertyAmenities)
                 .ThenInclude(epa => epa.Amenity)
             .Include(p => p.EstatePropertyValues
@@ -50,25 +53,8 @@ public class DuplicateEstatePropertyCommandHandler : IRequestHandler<DuplicateEs
         var featuredValue = originalProperty.EstatePropertyValues.FirstOrDefault(v => v.IsFeatured);
         if (featuredValue != null)
         {
-            var newValues = new EstatePropertyValues
-            {
-                Description = featuredValue.Description,
-                AvailableFrom = DateTime.SpecifyKind(featuredValue.AvailableFrom, DateTimeKind.Utc),
-                ArePetsAllowed = featuredValue.ArePetsAllowed,
-                Capacity = featuredValue.Capacity,
-                Currency = featuredValue.Currency,
-                SalePrice = featuredValue.SalePrice,
-                RentPrice = featuredValue.RentPrice,
-                HasCommonExpenses = featuredValue.HasCommonExpenses,
-                CommonExpensesValue = featuredValue.CommonExpensesValue,
-                IsElectricityIncluded = featuredValue.IsElectricityIncluded,
-                IsWaterIncluded = featuredValue.IsWaterIncluded,
-                IsPriceVisible = featuredValue.IsPriceVisible,
-                Status = featuredValue.Status,
-                IsActive = featuredValue.IsActive,
-                IsPropertyVisible = featuredValue.IsPropertyVisible,
-                IsFeatured = true
-            };
+            var newValues = new EstatePropertyValues();
+            featuredValue.duplicateScalarValues(newValues);
             duplicatedProperty.EstatePropertyValues.Add(newValues);
         }
         
@@ -76,28 +62,73 @@ public class DuplicateEstatePropertyCommandHandler : IRequestHandler<DuplicateEs
         {
             duplicatedProperty.EstatePropertyAmenities.Add(new EstatePropertyAmenity
             {
-                AmenityId = originalAmenityLink.AmenityId 
+                AmenityId = originalAmenityLink.AmenityId,
+                EstatePropertyId = duplicatedProperty.Id,
             });
         }
         
+        string basePath = "StoragePaths:PropertyImages";
+
+        // Paths for the original and duplicated properties:
+        string originalImagesPath = Path.Combine(basePath, "images", originalProperty.Id.ToString());
+        string newImagesPath = Path.Combine(basePath, "images", duplicatedProperty.Id.ToString());
+        
+        if (!Directory.Exists(newImagesPath))
+            Directory.CreateDirectory(newImagesPath);
+
         foreach (var originalImage in originalProperty.PropertyImages)
         {
-            duplicatedProperty.PropertyImages.Add(new PropertyImage
+            var copiedFile = await _fileStorageService.CopyFileAsync(
+                originalImage.Url,
+                "StoragePaths:PropertyImages",
+                [duplicatedProperty.Id.ToString()]
+            );
+            
+            var newImage = new PropertyImage
             {
-                Url = originalImage.Url,
+                Id = Guid.NewGuid(),
+                Url = copiedFile.RelativePath,
                 AltText = originalImage.AltText,
                 IsMain = originalImage.IsMain
-            });
+            };
+
+            duplicatedProperty.PropertyImages.Add(newImage);
+
+            if (originalImage.IsMain)
+                duplicatedProperty.MainImageId = newImage.Id;
         }
         
         foreach (var originalVideo in originalProperty.PropertyVideos)
         {
             duplicatedProperty.PropertyVideos.Add(new PropertyVideo
             {
+                Id = Guid.NewGuid(),
                 Url = originalVideo.Url,
                 Title = originalVideo.Title,
                 Description = originalVideo.Description
             });
+        }
+
+        foreach (var originalDocument in originalProperty.PropertyDocuments)
+        {
+            var copiedFile = await _fileStorageService.CopyFileAsync(
+                originalDocument.Url!,
+                "StoragePaths:PropertyDocuments",
+                [duplicatedProperty.Id.ToString()]
+            );
+            
+            var newDocument = new PropertyDocument
+            {
+                Id = Guid.NewGuid(),
+                Name = originalDocument.Name,
+                Url = copiedFile.RelativePath,
+                FileType = originalDocument.FileType,
+                IsPublic = originalDocument.IsPublic,
+                EstatePropertyId = duplicatedProperty.Id,
+                EstateProperty = duplicatedProperty
+            };
+
+            duplicatedProperty.PropertyDocuments.Add(newDocument);
         }
         
         _context.EstateProperties.Add(duplicatedProperty);

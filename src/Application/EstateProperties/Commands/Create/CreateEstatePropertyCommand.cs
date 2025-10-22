@@ -28,7 +28,7 @@ public class CreateEstatePropertyCommandHandler : IRequestHandler<CreateEstatePr
         var request = command.CreateOrUpdateEstatePropertyDto;
         var estateProperty = _mapper.Map<EstateProperty>(request);
         
-        var propertyFolderId = Guid.NewGuid().ToString();
+        var propertyId = Guid.NewGuid();
 
         // Process Documents
         var docExtensions = new[] { ".pdf", ".doc", ".docx" };
@@ -38,7 +38,7 @@ public class CreateEstatePropertyCommandHandler : IRequestHandler<CreateEstatePr
                 docDto.File!, 
                 "StoragePaths:PropertyDocuments",
                 docExtensions, 
-                propertyFolderId
+                propertyId.ToString()
             );
             
             estateProperty.PropertyDocuments.Add(new PropertyDocument {
@@ -60,7 +60,7 @@ public class CreateEstatePropertyCommandHandler : IRequestHandler<CreateEstatePr
                     imgFile.File!, 
                     "StoragePaths:PropertyImages",
                     imgExtensions, 
-                    propertyFolderId
+                    propertyId.ToString()
                 );
 
                 var propertyImageToAdd = new PropertyImage
@@ -110,8 +110,6 @@ public class CreateEstatePropertyCommandHandler : IRequestHandler<CreateEstatePr
                     EstateProperty = estateProperty,
                     AmenityId = amenityId,
                     Amenity = amenitiesDb.FirstOrDefault(a => a.Id == amenityId)!,
-                    CreatedAtUtc = DateTimeOffset.Now,
-                    DeletedAtUtc = null
                 };
                 
                 estateProperty.EstatePropertyAmenities.Add(amenityToAdd);
@@ -124,7 +122,8 @@ public class CreateEstatePropertyCommandHandler : IRequestHandler<CreateEstatePr
         
         estateProperty.OwnerId = member.Id;
         estateProperty.Owner = member;
-
+        estateProperty.Id = propertyId;
+        
         var featuredValues = _mapper.Map<EstatePropertyValues>(request);
         featuredValues.IsFeatured = true;
         featuredValues.AvailableFrom = DateTime.SpecifyKind(featuredValues.AvailableFrom, DateTimeKind.Utc);
@@ -134,6 +133,6 @@ public class CreateEstatePropertyCommandHandler : IRequestHandler<CreateEstatePr
         await _context.SaveChangesAsync(cancellationToken);
         
         estateProperty.AddDomainEvent(new EstatePropertyCreatedEvent(estateProperty));
-        return request!;
+        return request;
     }
 }
