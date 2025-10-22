@@ -10,4 +10,10 @@ public class EstatePropertyAmenity
 
     public DateTimeOffset CreatedAtUtc { get; set; }
     public DateTimeOffset? DeletedAtUtc { get; set; } = null;
+
+    public EstatePropertyAmenity()
+    {
+        CreatedAtUtc = DateTimeOffset.UtcNow;
+        DeletedAtUtc = null;
+    }
 }

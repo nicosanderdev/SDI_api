@@ -13,4 +13,9 @@ public class PropertyVideo : BaseAuditableEntity
     public string? Description { get; set; }
     public Guid EstatePropertyId { get; set; }
     public virtual EstateProperty EstateProperty { get; set; } = null!;
+    
+    public PropertyVideo()
+    {
+        Id = Guid.NewGuid();
+    }
 }

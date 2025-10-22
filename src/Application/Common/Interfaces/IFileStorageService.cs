@@ -20,4 +20,14 @@ public interface IFileStorageService
     /// </summary>
     /// <param name="relativePath">The relative path of the file to delete, as stored in the database.</param>
     Task DeleteFileAsync(string? relativePath);
+
+    /// <summary>
+    /// Copies a file from one location to another.
+    /// </summary>
+    /// <param name="sourceRelativePath">The relative path of the file to copy, as stored in the database.</param>
+    /// <param name="rootPathConfigKey">The key in appsettings.json for the root storage folder (e.g., "StoragePaths:Avatars").</param>
+    /// <param name="subfolders">An array of subfolders to create within the root path (e.g., ["userId", "documents"]).</param>
+    /// <param name="newFileNameWithoutExtension">The new file name without the extension (e.g., "newFileName").</param>
+    /// <returns>A FileSaveResult containing paths and metadata.</returns>
+    Task<FileSaveResult> CopyFileAsync(string sourceRelativePath, string rootPathConfigKey, string[] subfolders, string? newFileNameWithoutExtension = null);
 }
