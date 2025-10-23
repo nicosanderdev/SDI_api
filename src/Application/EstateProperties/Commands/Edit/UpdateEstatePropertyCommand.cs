@@ -270,31 +270,102 @@ public class UpdateEstatePropertyCommandHandler : IRequestHandler<UpdateEstatePr
     }
     
     /// <summary>
-    /// Manages the single EstatePropertyValue associated with an EstateProperty.
-    /// It creates, updates, or deletes the value object based on the provided DTO.
+    /// Save a new EstatePropertyValues record when any value attribute changes; otherwise do nothing.
+    /// Keeps existing relationships intact. Latest value becomes featured.
     /// </summary>
     private void UpdatePropertyValue(EstateProperty entity, CreateOrUpdateEstatePropertyDto? valueDto)
     {
         var existingValue = entity.EstatePropertyValues.FirstOrDefault();
 
-        if (valueDto != null)
+        if (valueDto == null)
         {
-            if (existingValue != null)
-            {
-                valueDto.Id = existingValue.Id;
-                _mapper.Map(valueDto, existingValue);
-                existingValue.AvailableFrom = DateTime.SpecifyKind(existingValue.AvailableFrom, DateTimeKind.Utc);
-            }
-            else
-            {
-                var newValue = _mapper.Map<EstatePropertyValues>(valueDto);
-                newValue.IsFeatured = true;
-                newValue.AvailableFrom = DateTime.SpecifyKind(newValue.AvailableFrom, DateTimeKind.Utc);
-                entity.EstatePropertyValues.Add(newValue);
-            }
+            // No incoming values => no change per new requirements.
+            return;
         }
-        else if (existingValue != null)
-            _context.EstatePropertyValues.Remove(existingValue);
+
+        // Normalize incoming values
+        string? incomingDescription = string.IsNullOrWhiteSpace(valueDto.Description)
+            ? null
+            : valueDto.Description!.Trim();
+        var incomingAvailableFrom = DateTime.SpecifyKind(valueDto.AvailableFrom, DateTimeKind.Utc);
+        var incomingCapacity = valueDto.Capacity;
+        var incomingCurrency = valueDto.Currency;
+        var incomingSalePrice = valueDto.SalePrice;
+        var incomingRentPrice = valueDto.RentPrice;
+        var incomingHasCommonExpenses = valueDto.HasCommonExpenses;
+        var incomingCommonExpensesValue = valueDto.CommonExpensesAmount;
+        bool? incomingIsElectricityIncluded = valueDto.IsElectricityIncluded;
+        bool? incomingIsWaterIncluded = valueDto.IsWaterIncluded;
+        var incomingIsPriceVisible = valueDto.IsPriceVisible;
+        var incomingStatus = valueDto.Status;
+        var incomingIsActive = valueDto.IsActive;
+        var incomingIsPropertyVisible = valueDto.IsPropertyVisible;
+
+        bool hasChanges = false;
+        if (existingValue == null)
+        {
+            hasChanges = true; // no previous values, so we need to create one
+        }
+        else
+        {
+            // Compare all relevant fields
+            hasChanges =
+                Normalize(existingValue.Description) != incomingDescription ||
+                NormalizeDate(existingValue.AvailableFrom) != incomingAvailableFrom ||
+                existingValue.Capacity != incomingCapacity ||
+                existingValue.Currency != incomingCurrency ||
+                existingValue.SalePrice != incomingSalePrice ||
+                existingValue.RentPrice != incomingRentPrice ||
+                existingValue.HasCommonExpenses != incomingHasCommonExpenses ||
+                existingValue.CommonExpensesValue != incomingCommonExpensesValue ||
+                CoerceBool(existingValue.IsElectricityIncluded) != CoerceBool(incomingIsElectricityIncluded) ||
+                CoerceBool(existingValue.IsWaterIncluded) != CoerceBool(incomingIsWaterIncluded) ||
+                existingValue.IsPriceVisible != incomingIsPriceVisible ||
+                existingValue.Status != incomingStatus ||
+                existingValue.IsActive != incomingIsActive ||
+                existingValue.IsPropertyVisible != incomingIsPropertyVisible;
+        }
+
+        if (!hasChanges)
+        {
+            // No value fields changed; do not update or create
+            return;
+        }
+
+        // Create a new values record and mark it as featured
+        var newValues = new EstatePropertyValues
+        {
+            Description = incomingDescription,
+            AvailableFrom = incomingAvailableFrom,
+            Capacity = incomingCapacity,
+            Currency = incomingCurrency,
+            SalePrice = incomingSalePrice,
+            RentPrice = incomingRentPrice,
+            HasCommonExpenses = incomingHasCommonExpenses,
+            CommonExpensesValue = incomingCommonExpensesValue,
+            IsElectricityIncluded = incomingIsElectricityIncluded,
+            IsWaterIncluded = incomingIsWaterIncluded,
+            IsPriceVisible = incomingIsPriceVisible,
+            Status = incomingStatus,
+            IsActive = incomingIsActive,
+            IsPropertyVisible = incomingIsPropertyVisible,
+            IsFeatured = true,
+            EstatePropertyId = entity.Id,
+            EstateProperty = entity
+        };
+
+        // Optionally un-feature the previous one to ensure a single featured record
+        if (existingValue != null && existingValue.IsFeatured)
+        {
+            existingValue.IsFeatured = false;
+        }
+
+        entity.EstatePropertyValues.Add(newValues);
+        _context.EstatePropertyValues.Add(newValues);
+
+        static string? Normalize(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
+        static DateTime NormalizeDate(DateTime dt) => DateTime.SpecifyKind(dt, DateTimeKind.Utc);
+        static bool CoerceBool(bool? b) => b ?? false;
     }
 
     private async Task UpdateAmenitiesAsync(EstateProperty entity, List<AmenityDto>? newAmenities)

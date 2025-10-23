@@ -122,6 +122,8 @@ public class EstatePropertyProfile : Profile
             .ForMember(dest => dest.Description, opt =>
                 opt.MapFrom(src => src.Description));
 
+        CreateMap<EstatePropertyValues, EstatePropertyValuesDto>();
+
         CreateMap<UsersEstatePropertyDto, EstateProperty>()
             .ForMember(dest => dest.EstatePropertyAmenities, opt => opt.Ignore());
         
@@ -136,8 +138,8 @@ public class EstatePropertyProfile : Profile
                 opt.Ignore())
             .ForMember(dest => dest.PropertyVideos, opt => 
                 opt.Ignore())
-            .ForMember(dest => dest.MainImageId, opt =>
-                opt.MapFrom(src => src.MainImageId != null ? Guid.Parse(src.MainImageId!) : Guid.Empty))
+            .ForMember(dest => dest.MainImageId, opt => 
+                opt.Ignore())
             .ForMember(dest => dest.Title, opt =>
                 opt.MapFrom(src => src.Title))
             .ForMember(dest => dest.LocationLatitude, opt =>
