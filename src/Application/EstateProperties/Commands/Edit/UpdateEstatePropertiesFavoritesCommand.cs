@@ -40,7 +40,7 @@ public class UpdateEstatePropertiesFavoritesCommandHandler : IRequestHandler<Upd
 
         _context.Favorites.Add(new Favorite()
         {
-            MemberId = memberId, EstatePropertyId = dto!.EstatePropertyId, FavoritedAt = new DateTimeOffset()
+            MemberId = memberId, EstatePropertyId = dto!.EstatePropertyId, FavoritedAt = DateTimeOffset.Now
         });
         
         await _context.SaveChangesAsync(cancellationToken);
