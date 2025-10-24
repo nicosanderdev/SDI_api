@@ -86,7 +86,7 @@ public class AuthController : ControllerBase
     }
     
     /// <summary>
-    /// TODO
+    /// Logs in a user, and returns authentication cookie
     /// </summary>
     [HttpPost("login-custom")]
     [ProducesResponseType(typeof(LoginResultDto), StatusCodes.Status200OK)]
@@ -114,7 +114,7 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// TODO
+    /// Logs out a user, and returns authentication cookie
     /// </summary>
     [HttpPost("logout-custom")]
     [ProducesResponseType(typeof(LoginResultDto), StatusCodes.Status200OK)]
@@ -132,7 +132,7 @@ public class AuthController : ControllerBase
     }
     
     /// <summary>
-    /// TODO
+    /// Retrieves user authentication information.
     /// </summary>
     [HttpGet("verify")]
     [ProducesResponseType(typeof(UserAuthDto), StatusCodes.Status200OK)]
@@ -169,10 +169,12 @@ public class AuthController : ControllerBase
             Roles = roles
         });
     }
-    
+
     /// <summary>
-    /// TODO
+    /// Initiates a password recovery process for a user based on the provided information.
     /// </summary>
+    /// <param name="command">The command containing details required to initiate the password recovery process.</param>
+    /// <returns>An IActionResult indicating the result of the password recovery process.</returns>
     [HttpPost("forgot-password-custom")]
     [AllowAnonymous]
     public async Task<IActionResult> ForgotPasswordCustom([FromBody] ForgotPasswordCommand command)
@@ -182,7 +184,7 @@ public class AuthController : ControllerBase
     }
     
     /// <summary>
-    /// TODO
+    /// Confirms the email address associated with a user's password recovery request.
     /// </summary>
     [HttpPost("forgot-password-confirm-email")]
     [AllowAnonymous]
@@ -198,7 +200,7 @@ public class AuthController : ControllerBase
     }
     
     /// <summary>
-    /// TODO
+    /// 
     /// </summary>
     [HttpPost("reset-password-init")]
     public async Task<IActionResult> ResetPasswordInit([FromBody] ResetPasswordInitCommand command)
@@ -212,7 +214,7 @@ public class AuthController : ControllerBase
     }
     
     /// <summary>
-    /// TODO
+    /// 
     /// </summary>
     [HttpPost("reset-password-2fa-validate")]
     [AllowAnonymous]
@@ -227,7 +229,7 @@ public class AuthController : ControllerBase
     }
     
     /// <summary>
-    /// TODO
+    /// 
     /// </summary>
     [HttpPost("validate-recovery-code")]
     [AllowAnonymous]
@@ -242,7 +244,7 @@ public class AuthController : ControllerBase
     }
     
     /// <summary>
-    /// TODO
+    /// 
     /// </summary>
     [HttpPost("reset-password-custom")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -257,7 +259,7 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// TODO
+    /// 
     /// </summary>
     [HttpPost("confirm-email-custom")]
     [AllowAnonymous]
@@ -274,7 +276,7 @@ public class AuthController : ControllerBase
     }
     
     /// <summary>
-    /// TODO
+    /// 
     /// </summary>
     [HttpGet("resend-confirmation-email-custom")]
     [AllowAnonymous]
@@ -293,7 +295,7 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// TODO
+    /// 
     /// </summary>
     [HttpPost("2fa/generate-custom")]
     [Authorize]
@@ -313,7 +315,7 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// TODO
+    /// 
     /// </summary>
     [HttpPost("2fa/enable-2fa-first-step")]
     [Authorize]
@@ -342,7 +344,7 @@ public class AuthController : ControllerBase
     }
     
     /// <summary>
-    /// TODO
+    /// 
     /// </summary>
     [HttpPost("2fa/enable-confirm")]
     [Authorize]
@@ -367,7 +369,7 @@ public class AuthController : ControllerBase
     /// //////////////////////////////////
     
     /// <summary>
-    /// TODO
+    /// 
     /// </summary>
     [HttpGet("google-login")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -383,7 +385,7 @@ public class AuthController : ControllerBase
     }
 
     /// <summary>
-    /// TODO
+    /// 
     /// </summary>
     [HttpGet("google-callback")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -448,7 +450,7 @@ public class AuthController : ControllerBase
     /// /////////////////
     
     /// <summary>
-    /// TODO
+    /// 
     /// </summary>
     private async Task<IActionResult> LoginUserInfo(LoginResultDto result)
     {

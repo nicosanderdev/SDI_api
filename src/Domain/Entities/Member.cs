@@ -28,6 +28,9 @@ public class Member : BaseAuditableEntity
     public string? PostalCode { get; set; }
     [MaxLength(100)]
     public string? Country { get; set; }
+    public Guid? MemberSubscriptionId { get; set; }
+    public MemberSubscription? MemberSubscription { get; set; }
+    public ICollection<Favorite> Favorites { get; set; } = new List<Favorite>();
 
     public Member()
     {

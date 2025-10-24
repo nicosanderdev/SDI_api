@@ -1778,6 +1778,61 @@
         }
       }
     },
+    "/api/properties/favorite-update": {
+      "post": {
+        "tags": [
+          "EstateProperties"
+        ],
+        "operationId": "EstateProperties_AddPropertyAsFavorite",
+        "requestBody": {
+          "x-name": "command",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEstatePropertiesFavoritesCommand"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/messages": {
       "get": {
         "tags": [
@@ -3855,6 +3910,33 @@
           "title": {
             "type": "string",
             "nullable": true
+          }
+        }
+      },
+      "UpdateEstatePropertiesFavoritesCommand": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "favoriteDto": {
+            "$ref": "#/components/schemas/PropertyAsFavoriteDto"
+          }
+        }
+      },
+      "PropertyAsFavoriteDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "estatePropertyId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "userId": {
+            "type": "string",
+            "format": "guid",
+            "nullable": true
+          },
+          "isFavorite": {
+            "type": "boolean"
           }
         }
       },

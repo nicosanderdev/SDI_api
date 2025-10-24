@@ -136,4 +136,23 @@ public class EstatePropertiesController : ControllerBase
         var result = await _sender.Send(new GetAllAmenitiesQuery());
         return Ok(result);
     }
+    
+    [HttpPost("favorite-update")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> AddPropertyAsFavorite([FromBody] UpdateEstatePropertiesFavoritesCommand command)
+    {
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userIdValue))
+            throw new UnauthorizedAccessException("User identifier not found.");
+
+        if (!Guid.TryParse(userIdValue, out var userGuid))
+            throw new ArgumentException("Invalid user identifier format.");
+        command.FavoriteDto.UserId = userGuid;
+        
+        var response = await _sender.Send(command);
+        return Ok(response);
+    }
 }
