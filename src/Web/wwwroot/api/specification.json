@@ -4103,6 +4103,13 @@
             "type": "string",
             "nullable": true
           },
+          "roles": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "type": "string"
+            }
+          },
           "address": {
             "nullable": true,
             "oneOf": [

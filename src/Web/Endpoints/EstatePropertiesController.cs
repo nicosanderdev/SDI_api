@@ -155,7 +155,6 @@ public class EstatePropertiesController : ControllerBase
         return Ok(response);
     }
 
-
     [HttpPost("favorite-update")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

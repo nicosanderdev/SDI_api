@@ -5,6 +5,7 @@ using SDI_Api.Application.Common.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using SDI_Api.Domain.Constants;
 using NotFoundException = SDI_Api.Application.Common.Exceptions.NotFoundException;
 
 namespace SDI_Api.Infrastructure.Identity;
@@ -116,7 +117,7 @@ public class IdentityService : IIdentityService
         
         if (identityResult.Succeeded)
         {
-            var identityRoleResult = await _userManager.AddToRoleAsync(user, "User");
+            var identityRoleResult = await _userManager.AddToRoleAsync(user, Roles.PublicUser);
             return (Result.Success(), user.getId()!);
         }
         return (identityResult.ToApplicationResult(), string.Empty);
