@@ -81,7 +81,7 @@ public class GetMessagesQueryHandler : IRequestHandler<GetMessagesQuery, Paginat
                         PropertyTitle = m.Thread.Property != null ? m.Thread.Property.Title : null,
                         Subject = m.Thread.Subject,
                         Snippet = m.Snippet,
-                        CreatedAt = m.CreatedAtUtc.ToString("o"),
+                        CreatedAt = m.CreatedAtUtc.ToString(),
                         IsRead = true, IsReplied = false, IsStarred = false, IsArchived = false, // Defaults for sent items view
                     });
                 

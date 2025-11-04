@@ -49,8 +49,14 @@ public class MessagesController(ISender sender) : ControllerBase
     {   
         var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
         Guid.TryParse(userIdValue, out Guid userId);
-        var command = new SendMessageCommand() { MessageData = messageData };
-        command.UserId = userId;
+        if (userId == Guid.Empty)
+            throw new ForbiddenAccessException();
+            
+        var command = new SendMessageCommand()
+        {
+            MessageData = messageData,
+            UserId = userId
+        };
         var result = await sender.Send(command);
         return Created("api/messages", result);
     }
