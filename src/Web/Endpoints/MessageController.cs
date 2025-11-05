@@ -41,6 +41,20 @@ public class MessagesController(ISender sender) : ControllerBase
         return Ok(await sender.Send(new GetMessageByIdQuery(messageGuidId, userId)));
     }
     
+    [HttpGet("property/{propertyId}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> GetMessagesByPropertyId([FromRoute] string propertyId)
+    {
+        if (!Guid.TryParse(propertyId, out var propertyGuidId))
+            throw new ArgumentException("Invalid property ID format.");
+        
+        var query = new GetMessagesByPropertyIdQuery(propertyGuidId);
+        var result = await sender.Send(query);
+        return Ok(result);
+    }
+    
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

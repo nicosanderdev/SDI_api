@@ -45,12 +45,17 @@ public class SendMessageCommandHandler : IRequestHandler<SendMessageCommand, Mes
         MessageThread thread;
         Message? repliedToMessage = null;
 
-        if (!string.IsNullOrEmpty(request.MessageData.ThreadId) && Guid.TryParse(request.MessageData.ThreadId, out var existingThreadGuid))
-            thread = _context.MessageThreads.Where(t => t.Id == existingThreadGuid).FirstOrDefault()
-                ?? throw new NotFoundException(nameof(MessageThread), existingThreadGuid.ToString());
-
-        else if (!string.IsNullOrEmpty(request.MessageData.InReplyToMessageId) && Guid.TryParse(request.MessageData.InReplyToMessageId, out var inReplyToMsgGuid))
+        if (!string.IsNullOrEmpty(request.MessageData.ThreadId) &&
+            Guid.TryParse(request.MessageData.ThreadId, out var existingThreadGuid))
         {
+            // If thread exists, use it, otherwise throw exception
+            thread = _context.MessageThreads.FirstOrDefault(t => t.Id == existingThreadGuid)
+                     ?? throw new NotFoundException(nameof(MessageThread), existingThreadGuid.ToString());
+        }
+        else if (!string.IsNullOrEmpty(request.MessageData.InReplyToMessageId) && 
+                 Guid.TryParse(request.MessageData.InReplyToMessageId, out var inReplyToMsgGuid))
+        {
+            // If message is in reply to another message, use it, otherwise throw exception
             repliedToMessage = await _context.Messages
                 .Include(m => m.Thread)
                 .FirstOrDefaultAsync(m => m.Id == inReplyToMsgGuid, cancellationToken)
@@ -71,14 +76,21 @@ public class SendMessageCommandHandler : IRequestHandler<SendMessageCommand, Mes
                     throw new NotFoundException(nameof(EstateProperty), pGuid.ToString());
                 propertyGuid = pGuid;
             }
-            thread = new MessageThread { Subject = request.MessageData.Subject!, PropertyId = propertyGuid, CreatedAtUtc = DateTime.UtcNow, LastMessageAtUtc = DateTime.UtcNow };
+            thread = new MessageThread
+            {
+                Subject = request.MessageData.Subject!, 
+                PropertyId = propertyGuid, 
+                CreatedAtUtc = DateTime.UtcNow, 
+                LastMessageAtUtc = DateTime.UtcNow
+            };
             _context.MessageThreads.Add(thread);
         }
-
+        
+        
         var message = new Message
         {
             ThreadId = thread.Id,
-            SenderId = Guid.Parse(senderIdString),
+            SenderId = senderId,
             Body = request.MessageData.Body!,
             Snippet = GenerateSnippet(request.MessageData.Body!, 150),
             CreatedAtUtc = DateTime.UtcNow,
@@ -87,11 +99,16 @@ public class SendMessageCommandHandler : IRequestHandler<SendMessageCommand, Mes
         _context.Messages.Add(message);
         thread.LastMessageAtUtc = message.CreatedAtUtc;
 
-        var messageRecipientEntry = new MessageRecipient()
+        var messageRecipientEntry = new MessageRecipient
         {
+            IsDeleted = false,
             MessageId = message.Id,
-            RecipientId = Guid.Parse(request.MessageData.RecipientId!),
+            RecipientId = recipientId,
             ReceivedAtUtc = DateTime.UtcNow,
+            IsRead = false,
+            HasBeenRepliedToByRecipient = false,
+            IsStarred = false,
+            IsArchived = false
         };
         _context.MessageRecipients.Add(messageRecipientEntry);
         
