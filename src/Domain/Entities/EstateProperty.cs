@@ -48,6 +48,7 @@ public class EstateProperty : BaseAuditableEntity
     public virtual ICollection<EstatePropertyAmenity> EstatePropertyAmenities { get; set; } = new List<EstatePropertyAmenity>();
     public Guid? OwnerId { get; set; }
     public Member Owner { get; set; } = null!;
+    public ICollection<Favorite> Favorites { get; set; } = new List<Favorite>();
 
     // Constructor
     public EstateProperty()

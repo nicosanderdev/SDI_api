@@ -58,7 +58,7 @@ public class RegisterUserCommandHandler : IRequestHandler<RegisterUserCommand, R
             UserId = Guid.Parse(userId),
             FirstName = request.RegisterUserDto.FirstName,
             LastName = request.RegisterUserDto.LastName,
-            AvatarUrl = "https://placehold.co/150x150" 
+            AvatarUrl = "https://placehold.co/150x150"
         };
 
         _context.Members.Add(member);

@@ -1,7 +1,7 @@
 ﻿using SDI_Api.Application.Common.Exceptions;
 using SDI_Api.Application.Common.Interfaces;
 using SDI_Api.Domain.Entities;
-using NotFoundException = Ardalis.GuardClauses.NotFoundException;
+using NotFoundException = SDI_Api.Application.Common.Exceptions.NotFoundException;
 
 namespace SDI_Api.Application.Messages.Commands;
 

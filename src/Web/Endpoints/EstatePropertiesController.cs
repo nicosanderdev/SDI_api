@@ -136,4 +136,41 @@ public class EstatePropertiesController : ControllerBase
         var result = await _sender.Send(new GetAllAmenitiesQuery());
         return Ok(result);
     }
+
+    [HttpGet("favorites")]
+    [ProducesResponseType(typeof(ICollection<PropertyAsFavoriteDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetPropertiesAsFavorite()
+    {
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userIdValue))
+            throw new UnauthorizedAccessException("User identifier not found.");
+
+        var request = new GetUserFavoritePropertiesQuery();
+        request.UserId = Guid.Parse(userIdValue);
+        var response = await _sender.Send(request);
+
+        return Ok(response);
+    }
+
+    [HttpPost("favorite-update")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> AddPropertyAsFavorite([FromBody] UpdateEstatePropertiesFavoritesCommand command)
+    {
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userIdValue))
+            throw new UnauthorizedAccessException("User identifier not found.");
+
+        if (!Guid.TryParse(userIdValue, out var userGuid))
+            throw new ArgumentException("Invalid user identifier format.");
+        command.FavoriteDto.UserId = userGuid;
+        
+        var response = await _sender.Send(command);
+        return Ok(response);
+    }
 }
