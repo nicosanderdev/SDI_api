@@ -55,6 +55,35 @@ public class MessagesController(ISender sender) : ControllerBase
         return Ok(result);
     }
     
+    [HttpGet("thread/{threadId}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetMessagesByThreadId(
+        [FromRoute] string threadId,
+        [FromQuery] int page = 1,
+        [FromQuery] int limit = 100,
+        [FromQuery] string? sortBy = "createdAt_asc")
+    {
+        if (!Guid.TryParse(threadId, out var threadGuid))
+            throw new ArgumentException("Invalid thread ID format.");
+
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        Guid.TryParse(userIdValue, out Guid userId);
+
+        var query = new GetMessagesByThreadIdQuery(threadGuid)
+        {
+            UserId = userId,
+            Page = page,
+            Limit = limit,
+            SortBy = sortBy
+        };
+
+        var result = await sender.Send(query);
+        return Ok(result);
+    }
+    
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -90,7 +119,103 @@ public class MessagesController(ISender sender) : ControllerBase
         await sender.Send(new MarkMessageAsReadCommand(guidId, userId));
         return Ok();
     }
-    
+
+    [HttpPatch("{id}/unread")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> MarkMessageAsUnread([FromRoute] string id)
+    {
+        if (!Guid.TryParse(id, out var guidId))
+            throw new ArgumentException("Invalid message ID format.");
+
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userIdValue, out var userId))
+            throw new ForbiddenAccessException();
+
+        await sender.Send(new MarkMessageAsUnreadCommand(guidId, userId));
+        return Ok();
+    }
+
+    [HttpPatch("{id}/replied")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> MarkMessageAsReplied([FromRoute] string id)
+    {
+        if (!Guid.TryParse(id, out var guidId))
+            throw new ArgumentException("Invalid message ID format.");
+
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userIdValue, out var userId))
+            throw new ForbiddenAccessException();
+
+        await sender.Send(new MarkMessageAsRepliedCommand(guidId, userId));
+        return Ok();
+    }
+
+    [HttpPatch("{id}/star")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> StarMessage([FromRoute] string id)
+    {
+        if (!Guid.TryParse(id, out var guidId))
+            throw new ArgumentException("Invalid message ID format.");
+
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userIdValue, out var userId))
+            throw new ForbiddenAccessException();
+
+        await sender.Send(new StarMessageCommand(guidId, userId));
+        return Ok();
+    }
+
+    [HttpDelete("{id}/unstar")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> UnstarMessage([FromRoute] string id)
+    {
+        if (!Guid.TryParse(id, out var guidId))
+            throw new ArgumentException("Invalid message ID format.");
+
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userIdValue, out var userId))
+            throw new ForbiddenAccessException();
+
+        await sender.Send(new UnstarMessageCommand(guidId, userId));
+        return Ok();
+    }
+
+    [HttpPost("{id}/archive")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ArchiveMessage([FromRoute] string id)
+    {
+        if (!Guid.TryParse(id, out var guidId))
+            throw new ArgumentException("Invalid message ID format.");
+
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userIdValue, out var userId))
+            throw new ForbiddenAccessException();
+
+        await sender.Send(new ArchiveMessageCommand(guidId, userId));
+        return Ok();
+    }
+
+    [HttpPatch("{id}/unarchive")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> UnarchiveMessage([FromRoute] string id)
+    {
+        if (!Guid.TryParse(id, out var guidId))
+            throw new ArgumentException("Invalid message ID format.");
+
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userIdValue, out var userId))
+            throw new ForbiddenAccessException();
+
+        await sender.Send(new UnarchiveMessageCommand(guidId, userId));
+        return Ok();
+    }
+
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -98,8 +223,12 @@ public class MessagesController(ISender sender) : ControllerBase
     {
         if (!Guid.TryParse(id, out var guidId))
             throw new ArgumentException("Invalid message ID format.");
-        
-        await sender.Send(new DeleteMessageCommand(guidId));
+
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userIdValue, out var userId))
+            throw new ForbiddenAccessException();
+
+        await sender.Send(new SoftDeleteMessageCommand(guidId, userId));
         return Ok();
     }
     
@@ -108,9 +237,12 @@ public class MessagesController(ISender sender) : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<TabCountsDto>> GetMessageCounts()
     {
-         // return Ok(await _sender.Send(new GetMessageCountsQuery())); // Assuming GetMessageCountsQuery exists
-         await Task.CompletedTask; // Placeholder
-         return Ok(new TabCountsDto()); // Placeholder
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userIdValue, out var userId))
+            throw new ForbiddenAccessException();
+        
+         var result = await sender.Send(new GetMessageCountsQuery { UserId = userId });
+         return Ok(result);
     }
     
     // private async Task<IActionResult> UpdateMessageRecipientStatus(Guid messageId, Func<MessageRecipient, bool> updateAction, string successMessage = "Status updated.", string notFoundMessage = "Message not found for user.")
