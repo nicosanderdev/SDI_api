@@ -904,33 +904,180 @@
       }
     },
     "/api/properties": {
-      "post": {
+      "get": {
         "tags": [
           "EstateProperties"
         ],
         "operationId": "EstateProperties_GetEstateProperties",
-        "requestBody": {
-          "x-name": "query",
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/GetEstatePropertiesQuery"
+        "parameters": [
+          {
+            "name": "Ids",
+            "in": "query",
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "array",
+              "nullable": true,
+              "items": {
+                "type": "string",
+                "format": "guid"
               }
-            }
+            },
+            "x-position": 1
           },
-          "required": true,
-          "x-position": 1
-        },
+          {
+            "name": "PageNumber",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 2
+          },
+          {
+            "name": "PageSize",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "x-position": 3
+          },
+          {
+            "name": "Filter.IsDeleted",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            },
+            "x-position": 4
+          },
+          {
+            "name": "Filter.OwnerId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 5
+          },
+          {
+            "name": "Filter.CreatedAfter",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "nullable": true
+            },
+            "x-position": 6
+          },
+          {
+            "name": "Filter.CreatedBefore",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time",
+              "nullable": true
+            },
+            "x-position": 7
+          },
+          {
+            "name": "Filter.Status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 8
+          },
+          {
+            "name": "Filter.SearchTerm",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 9
+          },
+          {
+            "name": "Filter.IncludeImages",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "nullable": true
+            },
+            "x-position": 10
+          },
+          {
+            "name": "Filter.IncludeVideos",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "nullable": true
+            },
+            "x-position": 11
+          },
+          {
+            "name": "Filter.IncludeDocuments",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "nullable": true
+            },
+            "x-position": 12
+          },
+          {
+            "name": "Filter.IncludeAmenities",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "nullable": true
+            },
+            "x-position": 13
+          },
+          {
+            "name": "Filter.SwLat",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "float",
+              "nullable": true
+            },
+            "x-position": 14
+          },
+          {
+            "name": "Filter.SwLng",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "float",
+              "nullable": true
+            },
+            "x-position": 15
+          },
+          {
+            "name": "Filter.NeLat",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "float",
+              "nullable": true
+            },
+            "x-position": 16
+          },
+          {
+            "name": "Filter.NeLng",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "float",
+              "nullable": true
+            },
+            "x-position": 17
+          }
+        ],
         "responses": {
           "200": {
-            "description": "",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PaginatedResultOfPublicEstatePropertyDto"
-                }
-              }
-            }
+            "description": ""
           },
           "400": {
             "description": "",
@@ -1084,6 +1231,46 @@
               "nullable": true
             },
             "x-position": 14
+          },
+          {
+            "name": "Filter.SwLat",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "float",
+              "nullable": true
+            },
+            "x-position": 15
+          },
+          {
+            "name": "Filter.SwLng",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "float",
+              "nullable": true
+            },
+            "x-position": 16
+          },
+          {
+            "name": "Filter.NeLat",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "float",
+              "nullable": true
+            },
+            "x-position": 17
+          },
+          {
+            "name": "Filter.NeLng",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "float",
+              "nullable": true
+            },
+            "x-position": 18
           }
         ],
         "responses": {
@@ -3488,212 +3675,6 @@
           }
         }
       },
-      "GetEstatePropertiesQuery": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "pageNumber": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "pageSize": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "filter": {
-            "$ref": "#/components/schemas/PropertyFilterDto"
-          }
-        }
-      },
-      "PropertyFilterDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "isDeleted": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "ownerId": {
-            "type": "string",
-            "nullable": true
-          },
-          "createdAfter": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "createdBefore": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "status": {
-            "type": "string",
-            "nullable": true
-          },
-          "searchTerm": {
-            "type": "string",
-            "nullable": true
-          },
-          "swLat": {
-            "type": "number",
-            "format": "float",
-            "nullable": true
-          },
-          "swLng": {
-            "type": "number",
-            "format": "float",
-            "nullable": true
-          },
-          "neLat": {
-            "type": "number",
-            "format": "float",
-            "nullable": true
-          },
-          "neLng": {
-            "type": "number",
-            "format": "float",
-            "nullable": true
-          }
-        }
-      },
-      "PropertyImageDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string",
-            "nullable": true
-          },
-          "url": {
-            "type": "string",
-            "nullable": true
-          },
-          "altText": {
-            "type": "string",
-            "nullable": true
-          },
-          "isMain": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "estatePropertyId": {
-            "type": "string",
-            "format": "guid"
-          },
-          "fileName": {
-            "type": "string",
-            "nullable": true
-          },
-          "file": {
-            "type": "string",
-            "format": "binary",
-            "nullable": true
-          },
-          "isPublic": {
-            "type": "boolean"
-          }
-        }
-      },
-      "PropertyDocumentDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string",
-            "nullable": true
-          },
-          "url": {
-            "type": "string",
-            "nullable": true
-          },
-          "name": {
-            "type": "string",
-            "nullable": true
-          },
-          "fileName": {
-            "type": "string",
-            "nullable": true
-          },
-          "estatePropertyId": {
-            "type": "string",
-            "format": "guid"
-          },
-          "file": {
-            "type": "string",
-            "format": "binary",
-            "nullable": true
-          },
-          "isPublic": {
-            "type": "boolean"
-          }
-        }
-      },
-      "PropertyVideoDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string",
-            "nullable": true
-          },
-          "url": {
-            "type": "string",
-            "nullable": true
-          },
-          "title": {
-            "type": "string",
-            "nullable": true
-          },
-          "description": {
-            "type": "string",
-            "nullable": true
-          },
-          "estatePropertyId": {
-            "type": "string",
-            "format": "guid"
-          },
-          "isPublic": {
-            "type": "boolean"
-          }
-        }
-      },
-      "AmenityDto": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "id": {
-            "type": "string",
-            "nullable": true
-          },
-          "name": {
-            "type": "string",
-            "nullable": true
-          },
-          "iconId": {
-            "type": "string",
-            "nullable": true
-          }
-        }
-      },
-      "Currency": {
-        "type": "integer",
-        "description": "",
-        "x-enumNames": [
-          "USD",
-          "UYU",
-          "BRL",
-          "EUR",
-          "GBP"
-        ],
-        "enum": [
-          0,
-          1,
-          2,
-          3,
-          4
-        ]
-      },
       "PaginatedResultOfUsersEstatePropertyDto": {
         "type": "object",
         "additionalProperties": false,
@@ -3920,6 +3901,20 @@
           }
         }
       },
+      "LocationDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "lat": {
+            "type": "number",
+            "format": "double"
+          },
+          "lng": {
+            "type": "number",
+            "format": "double"
+          }
+        }
+      },
       "EstatePropertyValuesDto": {
         "type": "object",
         "additionalProperties": false,
@@ -3987,6 +3982,24 @@
           }
         }
       },
+      "Currency": {
+        "type": "integer",
+        "description": "",
+        "x-enumNames": [
+          "USD",
+          "UYU",
+          "BRL",
+          "EUR",
+          "GBP"
+        ],
+        "enum": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ]
+      },
       "PropertyStatus": {
         "type": "integer",
         "description": "",
@@ -4004,6 +4017,125 @@
           3,
           4
         ]
+      },
+      "PropertyImageDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "url": {
+            "type": "string",
+            "nullable": true
+          },
+          "altText": {
+            "type": "string",
+            "nullable": true
+          },
+          "isMain": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "estatePropertyId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "fileName": {
+            "type": "string",
+            "nullable": true
+          },
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "nullable": true
+          },
+          "isPublic": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PropertyDocumentDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "url": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "fileName": {
+            "type": "string",
+            "nullable": true
+          },
+          "estatePropertyId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "nullable": true
+          },
+          "isPublic": {
+            "type": "boolean"
+          }
+        }
+      },
+      "PropertyVideoDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "url": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "estatePropertyId": {
+            "type": "string",
+            "format": "guid"
+          },
+          "isPublic": {
+            "type": "boolean"
+          }
+        }
+      },
+      "AmenityDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "nullable": true
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "iconId": {
+            "type": "string",
+            "nullable": true
+          }
+        }
       },
       "DuplicatedEstatePropertyDto": {
         "type": "object",

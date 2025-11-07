@@ -66,6 +66,8 @@ public class EstatePropertyProfile : Profile
         CreateMap<EstateProperty, PublicEstatePropertyDto>()
             .ForMember(dest => dest.Images, opt =>
                 opt.Ignore())
+            .ForMember(dest => dest.PropertyImages, opt =>
+                opt.Ignore())
             .ForMember(dest => dest.SalePrice,
                 opt => opt.MapFrom(src =>
                     src.EstatePropertyValues.FirstOrDefault(v => v.IsFeatured)!.SalePrice))
@@ -75,8 +77,7 @@ public class EstatePropertyProfile : Profile
             .ForMember(dest => dest.Description,
                 opt => opt.MapFrom(src => src.EstatePropertyValues.FirstOrDefault(v => v.IsFeatured)!.Description))
             .ForMember(dest => dest.Amenities, opt =>
-                opt.MapFrom(src => src.EstatePropertyAmenities));
-        
+                opt.MapFrom(src => src.EstatePropertyAmenities))
             .ForMember(dest => dest.Location, opt =>
                 opt.MapFrom(src => new LocationDto { Latitude = (double)src.LocationLatitude, Longitude = (double)src.LocationLongitude }));
 
@@ -89,7 +90,7 @@ public class EstatePropertyProfile : Profile
             .ForMember(dest => dest.LocationLatitude, opt =>
                 opt.MapFrom(src => src.Location!.Latitude))
             .ForMember(dest => dest.LocationLongitude, opt =>
-                opt.MapFrom(src => src.Location!.Longitude));
+                opt.MapFrom(src => src.Location!.Longitude))
             .ForMember(dest => dest.EstatePropertyAmenities, opt => opt.MapFrom(src =>
                 src.Amenities!
                     .Select(a => new EstatePropertyAmenity { AmenityId = Guid.Parse(a.Id!) })

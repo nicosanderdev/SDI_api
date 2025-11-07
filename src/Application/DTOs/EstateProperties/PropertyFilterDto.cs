@@ -14,8 +14,6 @@ public class PropertyFilterDto
     public bool? IncludeVideos { get; set; } = false;
     public bool? IncludeDocuments { get; set; } = false;
     public bool? IncludeAmenities { get; set; } = false;
-
-    // Optional bounding box coordinates (south-west and north-east corners)
     public float? SwLat { get; set; }
     public float? SwLng { get; set; }
     public float? NeLat { get; set; }

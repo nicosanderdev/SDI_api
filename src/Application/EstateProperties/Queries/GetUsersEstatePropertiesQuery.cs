@@ -43,20 +43,18 @@ public class GetUsersEstatePropertiesQueryHandler : IRequestHandler<GetUsersEsta
             .Include(ep => ep.EstatePropertyValues.Where(epv => !epv.IsFeatured))
             .AsNoTracking();
         
-        var queryByFilter = baseQuery;
-        
         var filter = request.Filter;
         
-        if (request.Filter?.IncludeImages == true)
+        if (filter.IncludeImages == true)
             baseQuery = baseQuery.Include(ep => ep.PropertyImages);
 
-        if (request.Filter?.IncludeDocuments == true)
+        if (filter.IncludeDocuments == true)
             baseQuery = baseQuery.Include(ep => ep.PropertyDocuments);
 
-        if (request.Filter?.IncludeVideos == true)
+        if (filter.IncludeVideos == true)
             baseQuery = baseQuery.Include(ep => ep.PropertyVideos);
         
-        if (request.Filter?.IncludeAmenities == true)
+        if (filter.IncludeAmenities == true)
             baseQuery = baseQuery.Include(ep => ep.EstatePropertyAmenities)
                 .ThenInclude(epa => epa.Amenity);
         
@@ -69,7 +67,7 @@ public class GetUsersEstatePropertiesQueryHandler : IRequestHandler<GetUsersEsta
             return new PaginatedResult<UsersEstatePropertyDto>(dtos, dtos.Count, 1, 1);
         }
 
-        queryByFilter = baseQuery;
+        var queryByFilter = baseQuery;
         queryByFilter = queryByFilter.Where(p => p.IsDeleted == filter.IsDeleted);
         
         if (!string.IsNullOrEmpty(filter.Status) && Enum.TryParse<PropertyStatus>(filter.Status, true, out var statusEnum))
