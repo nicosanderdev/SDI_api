@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace SDI_Api.Application.DTOs.Messages;
+﻿namespace SDI_Api.Application.DTOs.Messages;
 
 public class SendMessageDto
 {

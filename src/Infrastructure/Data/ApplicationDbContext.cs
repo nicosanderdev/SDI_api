@@ -13,14 +13,18 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<EstateProperty> EstateProperties => Set<EstateProperty>();
     public DbSet<EstatePropertyValues> EstatePropertyValues => Set<EstatePropertyValues>();
     public DbSet<PropertyImage> PropertyImages => Set<PropertyImage>();
+    public DbSet<PropertyVideo> PropertyVideos => Set<PropertyVideo>();
+    public DbSet<PropertyDocument> PropertyDocuments => Set<PropertyDocument>();
     public DbSet<MessageThread> MessageThreads => Set<MessageThread>();
     public DbSet<Message> Messages => Set<Message>();
     public DbSet<MessageRecipient> MessageRecipients => Set<MessageRecipient>();
     public DbSet<PropertyVisitLog> PropertyVisitLogs => Set<PropertyVisitLog>();
     public DbSet<PropertyMessageLog> PropertyMessageLogs => Set<PropertyMessageLog>();
     public DbSet<Member> Members => Set<Member>();
+    public DbSet<MemberSubscription> MemberSubscriptions => Set<MemberSubscription>();
     public DbSet<RecoveryCode> RecoveryCodes => Set<RecoveryCode>();
-    public DbSet<PropertyDocument> PropertyDocuments => Set<PropertyDocument>();
+    public DbSet<Amenity> Amenities => Set<Amenity>();
+    public DbSet<Favorite> Favorites => Set<Favorite>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -40,23 +44,28 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
                 .HasForeignKey(pi => pi.EstatePropertyId)
                 .OnDelete(DeleteBehavior.Cascade);
             
+            entity.HasMany(e => e.PropertyDocuments)
+                .WithOne(pv => pv.EstateProperty)
+                .HasForeignKey(pi => pi.EstatePropertyId)
+                .OnDelete(DeleteBehavior.Cascade);
+            
             entity.HasMany(e => e.EstatePropertyValues)
                 .WithOne(pd => pd.EstateProperty)
                 .HasForeignKey(pd => pd.EstatePropertyId)
                 .OnDelete(DeleteBehavior.Cascade);
-            
-            entity.HasMany(e => e.Amenities)
-                .WithMany(a => a.EstateProperties)
-                .UsingEntity<Dictionary<string, object>>(
-                    "EstatePropertyAmenity",
-                    j => j.HasOne<Amenity>().WithMany().HasForeignKey("AmenityId").OnDelete(DeleteBehavior.Cascade),
-                    j => j.HasOne<EstateProperty>().WithMany().HasForeignKey("EstatePropertyId").OnDelete(DeleteBehavior.Cascade),
-                    j =>
-                    {
-                        j.HasKey("EstatePropertyId", "AmenityId");
-                        j.ToTable("EstatePropertyAmenities");
-                    });
+        });
 
+        builder.Entity<EstatePropertyAmenity>(entity =>
+        {
+            entity.HasKey(ea => new { ea.EstatePropertyId, ea.AmenityId });
+
+            entity.HasOne(ea => ea.EstateProperty)
+                .WithMany(e => e.EstatePropertyAmenities)
+                .HasForeignKey(ea => ea.EstatePropertyId);
+
+            entity.HasOne(ea => ea.Amenity)
+                .WithMany(a => a.EstatePropertyAmenities)
+                .HasForeignKey(ea => ea.AmenityId);
         });
 
         builder.Entity<PropertyImage>(entity =>
@@ -135,7 +144,38 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
         
         builder.Entity<Member>(entity =>
         {
+            entity.HasKey(ms => ms.Id);
+
             entity.HasIndex(m => m.UserId).IsUnique();
+
+            entity.HasOne(m => m.MemberSubscription)
+                .WithOne(ms => ms.Member)
+                .HasForeignKey<MemberSubscription>(ms => ms.MemberId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        builder.Entity<MemberSubscription>(entity =>
+        {
+            entity.HasKey(ms => ms.Id);
+            
+            entity.HasIndex(ms => ms.MemberId).IsUnique();
+        });
+        
+        builder.Entity<Favorite>(entity =>
+        {
+            entity.HasKey(f => new { f.MemberId, f.EstatePropertyId });
+            
+            entity.HasOne(f => f.Member)
+                .WithMany(m => m.Favorites)
+                .HasForeignKey(f => f.MemberId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(f => f.EstateProperty)
+                .WithMany(p => p.Favorites)
+                .HasForeignKey(f => f.EstatePropertyId)
+                .OnDelete(DeleteBehavior.Cascade);
+            
+            entity.HasIndex(f => new { f.MemberId, f.EstatePropertyId }).IsUnique();
         });
         
         builder.Entity<RecoveryCode>(entity =>

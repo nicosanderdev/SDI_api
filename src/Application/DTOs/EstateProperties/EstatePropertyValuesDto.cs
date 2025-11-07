@@ -1,16 +1,12 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using SDI_Api.Domain.Enums;
 
-namespace SDI_Api.Domain.Entities;
+namespace SDI_Api.Application.DTOs.EstateProperties;
 
-public class EstatePropertyValues : BaseAuditableEntity
+public class EstatePropertyValuesDto
 {
-    [MaxLength(1000)]
     public string? Description { get; set; }
-    [Required]
     public DateTime AvailableFrom { get; set; }
     public int Capacity { get; set; }
-    
-    // Price and status
     public Currency Currency { get; set; }
     public decimal? SalePrice { get; set; }
     public decimal? RentPrice { get; set; }
@@ -22,14 +18,6 @@ public class EstatePropertyValues : BaseAuditableEntity
     public PropertyStatus Status { get; set; }
     public bool IsActive { get; set; }
     public bool IsPropertyVisible { get; set; }
-    
-    // Relationships
     public bool IsFeatured { get; set; }
-    public Guid EstatePropertyId { get; set; }
-    public virtual EstateProperty EstateProperty { get; set; } = null!; 
-
-    public EstatePropertyValues()
-    {
-        Id = Guid.NewGuid();
-    }
+    public DateTimeOffset? CreatedAt { get; set; }
 }

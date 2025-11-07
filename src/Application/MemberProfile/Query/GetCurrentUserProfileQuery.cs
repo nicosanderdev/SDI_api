@@ -33,8 +33,12 @@ public class GetCurrentUserProfileQueryHandler : IRequestHandler<GetCurrentUserP
         Guid.TryParse(request.UserId, out var userIdGuid);
         var member = await _context.Members
             .Where(x => x.UserId == userIdGuid).FirstOrDefaultAsync(cancellationToken);
-
+        
         var profileDataDto = _mapper.Map<ProfileDataDto>(user);
+        var roles = await _identityService.GetUserRolesAsync(request.UserId);
+        if (roles != null)
+            profileDataDto.Roles = roles as List<string>;
+        
         return _mapper.Map(member, profileDataDto);
     }
 }

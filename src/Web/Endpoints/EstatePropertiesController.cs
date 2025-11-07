@@ -1,9 +1,8 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using System.Text.Json;
-using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SDI_Api.Application.Common.Interfaces;
+using SDI_Api.Application.Common.Models;
 using SDI_Api.Application.DTOs.EstateProperties;
 using SDI_Api.Application.EstateProperties.Commands;
 using SDI_Api.Application.EstateProperties.Commands.Create;
@@ -19,16 +18,12 @@ namespace SDI_Api.Web.Endpoints;
 public class EstatePropertiesController : ControllerBase
 {
     private readonly ISender _sender;
-    private readonly IMapper _mapper;
-    private readonly IEmailService _emailService;
 
-    public EstatePropertiesController(ISender sender, IMapper mapper, IEmailService emailService)
+    public EstatePropertiesController(ISender sender)
     {
         _sender = sender;
-        _mapper = mapper;
-        _emailService = emailService;
     }
-
+    
     [AllowAnonymous]
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -39,22 +34,11 @@ public class EstatePropertiesController : ControllerBase
         return Ok(response);
     }
     
-    [AllowAnonymous]
-    [HttpGet("{id}")]
-    public async Task<IActionResult> GetEstateProperty([FromRoute] string id)
-    {
-        if (!Guid.TryParse(id, out var guidId))
-            throw new ArgumentException("Invalid ID format.");
-
-        var response = await _sender.Send(new GetEstatePropertyByIdQuery(guidId));
-        return Ok(response);
-    }
-
     [HttpGet("mine")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PaginatedResult<UsersEstatePropertyDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> GetUsersEstateProperties([FromQuery] GetUsersEstatePropertiesQuery query)
+    public async Task<IActionResult> GetUsersProperties([FromQuery] GetUsersEstatePropertiesQuery query)
     {
         var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (string.IsNullOrEmpty(userIdValue))
@@ -64,29 +48,6 @@ public class EstatePropertiesController : ControllerBase
             throw new ArgumentException("Invalid user identifier format.");
 
         query.UserId = userGuid;
-        var response = await _sender.Send(query);
-        return Ok(response);
-    }
-    
-    [HttpGet("mine/{id}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    public async Task<IActionResult> GetUsersEstateProperty([FromRoute] string id)
-    {
-        var query = new GetUsersEstatePropertyQuery();
-        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (string.IsNullOrEmpty(userIdValue))
-            throw new UnauthorizedAccessException("User identifier not found.");
-
-        if (!Guid.TryParse(id, out var propertyId))
-            throw new ArgumentException("Invalid user identifier format.");
-        query.PropertyId = propertyId;
-        
-        if (!Guid.TryParse(userIdValue, out var userGuid))
-            throw new ArgumentException("Invalid user identifier format.");
-        query.UserId = userGuid;
-        
         var response = await _sender.Send(query);
         return Ok(response);
     }
@@ -131,6 +92,30 @@ public class EstatePropertiesController : ControllerBase
         return Ok(updatedPropertyDto);
     }
 
+    [HttpPost("{id:guid}/duplicate")]
+    [ProducesResponseType(typeof(DuplicatedEstatePropertyDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DuplicateProperty(Guid id)
+    {
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userIdValue))
+            throw new UnauthorizedAccessException("User identifier not found.");
+
+        if (!Guid.TryParse(userIdValue, out var userGuid))
+            throw new ArgumentException("Invalid user identifier format.");
+        
+        var command = new DuplicateEstatePropertyCommand
+        {
+            OriginalPropertyId = id,
+            UserId = userGuid
+        };
+        
+        var response = await _sender.Send(command);
+        return Ok(response);
+    }
+    
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -141,5 +126,51 @@ public class EstatePropertiesController : ControllerBase
         
         await _sender.Send(new DeleteEstatePropertyCommand(guidId));
         return NoContent();
+    }
+
+    [HttpGet("amenities")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> GetAllAmenities()
+    {
+        var result = await _sender.Send(new GetAllAmenitiesQuery());
+        return Ok(result);
+    }
+
+    [HttpGet("favorites")]
+    [ProducesResponseType(typeof(ICollection<PropertyAsFavoriteDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetPropertiesAsFavorite()
+    {
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userIdValue))
+            throw new UnauthorizedAccessException("User identifier not found.");
+
+        var request = new GetUserFavoritePropertiesQuery();
+        request.UserId = Guid.Parse(userIdValue);
+        var response = await _sender.Send(request);
+
+        return Ok(response);
+    }
+
+    [HttpPost("favorite-update")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> AddPropertyAsFavorite([FromBody] UpdateEstatePropertiesFavoritesCommand command)
+    {
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrEmpty(userIdValue))
+            throw new UnauthorizedAccessException("User identifier not found.");
+
+        if (!Guid.TryParse(userIdValue, out var userGuid))
+            throw new ArgumentException("Invalid user identifier format.");
+        command.FavoriteDto.UserId = userGuid;
+        
+        var response = await _sender.Send(command);
+        return Ok(response);
     }
 }

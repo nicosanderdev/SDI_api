@@ -9,5 +9,6 @@ public class ProfileDataDto
     public string? Phone { get; set; }
     public string? Title { get; set; }
     public string? AvatarUrl { get; set; }
+    public List<string>? Roles { get; set; }
     public AddressDto? Address { get; set; }
 }

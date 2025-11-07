@@ -27,7 +27,11 @@ public class GetUsersEstatePropertyQueryHandler : IRequestHandler<GetUsersEstate
         var estateProperty = await _context.EstateProperties
             .Where(ep => ep.Owner.UserId == request.UserId && ep.Id == request.PropertyId && !ep.IsDeleted)
             .Include(ep => ep.PropertyImages)
+            .Include(ep => ep.PropertyVideos)
+            .Include(ep => ep.PropertyDocuments)
             .Include(ep => ep.EstatePropertyValues)
+            .Include(p => p.EstatePropertyAmenities)
+                .ThenInclude(ea => ea.Amenity)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (estateProperty == null)
@@ -35,7 +39,8 @@ public class GetUsersEstatePropertyQueryHandler : IRequestHandler<GetUsersEstate
         
         var dto = _mapper.Map<UsersEstatePropertyDto>(estateProperty);
         _mapper.Map(estateProperty.EstatePropertyValues.FirstOrDefault(ep => ep.IsFeatured)!, dto);
-        _mapper.Map(estateProperty.PropertyImages.Where(pi => !pi.IsDeleted), dto.Images);
+        _mapper.Map(estateProperty.PropertyImages.Where(pi => !pi.IsDeleted), dto.PropertyImages);
+        _mapper.Map(estateProperty.PropertyDocuments.Where(pi => !pi.IsDeleted), dto.PropertyDocuments);
         return dto;
     }
 }

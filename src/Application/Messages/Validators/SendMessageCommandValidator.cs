@@ -21,10 +21,10 @@ public class SendMessageCommandValidator : AbstractValidator<SendMessageCommand>
         // The `When` clause prevents NullReferenceException if MessageData is null.
         When(v => true, () =>
         {
-            RuleFor(v => v.MessageData.RecipientId)
+            /* RuleFor(v => v.MessageData.RecipientId)
                 .NotEmpty().WithMessage("RecipientId is required.")
                 .Must(BeAValidGuid).WithMessage("RecipientId must be a valid GUID.")
-                .MustAsync(RecipientMustExist).WithMessage("The specified recipient does not exist.");
+                .MustAsync(RecipientMustExist).WithMessage("The specified recipient does not exist."); */
 
             RuleFor(v => v.MessageData.Body)
                 .NotEmpty().WithMessage("Message body cannot be empty.");

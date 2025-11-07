@@ -2,7 +2,8 @@
 using SDI_Api.Domain.Entities;
 using Ardalis.GuardClauses;
 using Microsoft.AspNetCore.Http;
-using SDI_Api.Application.Dtos; // Or your preferred exception library
+using SDI_Api.Application.Dtos;
+using SDI_Api.Application.DTOs.EstateProperties; // Or your preferred exception library
 
 namespace SDI_Api.Application.EstateProperties.Commands.Edit;
 
@@ -33,60 +34,85 @@ public class UpdateEstatePropertyCommandHandler : IRequestHandler<UpdateEstatePr
 
         var entity = await _context.EstateProperties
             .Include(p => p.PropertyImages)
-            .Include(p => p.Documents)
+            .Include(p => p.PropertyDocuments)
+            .Include(p => p.PropertyVideos)
             .Include(p => p.EstatePropertyValues)
+            .Include(p => p.EstatePropertyAmenities)
+                .ThenInclude(epa => epa.Amenity)
             .FirstOrDefaultAsync(p => p.Id == request.Id, cancellationToken);
 
         if (entity == null)
             throw new NotFoundException(nameof(EstateProperty), request.Id.ToString());
         
         _mapper.Map(request, entity);
-        
-        var propertyFolderId = GetOrGeneratePropertyFolderId(entity);
-        await UpdateDocumentsAsync(entity, request.Documents, propertyFolderId);
 
-        await UpdateImagesAsync(entity, request.PropertyImages, request.MainImageId, propertyFolderId);
+        var propertyFolderId = entity.Id.ToString();
+        await UpdateDocumentsAsync(entity, request.PropertyDocuments, propertyFolderId!);
+        await UpdateImagesAsync(entity, request.PropertyImages, request.MainImageId, propertyFolderId!);
+        await UpdateVideosAsync(entity, request.PropertyVideos);
         UpdatePropertyValue(entity, request);
+        await UpdateAmenitiesAsync(entity, request.Amenities);
         
         await _context.SaveChangesAsync(cancellationToken);
         return Unit.Value;
     }
 
-    private string GetOrGeneratePropertyFolderId(EstateProperty entity)
+    private async Task UpdateDocumentsAsync(EstateProperty entity, List<PropertyDocumentDto>? newDocuments, string propertyFolderId)
     {
-        var anyFileUrl = entity.PropertyImages.FirstOrDefault()?.Url ?? entity.Documents.FirstOrDefault()?.Url;
-
-        if (!string.IsNullOrEmpty(anyFileUrl))
+        var incomingDocumentsIds = newDocuments?
+            .Where(img => !string.IsNullOrWhiteSpace(img.Id))
+            .Select(img => img.Id!)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase) ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        
+        var documentsToDelete = entity.PropertyDocuments
+            .Where(img => !incomingDocumentsIds.Contains(img.Id.ToString()))
+            .ToList();
+        
+        foreach (var oldDocument in documentsToDelete)
         {
-            var pathSegments = anyFileUrl.Split(new[] { '/', '\\' });
-            if (pathSegments.Length >= 2)
-                return pathSegments[pathSegments.Length - 2];
+            await _fileStorageService.DeleteFileAsync(oldDocument.Url);
+            _context.PropertyDocuments.Remove(oldDocument);
         }
-        return Guid.NewGuid().ToString();
-    }
-
-    private async Task UpdateDocumentsAsync(EstateProperty entity, List<IFormFile> newDocuments, string propertyFolderId)
-    {
-        foreach (var oldDoc in entity.Documents)
-            await _fileStorageService.DeleteFileAsync(oldDoc.Url);
-        _context.PropertyDocuments.RemoveRange(entity.Documents);
-        entity.Documents.Clear();
+        entity.PropertyDocuments = entity.PropertyDocuments.Except(documentsToDelete).ToList();
+        
+        var existingDbDocumentsIds = entity.PropertyDocuments
+            .Select(doc => doc.Id.ToString())
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
         
         var docExtensions = new[] { ".pdf", ".doc", ".docx" };
-        foreach (var docFile in newDocuments)
+        if (newDocuments != null)
         {
-            var fileResult = await _fileStorageService.SaveFileAsync(
-                docFile, 
-                "StoragePaths:PropertyDocuments",
-                docExtensions, 
-                propertyFolderId
-            );
-            
-            entity.Documents.Add(new PropertyDocument {
-                Name = fileResult.FileName,
-                FileType = fileResult.ContentType,
-                Url = fileResult.RelativePath
-            });
+            var newPropertyDocuments = new List<PropertyDocument>();
+            foreach (var docFile in newDocuments)
+            {
+                if (docFile.File == null)
+                    continue;
+                
+                if (!string.IsNullOrWhiteSpace(docFile.Id) && existingDbDocumentsIds.Contains(docFile.Id))
+                    continue;
+                
+                var fileResult = await _fileStorageService.SaveFileAsync(
+                    docFile.File, 
+                    "StoragePaths:PropertyDocuments",
+                    docExtensions, 
+                    propertyFolderId
+                );
+                
+                Guid parsedId;
+                Guid.TryParse(docFile.Id, out parsedId);
+                var propertyDocumentsToAdd = _mapper.Map<PropertyDocument>(docFile);
+                propertyDocumentsToAdd.Id = parsedId;
+                propertyDocumentsToAdd.Url = fileResult.RelativePath;
+                propertyDocumentsToAdd.EstatePropertyId = entity.Id;
+                propertyDocumentsToAdd.EstateProperty = entity;
+                
+                entity.PropertyDocuments.Add(propertyDocumentsToAdd);
+                newPropertyDocuments.Add(propertyDocumentsToAdd);
+            }
+            if (newPropertyDocuments.Count > 0)
+            {
+                _context.PropertyDocuments.AddRange(newPropertyDocuments);
+            }
         }
     }
 
@@ -99,12 +125,13 @@ public class UpdateEstatePropertyCommandHandler : IRequestHandler<UpdateEstatePr
     /// <param name="propertyFolderId"></param>
     private async Task UpdateImagesAsync(EstateProperty entity, List<PropertyImageDto>? newImages, string? mainImageUrl, string propertyFolderId)
     {
-        var incomingImageNames = newImages?.Where(img => img.File != null)
-            .Select(img => img.File!.FileName)
-            .ToHashSet() ?? new HashSet<string>();
+        var incomingImageIds = newImages?
+            .Where(img => !string.IsNullOrWhiteSpace(img.Id))
+            .Select(img => img.Id!)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase) ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         
         var imagesToDelete = entity.PropertyImages
-            .Where(img => !incomingImageNames.Contains(Path.GetFileName(img.Url)))
+            .Where(img => !incomingImageIds.Contains(img.Id.ToString()))
             .ToList();
         
         foreach (var oldImage in imagesToDelete)
@@ -114,40 +141,46 @@ public class UpdateEstatePropertyCommandHandler : IRequestHandler<UpdateEstatePr
         }
         entity.PropertyImages = entity.PropertyImages.Except(imagesToDelete).ToList();
         
-        var existingImageNames = entity.PropertyImages
-            .Select(img => Path.GetFileName(img.Url))
-            .ToHashSet();
+        var existingDbImageIds = entity.PropertyImages
+            .Select(img => img.Id.ToString())
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
         
         var imgExtensions = new[] { ".jpg", ".jpeg", ".png" };
         if (newImages != null)
         {
+            var newPropertyImages = new List<PropertyImage>();
             foreach (var imgDto in newImages)
             {
                 if (imgDto.File == null)
                     continue;
                 
-                if (existingImageNames.Contains(imgDto.File.FileName))
+                if (!string.IsNullOrWhiteSpace(imgDto.Id) && existingDbImageIds.Contains(imgDto.Id))
                     continue;
-                    
+                
                 var fileResult = await _fileStorageService.SaveFileAsync(
                     imgDto.File, 
                     "StoragePaths:PropertyImages",
                     imgExtensions, 
                     propertyFolderId
                 );
-
-                var propertyImageToAdd = new PropertyImage
-                {
-                    AltText = imgDto.AltText ?? fileResult.FileName, 
-                    Url = fileResult.RelativePath,
-                    IsMain = fileResult.FileName == mainImageUrl || (imgDto.IsMain != null && imgDto.IsMain.Value)
-                };
+                
+                Guid parsedId;
+                Guid.TryParse(imgDto.Id, out parsedId);
+                var propertyImageToAdd = _mapper.Map<PropertyImage>(imgDto);
+                propertyImageToAdd.Id = parsedId;
+                propertyImageToAdd.Url = fileResult.RelativePath;
+                propertyImageToAdd.EstatePropertyId = entity.Id;
+                propertyImageToAdd.EstateProperty = entity;
                 
                 entity.PropertyImages.Add(propertyImageToAdd);
+                newPropertyImages.Add(propertyImageToAdd);
+            }
+            if (newPropertyImages.Count > 0)
+            {
+                _context.PropertyImages.AddRange(newPropertyImages);
             }
         }
-
-        // Now set IsMain flags and MainImageId after all images are added
+        
         if (!string.IsNullOrEmpty(mainImageUrl))
         {
             foreach (var img in entity.PropertyImages)
@@ -157,9 +190,7 @@ public class UpdateEstatePropertyCommandHandler : IRequestHandler<UpdateEstatePr
                 .FirstOrDefault(img => Path.GetFileName(img.Url) == mainImageUrl);
             
             if (mainImage != null)
-            {
                 mainImage.IsMain = true;
-            }
         }
         
         // Set MainImageId only after determining which image is main
@@ -180,33 +211,202 @@ public class UpdateEstatePropertyCommandHandler : IRequestHandler<UpdateEstatePr
             entity.MainImageId = null;
         }
     }
-
-
+    
+    private Task UpdateVideosAsync(EstateProperty entity, List<PropertyVideoDto>? newVideos)
+    {
+        var incomingVideoIds = newVideos?
+            .Where(v => !string.IsNullOrWhiteSpace(v.Id))
+            .Select(v => v.Id!)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase) ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        
+        var videosToDelete = entity.PropertyVideos
+            .Where(v => !incomingVideoIds.Contains(v.Id.ToString()))
+            .ToList();
+        
+        foreach (var oldVideo in videosToDelete)
+        {
+            _context.PropertyVideos.Remove(oldVideo);
+        }
+        entity.PropertyVideos = entity.PropertyVideos.Except(videosToDelete).ToList();
+        
+        var existingDbVideoIds = entity.PropertyVideos
+            .Select(v => v.Id.ToString())
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        
+        if (newVideos != null)
+        {
+            var newPropertyVideos = new List<PropertyVideo>();
+            foreach (var videoDto in newVideos)
+            {
+                if (!string.IsNullOrWhiteSpace(videoDto.Id) && existingDbVideoIds.Contains(videoDto.Id))
+                {
+                    var existing = entity.PropertyVideos.FirstOrDefault(v => v.Id.ToString() == videoDto.Id);
+                    if (existing != null)
+                    {
+                        if (!string.IsNullOrWhiteSpace(videoDto.Url))
+                            existing.Url = videoDto.Url!;
+                        existing.Description = videoDto.Description;
+                    }
+                    continue;
+                }
+                
+                if (!existingDbVideoIds.Contains(videoDto.Id!))
+                {
+                    Guid.TryParse(videoDto.Id, out var parsedId);
+                    var videoToAdd = _mapper.Map<PropertyVideo>(videoDto);
+                    videoToAdd.Id = parsedId;
+                    videoToAdd.EstatePropertyId = entity.Id;
+                    videoToAdd.EstateProperty = entity;
+                    entity.PropertyVideos.Add(videoToAdd);
+                    newPropertyVideos.Add(videoToAdd);
+                }
+            }
+            if (newPropertyVideos.Count > 0)
+            {
+                _context.PropertyVideos.AddRange(newPropertyVideos);
+            }
+        }
+        return Task.CompletedTask;
+    }
+    
     /// <summary>
-    /// Manages the single EstatePropertyValue associated with an EstateProperty.
-    /// It creates, updates, or deletes the value object based on the provided DTO.
+    /// Save a new EstatePropertyValues record when any value attribute changes; otherwise do nothing.
+    /// Keeps existing relationships intact. Latest value becomes featured.
     /// </summary>
     private void UpdatePropertyValue(EstateProperty entity, CreateOrUpdateEstatePropertyDto? valueDto)
     {
         var existingValue = entity.EstatePropertyValues.FirstOrDefault();
 
-        if (valueDto != null)
+        if (valueDto == null)
         {
-            if (existingValue != null)
+            // No incoming values => no change per new requirements.
+            return;
+        }
+
+        // Normalize incoming values
+        string? incomingDescription = string.IsNullOrWhiteSpace(valueDto.Description)
+            ? null
+            : valueDto.Description!.Trim();
+        var incomingAvailableFrom = DateTime.SpecifyKind(valueDto.AvailableFrom, DateTimeKind.Utc);
+        var incomingCapacity = valueDto.Capacity;
+        var incomingCurrency = valueDto.Currency;
+        var incomingSalePrice = valueDto.SalePrice;
+        var incomingRentPrice = valueDto.RentPrice;
+        var incomingHasCommonExpenses = valueDto.HasCommonExpenses;
+        var incomingCommonExpensesValue = valueDto.CommonExpensesAmount;
+        bool? incomingIsElectricityIncluded = valueDto.IsElectricityIncluded;
+        bool? incomingIsWaterIncluded = valueDto.IsWaterIncluded;
+        var incomingIsPriceVisible = valueDto.IsPriceVisible;
+        var incomingStatus = valueDto.Status;
+        var incomingIsActive = valueDto.IsActive;
+        var incomingIsPropertyVisible = valueDto.IsPropertyVisible;
+
+        bool hasChanges = false;
+        if (existingValue == null)
+        {
+            hasChanges = true; // no previous values, so we need to create one
+        }
+        else
+        {
+            // Compare all relevant fields
+            hasChanges =
+                Normalize(existingValue.Description) != incomingDescription ||
+                NormalizeDate(existingValue.AvailableFrom) != incomingAvailableFrom ||
+                existingValue.Capacity != incomingCapacity ||
+                existingValue.Currency != incomingCurrency ||
+                existingValue.SalePrice != incomingSalePrice ||
+                existingValue.RentPrice != incomingRentPrice ||
+                existingValue.HasCommonExpenses != incomingHasCommonExpenses ||
+                existingValue.CommonExpensesValue != incomingCommonExpensesValue ||
+                CoerceBool(existingValue.IsElectricityIncluded) != CoerceBool(incomingIsElectricityIncluded) ||
+                CoerceBool(existingValue.IsWaterIncluded) != CoerceBool(incomingIsWaterIncluded) ||
+                existingValue.IsPriceVisible != incomingIsPriceVisible ||
+                existingValue.Status != incomingStatus ||
+                existingValue.IsActive != incomingIsActive ||
+                existingValue.IsPropertyVisible != incomingIsPropertyVisible;
+        }
+
+        if (!hasChanges)
+        {
+            // No value fields changed; do not update or create
+            return;
+        }
+
+        // Create a new values record and mark it as featured
+        var newValues = new EstatePropertyValues
+        {
+            Description = incomingDescription,
+            AvailableFrom = incomingAvailableFrom,
+            Capacity = incomingCapacity,
+            Currency = incomingCurrency,
+            SalePrice = incomingSalePrice,
+            RentPrice = incomingRentPrice,
+            HasCommonExpenses = incomingHasCommonExpenses,
+            CommonExpensesValue = incomingCommonExpensesValue,
+            IsElectricityIncluded = incomingIsElectricityIncluded,
+            IsWaterIncluded = incomingIsWaterIncluded,
+            IsPriceVisible = incomingIsPriceVisible,
+            Status = incomingStatus,
+            IsActive = incomingIsActive,
+            IsPropertyVisible = incomingIsPropertyVisible,
+            IsFeatured = true,
+            EstatePropertyId = entity.Id,
+            EstateProperty = entity
+        };
+
+        // Optionally un-feature the previous one to ensure a single featured record
+        if (existingValue != null && existingValue.IsFeatured)
+        {
+            existingValue.IsFeatured = false;
+        }
+
+        entity.EstatePropertyValues.Add(newValues);
+        _context.EstatePropertyValues.Add(newValues);
+
+        static string? Normalize(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
+        static DateTime NormalizeDate(DateTime dt) => DateTime.SpecifyKind(dt, DateTimeKind.Utc);
+        static bool CoerceBool(bool? b) => b ?? false;
+    }
+
+    private async Task UpdateAmenitiesAsync(EstateProperty entity, List<AmenityDto>? newAmenities)
+    {
+        if (newAmenities == null)
+            return;
+
+        var incomingIds = newAmenities
+            .Where(a => Guid.TryParse(a.Id, out _))
+            .Select(a => Guid.Parse(a.Id!))
+            .ToHashSet();
+
+        var currentIds = entity.EstatePropertyAmenities
+            .Select(ea => ea.AmenityId)
+            .ToHashSet();
+
+        // Remove old relationships
+        var toRemove = entity.EstatePropertyAmenities
+            .Where(ea => !incomingIds.Contains(ea.AmenityId))
+            .ToList();
+
+        foreach (var rel in toRemove)
+        {
+            entity.EstatePropertyAmenities.Remove(rel);
+        }
+
+        // Add new relationships
+        var toAddIds = incomingIds.Except(currentIds).ToList();
+        foreach (var id in toAddIds)
+        {
+            // only add if amenity exists and not deleted
+            bool exists = await _context.Amenities.AnyAsync(a => a.Id == id && !a.IsDeleted);
+            if (exists)
             {
-                valueDto.Id = existingValue.Id;
-                _mapper.Map(valueDto, existingValue);
-                existingValue.AvailableFrom = DateTime.SpecifyKind(existingValue.AvailableFrom, DateTimeKind.Utc);
-            }
-            else
-            {
-                var newValue = _mapper.Map<EstatePropertyValues>(valueDto);
-                newValue.IsFeatured = true;
-                newValue.AvailableFrom = DateTime.SpecifyKind(newValue.AvailableFrom, DateTimeKind.Utc);
-                entity.EstatePropertyValues.Add(newValue);
+                entity.EstatePropertyAmenities.Add(new EstatePropertyAmenity
+                {
+                    EstatePropertyId = entity.Id,
+                    AmenityId = id,
+                    CreatedAtUtc = DateTimeOffset.Now
+                });
             }
         }
-        else if (existingValue != null)
-            _context.EstatePropertyValues.Remove(existingValue);
     }
 }

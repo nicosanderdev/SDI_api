@@ -28,23 +28,25 @@ public class CreateEstatePropertyCommandHandler : IRequestHandler<CreateEstatePr
         var request = command.CreateOrUpdateEstatePropertyDto;
         var estateProperty = _mapper.Map<EstateProperty>(request);
         
-        var propertyFolderId = Guid.NewGuid().ToString();
+        var propertyId = Guid.NewGuid();
 
         // Process Documents
         var docExtensions = new[] { ".pdf", ".doc", ".docx" };
-        foreach (var docFile in request!.Documents)
+        foreach (var docDto in request!.PropertyDocuments!)
         {
             var fileResult = await _fileStorageService.SaveFileAsync(
-                docFile, 
+                docDto.File!, 
                 "StoragePaths:PropertyDocuments",
                 docExtensions, 
-                propertyFolderId
+                propertyId.ToString()
             );
             
-            estateProperty.Documents.Add(new PropertyDocument {
+            estateProperty.PropertyDocuments.Add(new PropertyDocument {
                 Name = fileResult.FileName,
+                EstatePropertyId = request.Id,
                 FileType = fileResult.ContentType,
-                Url = fileResult.RelativePath
+                Url = fileResult.RelativePath,
+                IsPublic = docDto.IsPublic
             });
         }
         
@@ -58,7 +60,7 @@ public class CreateEstatePropertyCommandHandler : IRequestHandler<CreateEstatePr
                     imgFile.File!, 
                     "StoragePaths:PropertyImages",
                     imgExtensions, 
-                    propertyFolderId
+                    propertyId.ToString()
                 );
 
                 var propertyImageToAdd = new PropertyImage
@@ -76,13 +78,52 @@ public class CreateEstatePropertyCommandHandler : IRequestHandler<CreateEstatePr
             }
         }
         
+        // Process Videos
+        if (request.PropertyVideos != null)
+        {
+            foreach (var videoDto in request.PropertyVideos)
+            {
+                var propertyVideoToAdd = new PropertyVideo
+                {
+                    IsDeleted = false,
+                    Url = videoDto.Url!,
+                    Title = videoDto.Title ?? null,
+                    Description = videoDto.Description ?? null,
+                    EstatePropertyId = estateProperty.Id,
+                    EstateProperty = estateProperty
+                };
+                
+                estateProperty.PropertyVideos.Add(propertyVideoToAdd);
+            }
+        }
+        
+        // Process Amenities
+        var amenitiesDb = await _context.Amenities.ToListAsync(cancellationToken);
+        if (request.Amenities != null)
+        {
+            foreach (var amenityDto in request.Amenities)
+            {
+                Guid.TryParse(amenityDto.Id, out var amenityId);
+                var amenityToAdd = new EstatePropertyAmenity
+                {
+                    EstatePropertyId = estateProperty.Id,
+                    EstateProperty = estateProperty,
+                    AmenityId = amenityId,
+                    Amenity = amenitiesDb.FirstOrDefault(a => a.Id == amenityId)!,
+                };
+                
+                estateProperty.EstatePropertyAmenities.Add(amenityToAdd);
+            }
+        }
+        
         var member = await _context.Members.FirstOrDefaultAsync(m => m.UserId.ToString() == request!.OwnerId, cancellationToken);
         if (member == null || member.IsDeleted)
             throw new NotFoundException(nameof(Member), request!.OwnerId!);
         
         estateProperty.OwnerId = member.Id;
         estateProperty.Owner = member;
-
+        estateProperty.Id = propertyId;
+        
         var featuredValues = _mapper.Map<EstatePropertyValues>(request);
         featuredValues.IsFeatured = true;
         featuredValues.AvailableFrom = DateTime.SpecifyKind(featuredValues.AvailableFrom, DateTimeKind.Utc);
@@ -92,6 +133,6 @@ public class CreateEstatePropertyCommandHandler : IRequestHandler<CreateEstatePr
         await _context.SaveChangesAsync(cancellationToken);
         
         estateProperty.AddDomainEvent(new EstatePropertyCreatedEvent(estateProperty));
-        return request!;
+        return request;
     }
 }

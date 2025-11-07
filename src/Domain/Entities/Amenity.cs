@@ -4,5 +4,5 @@ public class Amenity : BaseEntity
 {
     public string? Name { get; set; }
     public string? IconId { get; set; }
-    public virtual List<EstateProperty> EstateProperties { get; set; } = new List<EstateProperty>();
+    public virtual ICollection<EstatePropertyAmenity> EstatePropertyAmenities { get; set; } = new List<EstatePropertyAmenity>();
 }

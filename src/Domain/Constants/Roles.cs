@@ -2,6 +2,7 @@
 
 public abstract class Roles
 {
+    public const string PublicUser = nameof(PublicUser);
+    public const string Manager = nameof(Manager);
     public const string Administrator = nameof(Administrator);
-    public const string User = nameof(User);
 }
