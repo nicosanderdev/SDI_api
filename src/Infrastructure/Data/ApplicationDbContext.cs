@@ -25,6 +25,12 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<RecoveryCode> RecoveryCodes => Set<RecoveryCode>();
     public DbSet<Amenity> Amenities => Set<Amenity>();
     public DbSet<Favorite> Favorites => Set<Favorite>();
+    public DbSet<Plan> Plans => Set<Plan>();
+    public DbSet<Company> Companies => Set<Company>();
+    public DbSet<UserCompany> UserCompanies => Set<UserCompany>();
+    public DbSet<Subscription> Subscriptions => Set<Subscription>();
+    public DbSet<BillingHistory> BillingHistories => Set<BillingHistory>();
+    public DbSet<Usage> Usages => Set<Usage>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -133,11 +139,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
 
         builder.Entity<MessageRecipient>(entity =>
         {
-            entity.HasKey(mr => mr.Id); // Explicitly define PK if not named 'Id' or '[ClassName]Id'
-            // Or composite key: entity.HasKey(mr => new { mr.MessageId, mr.RecipientId });
-            // If using composite key, then Id property is not needed on MessageRecipient.
-            // For simplicity, single Guid Id is used here.
-
+            entity.HasKey(mr => mr.Id); 
             entity.HasIndex(mr => new { mr.RecipientId, mr.IsRead, mr.IsArchived, mr.IsDeleted }); // For inbox counts
             entity.HasIndex(mr => new { mr.RecipientId, mr.IsStarred, mr.IsDeleted }); // For starred counts
         });
@@ -182,6 +184,80 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
         {
             entity.HasIndex(rc => rc.Code).IsUnique();
             entity.HasIndex(rc => rc.UserId);
+        });
+        
+        // Subscription feature entities
+        builder.Entity<Plan>(entity =>
+        {
+            entity.HasKey(p => p.Id);
+            entity.HasIndex(p => p.Key).IsUnique();
+            entity.HasIndex(p => p.IsActive);
+            
+            entity.HasMany(p => p.Subscriptions)
+                .WithOne(s => s.Plan)
+                .HasForeignKey(s => s.PlanId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+        
+        builder.Entity<Company>(entity =>
+        {
+            entity.HasKey(c => c.Id);
+            entity.HasIndex(c => c.BillingContactUserId);
+            entity.HasIndex(c => c.Name);
+            
+            entity.HasMany(c => c.UserCompanies)
+                .WithOne(uc => uc.Company)
+                .HasForeignKey(uc => uc.CompanyId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+        
+        builder.Entity<UserCompany>(entity =>
+        {
+            entity.HasKey(uc => uc.Id);
+            entity.HasIndex(uc => new { uc.MemberId, uc.CompanyId }).IsUnique();
+            entity.HasIndex(uc => uc.MemberId);
+            entity.HasIndex(uc => uc.CompanyId);
+        });
+        
+        builder.Entity<Subscription>(entity =>
+        {
+            entity.HasKey(s => s.Id);
+            entity.HasIndex(s => new { s.OwnerType, s.OwnerId });
+            entity.HasIndex(s => s.PlanId);
+            entity.HasIndex(s => s.Status);
+            entity.HasIndex(s => s.ProviderSubscriptionId);
+            
+            // This is handled at the application level based on OwnerType
+            // No explicit FK constraint is set to allow flexibility
+            entity.HasOne(s => s.Plan)
+                .WithMany(p => p.Subscriptions)
+                .HasForeignKey(s => s.PlanId)
+                .OnDelete(DeleteBehavior.Restrict);
+            
+            entity.HasMany(s => s.BillingHistories)
+                .WithOne(bh => bh.Subscription)
+                .HasForeignKey(bh => bh.SubscriptionId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+        
+        builder.Entity<BillingHistory>(entity =>
+        {
+            entity.HasKey(bh => bh.Id);
+            entity.HasIndex(bh => bh.SubscriptionId);
+            entity.HasIndex(bh => bh.ProviderInvoiceId);
+            entity.HasIndex(bh => bh.Status);
+            
+            entity.HasOne(bh => bh.Subscription)
+                .WithMany(s => s.BillingHistories)
+                .HasForeignKey(bh => bh.SubscriptionId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+        
+        builder.Entity<Usage>(entity =>
+        {
+            entity.HasKey(u => u.Id);
+            entity.HasIndex(u => new { u.OwnerType, u.OwnerId, u.SnapshotAt });
+            entity.HasIndex(u => u.SnapshotAt);
         });
     }
 }

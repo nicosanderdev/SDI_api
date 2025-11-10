@@ -19,5 +19,11 @@ public interface IApplicationDbContext
     DbSet<RecoveryCode> RecoveryCodes { get; }
     DbSet<Amenity> Amenities { get; }
     DbSet<Favorite> Favorites { get; }
+    DbSet<Plan> Plans { get; }
+    DbSet<Company> Companies { get; }
+    DbSet<UserCompany> UserCompanies { get; }
+    DbSet<Subscription> Subscriptions { get; }
+    DbSet<BillingHistory> BillingHistories { get; }
+    DbSet<Usage> Usages { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }
