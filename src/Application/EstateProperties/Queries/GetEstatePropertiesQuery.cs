@@ -30,6 +30,7 @@ public class GetEstatePropertiesQueryHandler : IRequestHandler<GetEstateProperti
         IQueryable<EstateProperty> baseQuery = _context.EstateProperties
             .Where(p => p.EstatePropertyValues.FirstOrDefault(epv => epv.IsFeatured)!.IsPropertyVisible)
             .Where(p => !p.IsDeleted)
+            .Include(p => p.EstatePropertyValues)
             .AsNoTracking();
         
         var filter = request.Filter;

@@ -67,7 +67,7 @@ public class EstatePropertyProfile : Profile
             .ForMember(dest => dest.Images, opt =>
                 opt.Ignore())
             .ForMember(dest => dest.PropertyImages, opt =>
-                opt.Ignore())
+                opt.MapFrom(src => src.PropertyImages))
             .ForMember(dest => dest.SalePrice,
                 opt => opt.MapFrom(src =>
                     src.EstatePropertyValues.FirstOrDefault(v => v.IsFeatured)!.SalePrice))
@@ -96,12 +96,15 @@ public class EstatePropertyProfile : Profile
                     .Select(a => new EstatePropertyAmenity { AmenityId = Guid.Parse(a.Id!) })
             ));
 
+        CreateMap<EstatePropertyValues, PublicEstatePropertyDto>();
+            
         CreateMap<PublicEstatePropertyDto, EstatePropertyValues>()
             .ForMember(dest => dest.Description, opt =>
                 opt.MapFrom(src => src.Description))
             .ForMember(dest => dest.Id, opt =>
                 opt.Ignore());
-
+        
+        
         // =================================================================
         // Mappings for Users Estate Property data
         // =================================================================
