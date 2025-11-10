@@ -31,6 +31,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
     public DbSet<Subscription> Subscriptions => Set<Subscription>();
     public DbSet<BillingHistory> BillingHistories => Set<BillingHistory>();
     public DbSet<Usage> Usages => Set<Usage>();
+    public DbSet<WebhookEvent> WebhookEvents => Set<WebhookEvent>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -258,6 +259,14 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>, IApplica
             entity.HasKey(u => u.Id);
             entity.HasIndex(u => new { u.OwnerType, u.OwnerId, u.SnapshotAt });
             entity.HasIndex(u => u.SnapshotAt);
+        });
+        
+        builder.Entity<WebhookEvent>(entity =>
+        {
+            entity.HasKey(we => we.Id);
+            entity.HasIndex(we => we.ProviderEventId).IsUnique();
+            entity.HasIndex(we => we.EventType);
+            entity.HasIndex(we => we.Processed);
         });
     }
 }

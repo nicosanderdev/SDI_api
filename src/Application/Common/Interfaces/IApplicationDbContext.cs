@@ -25,5 +25,6 @@ public interface IApplicationDbContext
     DbSet<Subscription> Subscriptions { get; }
     DbSet<BillingHistory> BillingHistories { get; }
     DbSet<Usage> Usages { get; }
+    DbSet<WebhookEvent> WebhookEvents { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken);
 }
