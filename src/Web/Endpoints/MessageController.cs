@@ -244,24 +244,4 @@ public class MessagesController(ISender sender) : ControllerBase
          var result = await sender.Send(new GetMessageCountsQuery { UserId = userId });
          return Ok(result);
     }
-    
-    // private async Task<IActionResult> UpdateMessageRecipientStatus(Guid messageId, Func<MessageRecipient, bool> updateAction, string successMessage = "Status updated.", string notFoundMessage = "Message not found for user.")
-    //     if (!Guid.TryParse(id, out var guidId)) 
-    //         return BadRequest("Invalid message ID format.");
-    //         await _sender.Send(new UpdateMessageRecipientStatusCommand(guidId));
-    //         return NoContent();
-    //
-    //
-    //     // TODO - NS revisar
-    //     var currentUserId = /* Get from ICurrentUserService */ Guid.NewGuid(); // Placeholder
-    //      var messageRecipient = await _context.MessageRecipients
-    //         .FirstOrDefaultAsync(mr => mr.MessageId == messageId && mr.RecipientId == currentUserId);
-    //
-    //     if (messageRecipient == null) return NotFound(new { message = notFoundMessage });
-    //
-    //     bool changed = updateAction(messageRecipient);
-    //     if(changed) await _context.SaveChangesAsync();
-    //     
-    //     return NoContent(); // Or Ok(new { message = successMessage });
-    // }
 }

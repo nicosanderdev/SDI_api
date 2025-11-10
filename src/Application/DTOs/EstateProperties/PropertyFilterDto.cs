@@ -1,4 +1,4 @@
-﻿namespace SDI_Api.Application.DTOs.EstateProperties;
+namespace SDI_Api.Application.DTOs.EstateProperties;
 
 public class PropertyFilterDto
 {
@@ -14,4 +14,8 @@ public class PropertyFilterDto
     public bool? IncludeVideos { get; set; } = false;
     public bool? IncludeDocuments { get; set; } = false;
     public bool? IncludeAmenities { get; set; } = false;
+    public float? SwLat { get; set; }
+    public float? SwLng { get; set; }
+    public float? NeLat { get; set; }
+    public float? NeLng { get; set; }
 }

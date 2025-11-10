@@ -1,4 +1,4 @@
-﻿using SDI_Api.Application.Common.Interfaces;
+using SDI_Api.Application.Common.Interfaces;
 using SDI_Api.Application.Common.Models;
 using SDI_Api.Application.DTOs.EstateProperties;
 using SDI_Api.Domain.Entities;
@@ -29,20 +29,36 @@ public class GetEstatePropertiesQueryHandler : IRequestHandler<GetEstateProperti
     {
         IQueryable<EstateProperty> baseQuery = _context.EstateProperties
             .Where(p => p.EstatePropertyValues.FirstOrDefault(epv => epv.IsFeatured)!.IsPropertyVisible)
-            .Where(p => !p.IsDeleted) 
+            .Where(p => !p.IsDeleted)
+            .Include(p => p.EstatePropertyValues)
             .AsNoTracking();
         
-        var queryByFilter = baseQuery;
+        var filter = request.Filter;
         
-        if (request.Filter?.IncludeImages == true)
+        if (filter.IncludeImages == true)
             baseQuery = baseQuery.Include(ep => ep.PropertyImages);
 
-        if (request.Filter?.IncludeVideos == true)
+        if (filter.IncludeVideos == true)
             baseQuery = baseQuery.Include(ep => ep.PropertyVideos);
         
-        if (request.Filter?.IncludeAmenities == true)
+        if (filter.IncludeAmenities == true)
             baseQuery = baseQuery.Include(ep => ep.EstatePropertyAmenities)
                 .ThenInclude(epa => epa.Amenity);
+        
+        if (filter.SwLat != null && filter.SwLng != null && filter.NeLat != null && filter.NeLng != null)
+        {
+            var swLat = (decimal)filter.SwLat.Value;
+            var swLng = (decimal)filter.SwLng.Value;
+            var neLat = (decimal)filter.NeLat.Value;
+            var neLng = (decimal)filter.NeLng.Value;
+            
+            baseQuery = baseQuery.Where(p => p.LocationLatitude >= swLat && p.LocationLatitude <= neLat);
+            
+            if (swLng <= neLng)
+                baseQuery = baseQuery.Where(p => p.LocationLongitude >= swLng && p.LocationLongitude <= neLng);
+            else
+                baseQuery = baseQuery.Where(p => p.LocationLongitude >= swLng || p.LocationLongitude <= neLng);
+        }
         
         if (request.Ids is { Count: > 0 })
         {
@@ -53,8 +69,9 @@ public class GetEstatePropertiesQueryHandler : IRequestHandler<GetEstateProperti
             return new PaginatedResult<PublicEstatePropertyDto>(dtos, dtos.Count, 1, 1);
         }
     
-        var filter = request.Filter;
-        if (!string.IsNullOrEmpty(filter!.OwnerId) && Guid.TryParse(filter.OwnerId, out var ownerGuid))
+        // After applying bounding box filter, assign to queryByFilter for additional filters
+        var queryByFilter = baseQuery;
+        if (!string.IsNullOrEmpty(filter.OwnerId) && Guid.TryParse(filter.OwnerId, out var ownerGuid))
             queryByFilter = queryByFilter.Where(p => p.OwnerId == ownerGuid);
 
         if (!string.IsNullOrEmpty(filter.Status) &&
@@ -80,9 +97,8 @@ public class GetEstatePropertiesQueryHandler : IRequestHandler<GetEstateProperti
 
         queryByFilter = queryByFilter.OrderByDescending(p => p.Created);
         
-        var paginatedResult = await PaginatedResult<EstateProperty>.CreateAsync(queryByFilter, request.PageNumber, request.PageSize);
-        var estatePropertyDtos = _mapper.Map<List<PublicEstatePropertyDto>>(paginatedResult.Items);
-        
-        return new PaginatedResult<PublicEstatePropertyDto>(estatePropertyDtos, paginatedResult.TotalCount, paginatedResult.PageNumber, paginatedResult.TotalPages);
+        var result = await PaginatedResult<EstateProperty>.CreateAsync(queryByFilter, request.PageNumber, request.PageSize);
+        var estatePropertyDtos = _mapper.Map<List<PublicEstatePropertyDto>>(result.Items);
+        return new PaginatedResult<PublicEstatePropertyDto>(estatePropertyDtos, result.TotalCount, result.PageNumber, result.TotalPages);
     }
 }
