@@ -23,40 +23,37 @@ public class GetCurrentSubscriptionQueryHandler : IRequestHandler<GetCurrentSubs
 
     public async Task<SubscriptionDto?> Handle(GetCurrentSubscriptionQuery request, CancellationToken cancellationToken)
     {
-        // First try to find user's personal subscription
+        var memberId = await _context.Members.Where(m => m.UserId.Equals(request.UserId))
+            .Select(m => m.Id).FirstOrDefaultAsync(cancellationToken); 
+        
         var userSubscription = await _context.Subscriptions
             .Include(s => s.Plan)
-            .Where(s => s.OwnerType == OwnerType.User && s.OwnerId == request.UserId)
+            .Where(s => s.OwnerType == OwnerType.User && s.OwnerId.Equals(memberId))
             .OrderByDescending(s => s.Created)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (userSubscription != null)
-        {
             return _mapper.Map<SubscriptionDto>(userSubscription);
-        }
-
-        // If no personal subscription, check if user belongs to a company with a subscription
-        var member = await _context.Members
-            .FirstOrDefaultAsync(m => m.UserId == request.UserId, cancellationToken);
-
-        if (member == null)
-            return null;
-
-        var userCompany = await _context.UserCompanies
-            .Include(uc => uc.Company)
-            .Where(uc => uc.MemberId == member.Id)
-            .FirstOrDefaultAsync(cancellationToken);
+        
+        var userCompany = await _context.UserCompanies.Where(uc => uc.MemberId.Equals(memberId))
+            .FirstOrDefaultAsync(cancellationToken: cancellationToken);
 
         if (userCompany == null)
             return null;
 
+        var companyId = await _context.Companies.Where(c => c.Id.Equals(userCompany.CompanyId))
+            .Select(c => c.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (companyId == Guid.Empty)
+            return null;
+
         var companySubscription = await _context.Subscriptions
             .Include(s => s.Plan)
-            .Where(s => s.OwnerType == OwnerType.Company && s.OwnerId == userCompany.CompanyId)
+            .Where(s => s.OwnerType == OwnerType.Company && s.OwnerId.Equals(companyId))
             .OrderByDescending(s => s.Created)
             .FirstOrDefaultAsync(cancellationToken);
 
         return companySubscription != null ? _mapper.Map<SubscriptionDto>(companySubscription) : null;
     }
 }
-

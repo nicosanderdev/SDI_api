@@ -4079,7 +4079,7 @@
             "format": "date-time",
             "nullable": true
           },
-          "created": {
+          "createdAt": {
             "type": "string",
             "format": "date-time"
           }

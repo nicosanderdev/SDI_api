@@ -10,7 +10,6 @@ public class BillingHistoryDto
     public decimal Amount { get; set; }
     public string Currency { get; set; } = "USD";
     public InvoiceStatus Status { get; set; }
-    public DateTime? PaidAt { get; set; }
-    public DateTime Created { get; set; }
+    public DateTimeOffset? PaidAt { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
 }
-
