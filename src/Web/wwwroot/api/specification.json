@@ -1312,6 +1312,348 @@
         }
       }
     },
+    "/api/company/me": {
+      "get": {
+        "tags": [
+          "Company"
+        ],
+        "operationId": "Company_GetMyCompany",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/company/me/users": {
+      "get": {
+        "tags": [
+          "Company"
+        ],
+        "operationId": "Company_GetMyCompanyUsers",
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CompanyUserDto"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Company"
+        ],
+        "operationId": "Company_AddUserToCompany",
+        "requestBody": {
+          "x-name": "userData",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddUserToCompanyDto"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CompanyUserDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/company/me/users/{userId}": {
+      "delete": {
+        "tags": [
+          "Company"
+        ],
+        "operationId": "Company_RemoveUserFromCompany",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "x-position": 1
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CompanyUserDto"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/company/me/profile": {
+      "put": {
+        "tags": [
+          "Company"
+        ],
+        "operationId": "Company_UpdateCompanyProfile",
+        "requestBody": {
+          "x-name": "profileData",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCompanyProfileDto"
+              }
+            }
+          },
+          "required": true,
+          "x-position": 1
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CompanyDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/company/me/logo": {
+      "post": {
+        "tags": [
+          "Company"
+        ],
+        "operationId": "Company_UploadCompanyLogo",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "ContentType": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "ContentDisposition": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "Headers": {
+                    "type": "array",
+                    "nullable": true,
+                    "items": {}
+                  },
+                  "Length": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "Name": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "FileName": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadCompanyImageResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/company/me/banner": {
+      "post": {
+        "tags": [
+          "Company"
+        ],
+        "operationId": "Company_UploadCompanyBanner",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "properties": {
+                  "ContentType": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "ContentDisposition": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "Headers": {
+                    "type": "array",
+                    "nullable": true,
+                    "items": {}
+                  },
+                  "Length": {
+                    "type": "integer",
+                    "format": "int64"
+                  },
+                  "Name": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "FileName": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadCompanyImageResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/properties": {
       "get": {
         "tags": [
@@ -4428,6 +4770,197 @@
           }
         }
       },
+      "CompanyDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "logoUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "bannerUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "address": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AddressDto"
+              }
+            ]
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "statistics": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CompanyStatisticsDto"
+              }
+            ]
+          },
+          "users": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "$ref": "#/components/schemas/CompanyUserDto"
+            }
+          }
+        }
+      },
+      "AddressDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "street": {
+            "type": "string",
+            "nullable": true
+          },
+          "street2": {
+            "type": "string",
+            "nullable": true
+          },
+          "city": {
+            "type": "string",
+            "nullable": true
+          },
+          "state": {
+            "type": "string",
+            "nullable": true
+          },
+          "postalCode": {
+            "type": "string",
+            "nullable": true
+          },
+          "country": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "CompanyStatisticsDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "totalProperties": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "unansweredMessages": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "totalVisits": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "CompanyUserDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string",
+            "nullable": true
+          },
+          "lastName": {
+            "type": "string",
+            "nullable": true
+          },
+          "role": {
+            "$ref": "#/components/schemas/UserCompanyRole"
+          },
+          "created": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "UserCompanyRole": {
+        "type": "integer",
+        "description": "",
+        "x-enumNames": [
+          "owner",
+          "admin",
+          "manager"
+        ],
+        "enum": [
+          0,
+          1,
+          2
+        ]
+      },
+      "AddUserToCompanyDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "email": {
+            "type": "string"
+          }
+        }
+      },
+      "UpdateCompanyProfileDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone": {
+            "type": "string",
+            "nullable": true
+          },
+          "address": {
+            "nullable": true,
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/AddressDto"
+              }
+            ]
+          }
+        }
+      },
+      "UploadCompanyImageResponseDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "url": {
+            "type": "string"
+          }
+        }
+      },
       "PaginatedResultOfUsersEstatePropertyDto": {
         "type": "object",
         "additionalProperties": false,
@@ -5052,13 +5585,13 @@
             "nullable": true,
             "oneOf": [
               {
-                "$ref": "#/components/schemas/AddressDto"
+                "$ref": "#/components/schemas/AddressDto2"
               }
             ]
           }
         }
       },
-      "AddressDto": {
+      "AddressDto2": {
         "type": "object",
         "additionalProperties": false,
         "properties": {

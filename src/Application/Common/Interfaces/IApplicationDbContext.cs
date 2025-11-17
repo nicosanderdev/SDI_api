@@ -20,7 +20,7 @@ public interface IApplicationDbContext
     DbSet<Amenity> Amenities { get; }
     DbSet<Favorite> Favorites { get; }
     DbSet<Plan> Plans { get; }
-    DbSet<Company> Companies { get; }
+    DbSet<Domain.Entities.Company> Companies { get; }
     DbSet<UserCompany> UserCompanies { get; }
     DbSet<Subscription> Subscriptions { get; }
     DbSet<BillingHistory> BillingHistories { get; }
