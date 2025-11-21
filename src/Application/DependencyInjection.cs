@@ -15,6 +15,7 @@ public static class DependencyInjection
     public static void AddApplicationServices(this IHostApplicationBuilder builder)
     {
         builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+        builder.Services.AddScoped<ICompanyAccessService, CompanyAccessService>();
         builder.Services.AddSingleton<IRecoveryCodeGenerator, RecoveryCodeGenerator>();
         builder.Services.AddSingleton<IEmailConfirmationTokenService, EmailConfirmationTokenService>();
         

@@ -1,9 +1,7 @@
-namespace SDI_Api.Domain.Enums;
+﻿namespace SDI_Api.Domain.Enums;
 
 public enum UserCompanyRole
 {
-    owner,
-    admin,
-    manager
+    Admin,
+    Manager
 }
-

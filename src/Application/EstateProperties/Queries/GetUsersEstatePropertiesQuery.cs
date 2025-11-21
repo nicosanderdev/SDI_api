@@ -3,6 +3,7 @@ using SDI_Api.Application.Common.Interfaces;
 using SDI_Api.Application.Common.Models;
 using SDI_Api.Application.Dtos;
 using SDI_Api.Application.DTOs.EstateProperties;
+using SDI_Api.Application.Util.Extensions;
 using SDI_Api.Domain.Entities;
 using SDI_Api.Domain.Enums;
 
@@ -10,37 +11,43 @@ namespace SDI_Api.Application.EstateProperties.Queries;
 
 public class GetUsersEstatePropertiesQuery : IRequest<PaginatedResult<UsersEstatePropertyDto>>
 {
-    // This will be set by the controller from the user's claims.
-    // It should not be bindable from the query string for security.
     [JsonIgnore]
     public Guid UserId { get; set; }
-
-    // To fetch specific properties by their IDs.
-    // If this list has values, filters are ignored.
     public List<Guid>? Ids { get; set; }
     public int PageNumber { get; set; } = 1;
     public int PageSize { get; set; } = 10;
-
-    // This filter now includes the 'IsDeleted' flag.
     public PropertyFilterDto Filter { get; set; } = new();
+    public string? CompanyId { get; set; }
 }
 
 public class GetUsersEstatePropertiesQueryHandler : IRequestHandler<GetUsersEstatePropertiesQuery, PaginatedResult<UsersEstatePropertyDto>>
 {
     private readonly IApplicationDbContext _context;
     private readonly IMapper _mapper;
+    private readonly ICompanyAccessService _companyAccessService;
 
-    public GetUsersEstatePropertiesQueryHandler(IApplicationDbContext context, IMapper mapper)
+    public GetUsersEstatePropertiesQueryHandler(
+        IApplicationDbContext context,
+        IMapper mapper,
+        ICompanyAccessService companyAccessService)
     {
         _context = context;
         _mapper = mapper;
+        _companyAccessService = companyAccessService;
     }
 
     public async Task<PaginatedResult<UsersEstatePropertyDto>> Handle(GetUsersEstatePropertiesQuery request, CancellationToken cancellationToken)
     {
+        // Validate company access
+        await _companyAccessService.ValidateCompanyAccessAsync(request.UserId, request.CompanyId);
+
+        // Get accessible company IDs for filtering
+        var accessibleCompanyIds = await _companyAccessService.GetAccessibleCompanyIdsAsync(request.UserId);
+
         IQueryable<EstateProperty> baseQuery = _context.EstateProperties
-            .Where(ep => ep.Owner.UserId == request.UserId)
             .Include(ep => ep.EstatePropertyValues)
+            .Include(ep => ep.Owner)
+            .ApplyCompanyFilter(request.CompanyId, request.UserId, accessibleCompanyIds)
             .AsNoTracking();
         
         var filter = request.Filter;

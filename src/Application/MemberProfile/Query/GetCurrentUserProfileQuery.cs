@@ -39,6 +39,15 @@ public class GetCurrentUserProfileQueryHandler : IRequestHandler<GetCurrentUserP
         if (roles != null)
             profileDataDto.Roles = roles as List<string>;
         
+        var companies = await _context.UserCompanies.Where(uc => uc.MemberId == member!.Id)
+            .Select(uc => new CompanyNamesDto
+            {
+                Id = uc.CompanyId,
+                Name = uc.Company.Name
+            })
+            .ToListAsync(cancellationToken);
+        profileDataDto.Companies = companies;
+        
         return _mapper.Map(member, profileDataDto);
     }
 }

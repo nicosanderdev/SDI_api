@@ -28,15 +28,11 @@ public class CreateCheckoutCommandHandler : IRequestHandler<CreateCheckoutComman
     public async Task<CheckoutResponseDto> Handle(CreateCheckoutCommand request, CancellationToken cancellationToken)
     {
         if (!Guid.TryParse(request.Request.PlanId, out var planId))
-        {
             throw new ArgumentException("Invalid plan ID format.");
-        }
 
         var plan = await _context.Plans.FindAsync(new object[] { planId }, cancellationToken);
         if (plan == null || !plan.IsActive)
-        {
             throw new NotFoundException(nameof(Plan), request.Request.PlanId);
-        }
 
         
         Guid ownerId;
@@ -45,9 +41,7 @@ public class CreateCheckoutCommandHandler : IRequestHandler<CreateCheckoutComman
         if (request.Request.IsCompanySubscription && !string.IsNullOrEmpty(request.Request.CompanyId))
         {
             if (!Guid.TryParse(request.Request.CompanyId, out var companyId))
-            {
                 throw new ArgumentException("Invalid company ID format.");
-            }
 
             // Verify user has permission to create company subscription
             var member = await _context.Members
@@ -60,18 +54,14 @@ public class CreateCheckoutCommandHandler : IRequestHandler<CreateCheckoutComman
                 .Where(uc => uc.MemberId == member.Id && uc.CompanyId == companyId)
                 .FirstOrDefaultAsync(cancellationToken);
 
-            if (userCompany == null || (userCompany.Role != UserCompanyRole.owner && userCompany.Role != UserCompanyRole.admin))
-            {
+            if (userCompany == null || (userCompany.Role != UserCompanyRole.Admin))
                 throw new ForbiddenAccessException();
-            }
 
             ownerId = companyId;
-            // ownerType = OwnerType.Company;
         }
         else
         {
             ownerId = request.UserId;
-            // ownerType = OwnerType.User;
         }
 
         // TODO: Integrate with payment provider (Stripe, PayPal, etc.)

@@ -10,6 +10,6 @@ public class CompanyUserDto
     public string? FirstName { get; set; }
     public string? LastName { get; set; }
     public UserCompanyRole Role { get; set; }
-    public DateTime Created { get; set; }
+    public DateTimeOffset Created { get; set; }
 }
 

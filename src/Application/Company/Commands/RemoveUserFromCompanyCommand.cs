@@ -1,6 +1,7 @@
 using SDI_Api.Application.Common.Exceptions;
 using SDI_Api.Application.Common.Interfaces;
 using SDI_Api.Application.DTOs.Company;
+using SDI_Api.Domain.Constants;
 using SDI_Api.Domain.Entities;
 using SDI_Api.Domain.Enums;
 using NotFoundException = SDI_Api.Application.Common.Exceptions.NotFoundException;
@@ -65,12 +66,12 @@ public class RemoveUserFromCompanyCommandHandler : IRequestHandler<RemoveUserFro
             throw new NotFoundException("UserCompany", "User is not a member of this company.");
 
         // Prevent removing the owner
-        if (userCompanyToRemove.Role == UserCompanyRole.owner)
-            throw new InvalidOperationException("Cannot remove the company owner.");
+        if (userCompanyToRemove.Role == UserCompanyRole.Manager)
+            throw new InvalidOperationException("Cannot remove the company manager.");
 
         // Check if current user is owner or admin
-        if (currentUserCompany.Role != UserCompanyRole.owner && currentUserCompany.Role != UserCompanyRole.admin)
-            throw new UnauthorizedAccessException("Only owners and admins can remove users from the company.");
+        if (currentUserCompany.Role != UserCompanyRole.Admin)
+            throw new UnauthorizedAccessException("Only admins can remove users from the company.");
 
         // Remove user from company
         _context.UserCompanies.Remove(userCompanyToRemove);

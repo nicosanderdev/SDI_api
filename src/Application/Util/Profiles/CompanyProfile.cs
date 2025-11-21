@@ -28,6 +28,10 @@ public class CompanyProfile : Profile
                     dest.Address = null;
                 }
             });
+
+        CreateMap<Member, CompanyUserDto>()
+            .ForMember(dest => dest.Email, opt => opt.Ignore())
+            .ForMember(dest => dest.Created, opt => opt.Ignore());
     }
 }
 

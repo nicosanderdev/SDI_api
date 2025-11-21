@@ -1,4 +1,6 @@
-﻿namespace Sdi_Api.Application.DTOs.Profile;
+﻿using SDI_Api.Application.DTOs.Company;
+
+namespace Sdi_Api.Application.DTOs.Profile;
 
 public class ProfileDataDto
 {
@@ -10,5 +12,6 @@ public class ProfileDataDto
     public string? Title { get; set; }
     public string? AvatarUrl { get; set; }
     public List<string>? Roles { get; set; }
+    public List<CompanyNamesDto>? Companies { get; set; }
     public AddressDto? Address { get; set; }
 }

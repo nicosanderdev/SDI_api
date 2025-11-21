@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using SDI_Api.Domain.Constants;
 using SDI_Api.Domain.Enums;
 
 namespace SDI_Api.Domain.Entities;
@@ -13,6 +14,12 @@ public class UserCompany : BaseEntity
     
     [Required]
     public UserCompanyRole Role { get; set; }
+    
+    [Required]
+    public Guid AddedBy { get; set; }
+    
+    [Required]
+    public DateTimeOffset JoinedAt { get; set; }
     
     // Navigation properties
     public Company Company { get; set; } = null!;

@@ -8,6 +8,7 @@ using SDI_Api.Application.Messages;
 using SDI_Api.Application.Messages.Commands;
 using SDI_Api.Application.Messages.Queries;
 using SDI_Api.Domain.Exceptions;
+using ForbiddenAccessException = SDI_Api.Application.Common.Exceptions.ForbiddenAccessException;
 
 namespace SDI_Api.Web.Endpoints;
 

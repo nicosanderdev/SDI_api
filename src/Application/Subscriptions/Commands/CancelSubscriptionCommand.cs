@@ -47,7 +47,7 @@ public class CancelSubscriptionCommandHandler : IRequestHandler<CancelSubscripti
                 .Where(uc => uc.MemberId == member.Id && uc.CompanyId == subscription.OwnerId)
                 .FirstOrDefaultAsync(cancellationToken);
 
-            if (userCompany == null || (userCompany.Role != UserCompanyRole.owner && userCompany.Role != UserCompanyRole.admin))
+            if (userCompany == null || (userCompany.Role != UserCompanyRole.Admin))
             {
                 throw new ForbiddenAccessException();
             }

@@ -2022,6 +2022,15 @@
               "nullable": true
             },
             "x-position": 18
+          },
+          {
+            "name": "CompanyId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 19
           }
         ],
         "responses": {
@@ -3649,6 +3658,15 @@
               "nullable": true
             },
             "x-position": 1
+          },
+          {
+            "name": "CompanyId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 2
           }
         ],
         "responses": {
@@ -3700,6 +3718,15 @@
               "type": "string"
             },
             "x-position": 2
+          },
+          {
+            "name": "CompanyId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 3
           }
         ],
         "responses": {
@@ -3743,6 +3770,15 @@
               "type": "string"
             },
             "x-position": 1
+          },
+          {
+            "name": "CompanyId",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "nullable": true
+            },
+            "x-position": 2
           }
         ],
         "responses": {
@@ -4907,14 +4943,12 @@
         "type": "integer",
         "description": "",
         "x-enumNames": [
-          "owner",
-          "admin",
-          "manager"
+          "Admin",
+          "Manager"
         ],
         "enum": [
           0,
-          1,
-          2
+          1
         ]
       },
       "AddUserToCompanyDto": {
@@ -4922,6 +4956,9 @@
         "additionalProperties": false,
         "properties": {
           "email": {
+            "type": "string"
+          },
+          "companyId": {
             "type": "string"
           }
         }
@@ -5581,6 +5618,13 @@
               "type": "string"
             }
           },
+          "companies": {
+            "type": "array",
+            "nullable": true,
+            "items": {
+              "$ref": "#/components/schemas/CompanyNamesDto"
+            }
+          },
           "address": {
             "nullable": true,
             "oneOf": [
@@ -5588,6 +5632,19 @@
                 "$ref": "#/components/schemas/AddressDto2"
               }
             ]
+          }
+        }
+      },
+      "CompanyNamesDto": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "guid"
+          },
+          "name": {
+            "type": "string"
           }
         }
       },

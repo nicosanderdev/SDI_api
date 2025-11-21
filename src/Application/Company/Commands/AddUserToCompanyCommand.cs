@@ -1,6 +1,7 @@
 using SDI_Api.Application.Common.Exceptions;
 using SDI_Api.Application.Common.Interfaces;
 using SDI_Api.Application.DTOs.Company;
+using SDI_Api.Domain.Constants;
 using SDI_Api.Domain.Entities;
 using SDI_Api.Domain.Enums;
 using NotFoundException = SDI_Api.Application.Common.Exceptions.NotFoundException;
@@ -32,29 +33,31 @@ public class AddUserToCompanyCommandHandler : IRequestHandler<AddUserToCompanyCo
     public async Task<List<CompanyUserDto>> Handle(AddUserToCompanyCommand request, CancellationToken cancellationToken)
     {
         // Get current user's member
-        var currentMember = await _context.Members
+        var currentMemberId = await _context.Members
             .Where(m => m.UserId == request.UserId)
+            .Select(m => m.Id)
             .FirstOrDefaultAsync(cancellationToken);
 
-        if (currentMember == null)
+        if (currentMemberId == Guid.Empty)
             throw new NotFoundException(nameof(Member), request.UserId.ToString());
 
         // Get current user's company
         var userCompany = await _context.UserCompanies
-            .Where(uc => uc.MemberId == currentMember.Id)
+            .Where(uc => uc.MemberId == currentMemberId && uc.CompanyId.ToString() == request.UserData.CompanyId)
             .FirstOrDefaultAsync(cancellationToken);
 
-        if (userCompany == null)
+        if (userCompany == null ||
+            userCompany != null && userCompany.CompanyId.ToString() != request.UserData.CompanyId)
             throw new NotFoundException("Company", "User is not associated with a company.");
-
-        // Find user by email
+        
+        // Find user to add by email
         var user = await _identityService.FindUserByEmailAsync(request.UserData.Email);
         if (user == null)
             throw new NotFoundException("User", $"User with email {request.UserData.Email} not found.");
 
         var userIdGuid = Guid.Parse(user.getId()!);
         
-        // Get member for the user
+        // Get member for the user to add
         var memberToAdd = await _context.Members
             .Where(m => m.UserId == userIdGuid)
             .FirstOrDefaultAsync(cancellationToken);
@@ -62,9 +65,9 @@ public class AddUserToCompanyCommandHandler : IRequestHandler<AddUserToCompanyCo
         if (memberToAdd == null)
             throw new NotFoundException(nameof(Member), user.getId()!);
 
-        // Check if user is already in the company
+        // Check if user to add is already in the company
         var existingUserCompany = await _context.UserCompanies
-            .Where(uc => uc.MemberId == memberToAdd.Id && uc.CompanyId == userCompany.CompanyId)
+            .Where(uc => uc.MemberId == memberToAdd.Id && uc.CompanyId == userCompany!.CompanyId)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (existingUserCompany != null)
@@ -77,8 +80,10 @@ public class AddUserToCompanyCommandHandler : IRequestHandler<AddUserToCompanyCo
         var newUserCompany = new UserCompany
         {
             MemberId = memberToAdd.Id,
-            CompanyId = userCompany.CompanyId,
-            Role = UserCompanyRole.manager
+            CompanyId = userCompany!.CompanyId,
+            Role = UserCompanyRole.Manager,
+            AddedBy = currentMemberId,
+            JoinedAt = DateTimeOffset.Now
         };
 
         _context.UserCompanies.Add(newUserCompany);

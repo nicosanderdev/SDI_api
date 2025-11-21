@@ -60,9 +60,10 @@ public class GetMyCompanyQueryHandler : IRequestHandler<GetMyCompanyQuery, Compa
                     continue;
 
                 var user = await _identityService.FindUserByIdAsync(member.UserId.ToString());
-                var companyUserDto = _mapper.Map<CompanyUserDto>(uc);
+                var companyUserDto = _mapper.Map<CompanyUserDto>(member);
+                
                 companyUserDto.Email = user?.getUserEmail() ?? string.Empty;
-                companyUserDto.Created = uc.Company.CreatedAt;
+                companyUserDto.Created = uc.JoinedAt;
                 usersList.Add(companyUserDto);
             }
             companyDto.Users = usersList;

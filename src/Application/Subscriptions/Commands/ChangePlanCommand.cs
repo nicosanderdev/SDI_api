@@ -58,7 +58,7 @@ public class ChangePlanCommandHandler : IRequestHandler<ChangePlanCommand, Subsc
                 .Where(uc => uc.MemberId == member.Id && uc.CompanyId == subscription.OwnerId)
                 .FirstOrDefaultAsync(cancellationToken);
 
-            if (userCompany == null || (userCompany.Role != UserCompanyRole.owner && userCompany.Role != UserCompanyRole.admin))
+            if (userCompany == null || (userCompany.Role != UserCompanyRole.Admin))
             {
                 throw new ForbiddenAccessException();
             }

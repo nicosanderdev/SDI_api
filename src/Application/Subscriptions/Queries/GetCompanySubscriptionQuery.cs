@@ -39,10 +39,8 @@ public class GetCompanySubscriptionQueryHandler : IRequestHandler<GetCompanySubs
             .Where(uc => uc.MemberId == member.Id && uc.CompanyId == request.CompanyId)
             .FirstOrDefaultAsync(cancellationToken);
 
-        if (userCompany == null || (userCompany.Role != UserCompanyRole.owner && userCompany.Role != UserCompanyRole.admin))
-        {
+        if (userCompany == null || (userCompany.Role != UserCompanyRole.Admin))
             throw new ForbiddenAccessException();
-        }
 
         var subscription = await _context.Subscriptions
             .Include(s => s.Plan)
